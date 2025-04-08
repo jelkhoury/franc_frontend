@@ -53,7 +53,7 @@ const Chatting = () => {
 
     try {
       // Send request to backend
-      const response = await fetch('http://192.168.0.105:5000/ask', {
+      const response = await fetch('http://20.49.30.0:5000/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: userMessage.text }),
