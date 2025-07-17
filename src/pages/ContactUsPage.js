@@ -80,11 +80,11 @@ const ContactUsPage = () => {
         >
           {/* Friendly Avatar */}
           <Image
-            src="/assets/images/franc_avatar.jpg"
+            src="/assets/images/franc_white_blue bg-01.svg"
             alt="Franc Avatar"
-            boxSize="100px"
+            boxSize="180px"
             objectFit="cover"
-            borderRadius="full"
+            borderRadius="lg"
             mx="auto"
             mb={4}
             transition="transform 0.3s"
@@ -115,7 +115,12 @@ const ContactUsPage = () => {
               <Text>PO Box 40016 Hadat-Baabda - Lebanon</Text>
               <Text>📞 +961 5 92 70 00 | Ext: 1130 – 1131-1133</Text>
               <Text>📞 +961 5 92 70 01</Text>
-              <Text>📧 <a href="mailto:ccd@ua.edu.lb" style={{ color: "#045aab" }}>ccd@ua.edu.lb</a></Text>
+              <Text>
+                📧{" "}
+                <a href="mailto:ccd@ua.edu.lb" style={{ color: "#045aab" }}>
+                  ccd@ua.edu.lb
+                </a>
+              </Text>
             </VStack>
           </Box>
 
@@ -124,49 +129,81 @@ const ContactUsPage = () => {
             <VStack spacing={4}>
               <FormControl isInvalid={errors.name}>
                 <FormLabel color="gray.700">Name</FormLabel>
-                <Input name="name" value={formData.name} onChange={handleChange} placeholder="Enter your name" focusBorderColor="brand.400" bg="gray.100" />
+                <Input
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Enter your name"
+                  focusBorderColor="brand.400"
+                  bg="gray.100"
+                />
                 <FormErrorMessage>{errors.name}</FormErrorMessage>
               </FormControl>
 
               <FormControl isInvalid={errors.email}>
                 <FormLabel color="gray.700">Email</FormLabel>
-                <Input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Enter your email" focusBorderColor="brand.400" bg="gray.100" />
+                <Input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Enter your email"
+                  focusBorderColor="brand.400"
+                  bg="gray.100"
+                />
                 <FormErrorMessage>{errors.email}</FormErrorMessage>
               </FormControl>
 
               <FormControl isInvalid={errors.contact}>
                 <FormLabel color="gray.700">Contact Number</FormLabel>
-                <Input type="tel" name="contact" value={formData.contact} onChange={handleChange} placeholder="Enter your contact number" focusBorderColor="brand.400" bg="gray.100" />
+                <Input
+                  type="tel"
+                  name="contact"
+                  value={formData.contact}
+                  onChange={handleChange}
+                  placeholder="Enter your contact number"
+                  focusBorderColor="brand.400"
+                  bg="gray.100"
+                />
                 <FormErrorMessage>{errors.contact}</FormErrorMessage>
               </FormControl>
 
               <FormControl isInvalid={errors.subject}>
                 <FormLabel color="gray.700">Subject</FormLabel>
-                <Input name="subject" value={formData.subject} onChange={handleChange} placeholder="Enter the subject" focusBorderColor="brand.400" bg="gray.100" />
+                <Input
+                  name="subject"
+                  value={formData.subject}
+                  onChange={handleChange}
+                  placeholder="Enter the subject"
+                  focusBorderColor="brand.400"
+                  bg="gray.100"
+                />
                 <FormErrorMessage>{errors.subject}</FormErrorMessage>
               </FormControl>
 
               <FormControl isInvalid={errors.message}>
                 <FormLabel color="gray.700">Message</FormLabel>
-                <Textarea name="message" value={formData.message} onChange={handleChange} placeholder="Enter your message" focusBorderColor="brand.400" bg="gray.100" />
+                <Textarea
+                  name="message"
+                  value={formData.message}
+                  onChange={handleChange}
+                  placeholder="Enter your message"
+                  focusBorderColor="brand.400"
+                  bg="gray.100"
+                />
                 <FormErrorMessage>{errors.message}</FormErrorMessage>
               </FormControl>
 
-              
-
               <Button
-  type="submit"
-  bg="#045aab" // Using the main color for the button background
-  color="white" // Set text color to white for better contrast
-  size="md"
-  w="full"
-  _hover={{ bg: "#03488c" }} // Darker shade for hover effect
->
-  Send Message
-</Button>
-
-
-             
+                type="submit"
+                bg="#045aab" // Using the main color for the button background
+                color="white" // Set text color to white for better contrast
+                size="md"
+                w="full"
+                _hover={{ bg: "#03488c" }} // Darker shade for hover effect
+              >
+                Send Message
+              </Button>
             </VStack>
           </form>
         </Box>
