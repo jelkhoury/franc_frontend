@@ -65,7 +65,7 @@ const AboutUsPage = () => {
         px={{ base: 6, md: 20 }}
       >
         <Flex
-          direction={{ base: 'column', md: 'row' }}
+          direction={{ base: "column", md: "row" }}
           align="center"
           justify="space-between"
           gap={10}
@@ -74,8 +74,9 @@ const AboutUsPage = () => {
           <Image
             src="/assets/images/about_us.svg"
             alt="Team Illustration"
-            maxW="400px"
+            maxW="450px"
             objectFit="contain"
+            borderRadius="lg"
             alignSelf="flex-end"
           />
 
@@ -95,10 +96,11 @@ const AboutUsPage = () => {
             </Heading>
 
             <Text fontSize="lg" color="gray.600" lineHeight="1.8">
-              Franc is a project developed through collaboration between the CCD and CS departments.
-              It was supported by Mr. Fouad Abdallah and Instructor Elie Najem from CCD, and
-              supervised by Dr. Charbel Gemayel, Head of CS. The development was carried out
-              by alumni Rani Hijazi and Wadih Issa.
+              Franc is a project developed through collaboration between the CCD
+              and CS departments. It was supported by Mr. Fouad Abdallah and
+              Instructor Elie Najem from CCD, and supervised by Dr. Charbel
+              Gemayel, Head of CS. The development was carried out by alumni
+              Rani Hijazi and Wadih Issa.
             </Text>
           </Box>
         </Flex>
@@ -114,7 +116,7 @@ const AboutUsPage = () => {
           {teamMembers.map((member, idx) => (
             <MotionBox
               key={idx}
-              flexBasis={{ base: '100%', sm: '48%', md: '22%' }}
+              flexBasis={{ base: "100%", sm: "48%", md: "22%" }}
               maxW="270px"
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
