@@ -54,7 +54,8 @@ const services = [
     description:
       "Practice with AI-driven mock interviews tailored to your industry.",
     icon: FcAssistant,
-    isActive: false,
+    isActive: true,
+    link: "/mock-interview",
   },
   {
     heading: "Job Matchmaking",

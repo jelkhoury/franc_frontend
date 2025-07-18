@@ -17,6 +17,7 @@ import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import OTPVerification from './components/OTPVerification';
 import { AuthProvider } from './components/AuthContext';
+import { MockInterviewPage, MockInterviewTryPage, MockInterviewMajorSelectPage, MockInterviewQuestionsPage } from './pages/services';
 
 
 const App = () => {
@@ -41,6 +42,10 @@ const App = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/OTP-Verification" element={<OTPVerification />} />
+          <Route path="/mock-interview" element={<MockInterviewPage />} />
+          <Route path="/mock-interview/try" element={<MockInterviewTryPage />} />
+          <Route path="/mock-interview/select-major" element={<MockInterviewMajorSelectPage />} />
+          <Route path="/mock-interview/questions" element={<MockInterviewQuestionsPage />} />
         </Routes>
       </AuthProvider>
     </Router>
