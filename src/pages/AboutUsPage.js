@@ -72,9 +72,9 @@ const AboutUsPage = () => {
         >
           {/* Right - Image */}
           <Image
-            src="/assets/images/franc_white_blue bg-01.svg"
+            src="/assets/images/about_us.svg"
             alt="Team Illustration"
-            maxW="285px"
+            maxW="450px"
             objectFit="contain"
             borderRadius="lg"
             alignSelf="flex-end"

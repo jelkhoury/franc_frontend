@@ -203,10 +203,22 @@ const FrancPage = () => {
       {/* Services Grid */}
       <Box mt={16} bg={useColorModeValue("gray.50", "gray.900")} py={10}>
         <Stack spacing={4} as={Container} maxW="3xl" textAlign="center" mb={12}>
-          <Heading fontSize={{ base: "2xl", sm: "4xl" }} fontWeight="bold">
-            <Text as="span" color="brand.500">
-              Franc
-            </Text>
+          <Heading
+            fontSize={{ base: "2xl", sm: "4xl" }}
+            fontWeight="bold"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            gap={2}
+          >
+            <Image
+              src="/assets/images/francyellow_transparentbg-01.svg"
+              alt="Logo"
+              height="55px"
+              width="auto"
+              objectFit="contain"
+              ignoreFallback
+            />
             's Services
           </Heading>
           <Text color="gray.600" fontSize={{ base: "sm", sm: "lg" }}>

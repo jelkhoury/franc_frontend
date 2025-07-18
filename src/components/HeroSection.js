@@ -13,7 +13,7 @@ import { Link as RouterLink } from "react-router-dom";
 
 const HeroSection = ({ onGetStartedClick }) => {
   return (
-    <Box py={{ base: 16, md: 20 }} px={6} bg="gray.100">
+    <Box py={{ base: 16, md: 32 }} px={6} bg="gray.100">
       <Container maxW="6xl">
         <Flex
           direction={{ base: "column", md: "row" }}
@@ -31,7 +31,10 @@ const HeroSection = ({ onGetStartedClick }) => {
               >
                 Welcome to{" "}
                 <Text as="span" color="brand.500">
-                  Franc's Platform
+                  Franc's
+                </Text>{" "}
+                <Text as="span" color="secondary.50">
+                  Platform
                 </Text>
               </Heading>
 
