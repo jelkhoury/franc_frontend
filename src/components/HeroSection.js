@@ -82,7 +82,6 @@ const HeroSection = ({ onGetStartedClick }) => {
               as="video"
               src="/assets/videos/franclogo.mp4"
               autoPlay
-              loop
               muted
               playsInline
               width={{ base: "280px", md: "500px" }}

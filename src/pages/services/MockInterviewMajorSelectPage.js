@@ -8,33 +8,111 @@ import {
   SimpleGrid,
   useToast,
   Image,
+  Stack, // 🔥 Add this line
+  Input,
+  InputGroup,
+  Select,
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import Footer from '../../components/Footer';
 import { useNavigate } from 'react-router-dom';
 
-const majors = [
-  'Nursing',
-  'Business',
-  'Engineering',
-  'Computer Science',
-  'Education',
-  'Psychology',
-  'Biology',
-  'Chemistry',
-  'Physics',
-  'Mathematics',
-  'Law',
-  'Architecture',
-  'Pharmacy',
-  'Marketing',
-  'Finance',
-  'Accounting',
-  // Add more as needed
+const FeaturedCard = () => (
+  <Box
+    bg="white"
+    borderRadius="xl"
+    boxShadow="md"
+    p={6}
+    mb={8}
+    display="flex"
+    justifyContent="space-between"
+    alignItems="center"
+    flexWrap="wrap"
+  >
+    <Box maxW="500px">
+      <Text fontWeight="bold" fontSize="xl" mb={2} color="brand.500">
+        Tips: Must Check for Mock Interviews
+      </Text>
+      <Text color="gray.600" fontSize="md">
+        - Prepare for common questions
+        <br />
+        - Check your internet connection
+        <br />
+        - Check your audio and video setup
+        <br />
+        - Focus on clear communication
+        <br />
+        - Dress professionally, even if it's a video interview
+      </Text>
+    </Box>
+    <Image
+      src="/assets/images/mock_interview.svg"
+      alt="Brain"
+      borderRadius="md"
+      boxSize="300px"
+      ml={{ base: 0, md: 4 }}
+      mt={{ base: 4, md: 0 }}
+    />
+  </Box>
+);
+
+const majorsWithInfo = [
+  {
+    title: 'Engineering',
+    desc: 'Focus on problem-solving and coding excellence.',
+    img: '/assets/images/cs_major.svg',
+    faculty: 'Engineering',
+  },
+  {
+    title: 'Marketing Strategy',
+    desc: 'Master digital campaigns and brand positioning.',
+    img: '/assets/images/marketing_major.svg',
+    faculty: 'Business',
+  },
+  {
+    title: 'Finance & Banking',
+    desc: 'Navigate market dynamics and financial analysis.',
+    img: '/assets/images/business_major.svg',
+    faculty: 'Business',
+  },
+  {
+    title: 'Nursing & Healthcare',
+    desc: 'Prepare for patient care and medical scenarios.',
+    img: '/assets/images/nursing_major.svg',
+    faculty: 'Health',
+  },
+  {
+    title: 'Audio & Visual Arts',
+    desc: 'Explore creative expression through media.',
+    img: '/assets/images/av_major.svg',
+    faculty: 'Arts',
+  },
 ];
+
+const MajorCard = ({ major, selected, onClick }) => (
+  <Box
+    p={4}
+    borderRadius="lg"
+    border={selected ? '2px solid #3182CE' : '1px solid #E2E8F0'}
+    bg="white"
+    cursor="pointer"
+    onClick={onClick}
+    _hover={{ boxShadow: 'lg' }}
+  >
+    <Image src={major.img} alt={major.title} mb={4} boxSize="100px" mx="auto" />
+    <Text fontWeight="bold" textAlign="center" mb={1}>
+      {major.title}
+    </Text>
+    <Text fontSize="sm" color="gray.600" textAlign="center">
+      {major.desc}
+    </Text>
+  </Box>
+);
 
 const MockInterviewMajorSelectPage = () => {
   const [selectedMajor, setSelectedMajor] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [facultyFilter, setFacultyFilter] = useState('');
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -63,56 +141,71 @@ const MockInterviewMajorSelectPage = () => {
       flexDirection="column"
       justifyContent="space-between"
     >
-      <Flex justify="center" align="center" flex="1" px={4} py={16}>
-        <Box
-          bg="white"
-          p={10}
-          borderRadius="2xl"
-          boxShadow="lg"
-          border="1px solid"
-          borderColor="gray.100"
-          maxW="700px"
-          w="100%"
-          textAlign="center"
-        >
-          <Image
-            src="/assets/images/franc_avatar.jpg"
-            alt="Franc Avatar"
-            boxSize="80px"
-            objectFit="cover"
-            borderRadius="full"
-            mx="auto"
-            mb={4}
-          />
-          <Heading size="lg" mb={4}>
-            Select Your Major
-          </Heading>
-          <Text color="gray.600" mb={6}>
-            Choose your academic major or program to get a tailored set of interview questions.
+      <Box px={4} py={16}>
+        <Stack spacing={8} mb={12} textAlign="center">
+          <Heading size="2xl">Mock Interview</Heading>
+          <Text fontSize="lg" color="gray.600">
+            Tailor your interview practice to your academic major. Select your major to get started!
           </Text>
-          <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4} mb={6}>
-            {majors.map((major) => (
-              <Button
-                key={major}
-                variant={selectedMajor === major ? 'solid' : 'outline'}
-                colorScheme={selectedMajor === major ? 'brand' : 'gray'}
-                onClick={() => handleSelect(major)}
-                size="lg"
-                borderRadius="xl"
-                fontWeight="semibold"
-              >
-                {major}
-              </Button>
+        </Stack>
+        <FeaturedCard />
+        <Heading size="lg" mb={4} textAlign="center">
+          Select Your Major
+        </Heading>
+        <Text color="gray.600" mb={6} textAlign="center">
+          Choose your academic major or program to get a tailored set of interview questions.
+        </Text>
+        {/* Faculty Filter and Search Input in Horizontal Flex */}
+        <Flex
+          direction={{ base: 'column', md: 'row' }}
+          gap={4}
+          justify="center"
+          align="center"
+          mb={6}
+        >
+          <Select
+            placeholder="Filter by faculty"
+            value={facultyFilter}
+            onChange={(e) => setFacultyFilter(e.target.value)}
+            maxW="300px"
+            bg="white"
+          >
+            <option value="Engineering">Engineering</option>
+            <option value="Business">Business</option>
+            <option value="Health">Health</option>
+            <option value="Arts">Arts</option>
+          </Select>
+          <InputGroup maxW="400px">
+            <Input
+              placeholder="Search majors..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              bg="white"
+            />
+          </InputGroup>
+        </Flex>
+        <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={6} mb={6}>
+          {majorsWithInfo
+            .filter((major) =>
+              (!facultyFilter || major.faculty === facultyFilter) &&
+              major.title.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+            .map((major) => (
+              <MajorCard
+                key={major.title}
+                major={major}
+                selected={selectedMajor === major.title}
+                onClick={() => setSelectedMajor(major.title)}
+              />
             ))}
-          </SimpleGrid>
-          <Button colorScheme="green" size="lg" onClick={handleProceed}>
-            Proceed
-          </Button>
-        </Box>
-      </Flex>
+        </SimpleGrid>
+        <Button colorScheme="green" size="lg" onClick={handleProceed} display="block" mx="auto">
+          Proceed
+        </Button>
+      </Box>
       <Footer />
     </Box>
   );
 };
 
-export default MockInterviewMajorSelectPage; 
+export default MockInterviewMajorSelectPage;

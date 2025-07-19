@@ -1,29 +1,27 @@
 import {
   Box,
   Button,
-  Flex,
   Heading,
   Text,
   VStack,
-  useDisclosure,
+  Image,
+  useToast,
+  Spinner,
+  HStack,
+  Flex,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
   ModalCloseButton,
   ModalBody,
-  Image,
-  HStack,
-  Spinner,
-  useToast,
-  Icon,
 } from '@chakra-ui/react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
+import { CheckCircleIcon } from '@chakra-ui/icons';
 import Footer from '../../components/Footer';
 import Webcam from 'react-webcam';
 import { useTimer } from 'react-timer-hook';
-import { CheckCircleIcon } from '@chakra-ui/icons';
 
 const questionBank = {
   Nursing: [
@@ -41,17 +39,17 @@ const questionBank = {
 };
 
 const INTERVIEW_DURATION_MINUTES = 10; // Example: 10 min for the whole interview
-const ANSWER_DURATION_SECONDS = 60; // 1 min per answer
+const ANSWER_DURATION_SECONDS = 5; // 1 min per answer
 
 const MockInterviewQuestionsPage = () => {
   const location = useLocation();
   const major = location.state?.major || 'Nursing';
   const questions = questionBank[major] || [];
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [selectedTitle, setSelectedTitle] = useState('');
   const [videoEnded, setVideoEnded] = useState(false);
   const [showRecorder, setShowRecorder] = useState(false);
+  const [showControls, setShowControls] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordedAnswers, setRecordedAnswers] = useState([]); // {questionIdx, blob}
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(null);
@@ -62,6 +60,13 @@ const MockInterviewQuestionsPage = () => {
   const webcamRef = useRef(null);
   const toast = useToast();
   const [webcamReady, setWebcamReady] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [countdownActive, setCountdownActive] = useState(false);
+
+  const [interviewStarted, setInterviewStarted] = useState(false);
+  const [showThankYou, setShowThankYou] = useState(false);
+  const [displayedQuestions, setDisplayedQuestions] = useState([]);
+  const navigate = useNavigate();
 
   // Interview timer
   const interviewEnd = new Date();
@@ -77,6 +82,7 @@ const MockInterviewQuestionsPage = () => {
   // Per-answer timer
   const [answerTimerKey, setAnswerTimerKey] = useState(0);
   const [answerTimerActive, setAnswerTimerActive] = useState(false);
+  const [answerTimerExpired, setAnswerTimerExpired] = useState(false);
   const {
     seconds: answerSeconds,
     minutes: answerMinutes,
@@ -87,48 +93,79 @@ const MockInterviewQuestionsPage = () => {
   } = useTimer({
     expiryTimestamp: new Date(),
     autoStart: false,
-    onExpire: () => handleAnswerTimeout(),
+    onExpire: () => {
+      setAnswerTimerExpired(true);
+      handleAnswerTimeout();
+    },
   });
 
-  // Open video modal
+  // Open video (no modal)
   const handlePlay = (video, title, idx) => {
     setSelectedVideo(video);
     setSelectedTitle(title);
     setCurrentQuestionIdx(idx);
     setVideoEnded(false);
     setShowRecorder(false);
+    setShowControls(false);
     setRecording(false);
     setRecordedChunks([]);
     setWebcamReady(false);
-    onOpen();
+    setAnswerTimerExpired(false);
   };
 
-  // When video ends, show recorder (webcam) and wait for webcam to be ready
+  // When video ends, show a countdown before starting recorder/timer
   const handleVideoEnded = () => {
+    setIsVideoModalOpen(false);
     setVideoEnded(true);
-    setTimeout(() => {
-      handleAnswerClick();
-    }, 500);
-  };
-
-  // Show recorder and wait for webcam to be ready
-  const handleAnswerClick = () => {
     setShowRecorder(true);
     setWebcamReady(false);
+    setAnswerTimerExpired(false);
+
+    let countdown = 5;
+    toast({
+      title: `Starting in ${countdown}...`,
+      status: 'info',
+      duration: 1000,
+      isClosable: false,
+    });
+
+    const interval = setInterval(() => {
+      countdown -= 1;
+      if (countdown > 0) {
+        toast({
+          title: `Starting in ${countdown}...`,
+          status: 'info',
+          duration: 1000,
+          isClosable: false,
+        });
+      } else {
+        clearInterval(interval);
+        setCountdownActive(false);
+        // Wait for webcam to be ready, then start recording
+        if (webcamRef.current?.video?.srcObject) {
+          setWebcamReady(true);
+          handleStartRecording();
+          restartAnswerTimer(new Date(Date.now() + ANSWER_DURATION_SECONDS * 1000), true);
+          toast({ title: 'Recording started', status: 'info', duration: 2000 });
+        } else {
+          toast({ title: 'Waiting for webcam...', status: 'warning', duration: 2000 });
+        }
+      }
+    }, 1000);
   };
 
-  // Start recording and answer timer when webcam is ready
   useEffect(() => {
     if (showRecorder && webcamReady && !recording) {
       handleStartRecording();
+      restartAnswerTimer(new Date(Date.now() + ANSWER_DURATION_SECONDS * 1000), true);
       toast({ title: 'Recording started', status: 'info', duration: 2000 });
     }
-    // eslint-disable-next-line
   }, [showRecorder, webcamReady]);
 
   // Start recording and answer timer
   const handleStartRecording = () => {
     setRecordedChunks([]);
+    setShowControls(false);
     const videoElement = webcamRef.current?.video;
     if (!videoElement || !videoElement.srcObject) {
       toast({ title: 'Webcam not ready', status: 'error' });
@@ -155,6 +192,7 @@ const MockInterviewQuestionsPage = () => {
   // Stop recording and save
   const handleStopRecording = (auto = false) => {
     if (mediaRecorder) {
+      setShowControls(true); // Ensure controls are shown immediately
       mediaRecorder.stop();
       setSaving(true);
       setTimeout(() => {
@@ -168,9 +206,7 @@ const MockInterviewQuestionsPage = () => {
         setShowRecorder(false);
         setMediaRecorder(null);
         setAnswerTimerActive(false);
-        if (auto) toast({ title: 'Recording stopped (time up)', status: 'info', duration: 2000 });
-        // Close modal after saving (for both auto and manual stop)
-        onClose();
+        if (auto) toast({ title: 'Recording stopped', status: 'info', duration: 2000 });
       }, 500);
     }
   };
@@ -179,6 +215,7 @@ const MockInterviewQuestionsPage = () => {
   const handleAnswerTimeout = () => {
     if (recording) {
       handleStopRecording(true);
+      setShowControls(true); // Ensure it's explicitly shown after timer expires
     }
   };
 
@@ -219,114 +256,212 @@ const MockInterviewQuestionsPage = () => {
     >
       {/* Interview Timer */}
       <Box textAlign="center" py={4}>
-        <Heading size="md" color="brand.500">
-          Interview Timer: {interviewTimerDisplay}
-        </Heading>
       </Box>
-      <Flex justify="center" align="center" flex="1" px={4} py={8}>
-        <Box
-          bg="white"
-          p={10}
-          borderRadius="2xl"
-          boxShadow="lg"
-          border="1px solid"
-          borderColor="gray.100"
-          maxW="700px"
-          w="100%"
-          textAlign="center"
-        >
-          <Image
-            src="/assets/images/franc_avatar.jpg"
-            alt="Franc Avatar"
-            boxSize="80px"
-            objectFit="cover"
-            borderRadius="full"
-            mx="auto"
-            mb={4}
-          />
-          <Heading size="lg" mb={4}>
-            Interview Questions - {major}
-          </Heading>
-          <Text color="gray.600" mb={6}>
-            Click on a question to watch the pre-recorded video.
-          </Text>
-          <VStack spacing={6} align="stretch">
-            {questions.length === 0 && <Text>No questions found for this major.</Text>}
-            {questions.map((q, idx) => (
-              <Box key={idx} p={4} bg="gray.50" borderRadius="lg" boxShadow="sm">
-                <Flex align="center" justify="space-between">
-                  <HStack>
-                    <Text fontWeight="semibold">{q.title}</Text>
-                    {isQuestionAnswered(idx) && <Icon as={CheckCircleIcon} color="green.400" boxSize={5} ml={2} />}
-                  </HStack>
-                  <Button
-                    colorScheme="brand"
-                    onClick={() => handlePlay(q.video, q.title, idx)}
-                    isDisabled={isQuestionAnswered(idx)}
-                  >
-                    View Video
-                  </Button>
-                </Flex>
-              </Box>
-            ))}
-          </VStack>
-        </Box>
-      </Flex>
-      <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>{selectedTitle}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            {!showRecorder ? (
-              <Box w="100%" h="350px">
-                <video
-                  src={selectedVideo}
-                  controls
-                  width="100%"
-                  height="100%"
-                  onEnded={handleVideoEnded}
-                  style={{ pointerEvents: videoEnded ? 'none' : 'auto', opacity: videoEnded ? 0.5 : 1 }}
-                />
-                <HStack mt={4} justify="center">
-                  <Button
-                    colorScheme="green"
-                    onClick={handleAnswerClick}
-                    isDisabled={!videoEnded}
-                    display="none"
-                  >
-                    Answer
-                  </Button>
-                </HStack>
-              </Box>
-            ) : (
-              <Box w="100%" textAlign="center">
+      <Box px={4} py={8}>
+        <Heading size="lg" mb={4} textAlign="center">
+          Interview Questions - {major}
+        </Heading>
+        {showThankYou ? (
+          <Box textAlign="center" py={10} px={6}>
+            <CheckCircleIcon boxSize={'50px'} color={'green.500'} />
+            <Heading as="h2" size="xl" mt={6} mb={2}>
+              Interview Complete
+            </Heading>
+            <Text color={'gray.500'} mb={6}>
+              Thank you! Your responses have been submitted successfully.
+            </Text>
+            <Button colorScheme="blue" onClick={() => navigate('/')}>
+              Return to Home
+            </Button>
+          </Box>
+        ) : interviewStarted ? (
+          <>
+            <Flex direction={{ base: 'column', md: 'row' }} gap={6} align="start">
+              <Box flex="1">
                 <Webcam
                   audio={true}
                   ref={webcamRef}
                   screenshotFormat="image/jpeg"
                   videoConstraints={{ width: 480, height: 360 }}
-                  style={{ borderRadius: '10px', margin: '0 auto' }}
+                  style={{ borderRadius: '10px', display: 'block', width: '100%' }}
+                  mirrored={true}
                   onUserMedia={() => setWebcamReady(true)}
                 />
+                {recording && (
+                  <Text mt={2} fontWeight="bold" color="red.500" textAlign="center">
+                    Recording...
+                  </Text>
+                )}
+              </Box>
+              <Box flex="1" bg="gray.50" p={4} borderRadius="lg" boxShadow="sm" maxH="400px" overflowY="auto">
+                <Heading size="sm" mb={2}>Questions</Heading>
+                {displayedQuestions.map((idx) => (
+                  <Box
+                    key={idx}
+                    p={3}
+                    mb={3}
+                    bg={idx === currentQuestionIdx ? 'blue.50' : 'gray.100'}
+                    borderRadius="md"
+                  >
+                    <Flex justify="space-between" align="center">
+                      <Text fontWeight="bold">Q{idx + 1}: {questions[idx].title}</Text>
+                      {!isQuestionAnswered(idx) && (
+                        <Button
+                          size="sm"
+                          colorScheme="blue"
+                          onClick={() => {
+                            setSelectedTitle(questions[idx].title);
+                            setSelectedVideo(questions[idx].video);
+                            setCurrentQuestionIdx(idx);
+                            setIsVideoModalOpen(true);
+                          }}
+                          isDisabled={recording || countdownActive}
+                        >
+                          Show
+                        </Button>
+                      )}
+                    </Flex>
+                  </Box>
+                ))}
+              </Box>
+            </Flex>
+            {currentQuestionIdx !== null &&
+              !selectedVideo &&
+              !isQuestionAnswered(currentQuestionIdx) && (
+                <Box mt={6} p={4} bg="gray.100" borderRadius="md" boxShadow="sm">
+                  <Text fontWeight="bold">Q{currentQuestionIdx + 1}: {questions[currentQuestionIdx].title}</Text>
+                  <Button mt={3} colorScheme="blue" onClick={() => {
+                    const idx = currentQuestionIdx;
+                    setSelectedTitle(questions[idx].title);
+                    setSelectedVideo(questions[idx].video);
+                    setCurrentQuestionIdx(idx);
+                    setIsVideoModalOpen(true);
+                  }} isDisabled={recording || countdownActive}>
+                    Show
+                  </Button>
+                </Box>
+            )}
+            {(showRecorder || showControls) && (
+              <Box mt={4}>
                 <AnswerTimer
                   key={answerTimerKey}
                   duration={ANSWER_DURATION_SECONDS}
                   onExpire={handleUserStop}
                   recording={recording}
                 />
-                <HStack mt={4} justify="center">
-                  <Button colorScheme="blue" onClick={handleUserStop} isDisabled={saving || !recording}>
-                    Finish & Save
-                  </Button>
-                  {saving && <Spinner size="sm" />}
-                </HStack>
               </Box>
             )}
+
+            {(showRecorder || showControls) && (
+              <HStack mt={4} justify="center">
+                <Button
+                  colorScheme="gray"
+                  onClick={() => {
+                    setShowControls(false);
+                    setSelectedTitle(questions[currentQuestionIdx].title);
+                    setSelectedVideo(questions[currentQuestionIdx].video);
+                    setRecordedChunks([]);
+                    setRecording(false);
+                    setIsVideoModalOpen(true);
+                  }}
+                  isDisabled={recording}
+                >
+                  Retry
+                </Button>
+                {currentQuestionIdx === questions.length - 1 ? (
+                  <Button
+                    colorScheme="green"
+                    onClick={() => setShowThankYou(true)}
+                    isDisabled={recording}
+                  >
+                    Submit
+                  </Button>
+                ) : (
+                  <Button
+                    colorScheme="blue"
+                    onClick={async () => {
+                      setShowControls(false);
+                      await handleUserStop();
+
+                      const nextIdx = currentQuestionIdx + 1;
+                      if (nextIdx < questions.length) {
+                        if (!displayedQuestions.includes(nextIdx)) {
+                          setDisplayedQuestions(prev => [...prev, nextIdx]);
+                        }
+                        setTimeout(() => {
+                          setSelectedTitle(questions[nextIdx].title);
+                          setSelectedVideo(questions[nextIdx].video);
+                          setCurrentQuestionIdx(nextIdx);
+                          setIsVideoModalOpen(true);
+                        }, 500);
+                      }
+                    }} isDisabled={countdownActive}                  
+                    >
+                    Next Question
+                  </Button>
+                )}
+              </HStack>
+            )}
+          </>
+        ) : (
+          <>
+            <Box
+              mb={6}
+              maxW="2xl"
+              mx="auto"
+              p={6}
+              bg="white"
+              borderRadius="lg"
+              borderWidth="1px"
+              boxShadow="md"
+            >
+              <Heading size="md" mb={2} textAlign="center" color="gray.700">How the Interview Works</Heading>
+              <VStack spacing={3} align="start" fontSize="sm" color="gray.600" as="ul" pl={4}>
+                <Text as="li">Click "Start Interview" to begin.</Text>
+                <Text as="li">You'll see the first interview question as a card with a "Show" button.</Text>
+                <Text as="li">Click "Show" to watch a short video prompt for that question.</Text>
+                <Text as="li">After the video ends, you'll get a 5-second countdown.</Text>
+                <Text as="li">Your webcam will start recording your answer for a limited time.</Text>
+                <Text as="li">You can either "Retry" the question or click "Next Question" to move on.</Text>
+                <Text as="li">At the end, all your recorded answers will be saved.</Text>
+              </VStack>
+            </Box>
+            <Button
+              colorScheme="blue"
+              size="lg"
+              onClick={() => {
+                setInterviewStarted(true);
+                setCurrentQuestionIdx(0);
+                setDisplayedQuestions([0]);
+                setTimeout(() => handlePlay(questions[0].video, questions[0].title, 0), 500);
+              }}
+              display="block"
+              mx="auto"
+            >
+              Start Interview
+            </Button>
+          </>
+        )}
+      </Box>
+      <Footer />
+      <Modal isOpen={isVideoModalOpen} onClose={() => setIsVideoModalOpen(false)} size="6xl" isCentered>
+        <ModalOverlay />
+        <ModalContent borderRadius="lg" p={4} bg="gray.50">
+          <ModalHeader fontSize="xl" fontWeight="bold">{selectedTitle}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Box overflow="hidden" borderRadius="md" boxShadow="lg">
+              <video
+                src={selectedVideo}
+                controls
+                width="100%"
+                style={{ borderRadius: '8px' }}
+                onEnded={handleVideoEnded}
+              />
+            </Box>
           </ModalBody>
         </ModalContent>
       </Modal>
-      <Footer />
     </Box>
   );
 };
@@ -344,10 +479,10 @@ const AnswerTimer = ({ duration, onExpire, recording }) => {
   }, [recording, isRunning, start, pause]);
 
   return (
-    <Heading size="md" color="brand.500" mt={4}>
+    <Heading size="md" color="brand.500" mt={4} textAlign="center">
       Answer Timer: {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
     </Heading>
   );
 };
 
-export default MockInterviewQuestionsPage; 
+export default MockInterviewQuestionsPage;

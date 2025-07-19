@@ -19,10 +19,10 @@ const MockInterviewPage = () => {
   const navigate = useNavigate();
 
   const handleTryNowClick = () => {
-    if (!isLoggedIn) {
+    if (isLoggedIn) {
       onOpen();
     } else {
-      navigate("/mock-interview/try");
+      navigate("/mock-interview/select-major");
     }
   };
 
