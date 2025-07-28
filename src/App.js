@@ -18,7 +18,7 @@ import ResetPassword from './components/ResetPassword';
 import OTPVerification from './components/OTPVerification';
 import { AuthProvider } from './components/AuthContext';
 import { MockInterviewPage, MockInterviewTryPage, MockInterviewMajorSelectPage, MockInterviewQuestionsPage } from './pages/services';
-
+import AdminPanel from './pages/AdminPanel';
 
 const App = () => {
   return (
@@ -46,6 +46,7 @@ const App = () => {
           <Route path="/mock-interview/try" element={<MockInterviewTryPage />} />
           <Route path="/mock-interview/select-major" element={<MockInterviewMajorSelectPage />} />
           <Route path="/mock-interview/questions" element={<MockInterviewQuestionsPage />} />
+          <Route path="/admin" element={<AdminPanel />} />
         </Routes>
       </AuthProvider>
     </Router>
