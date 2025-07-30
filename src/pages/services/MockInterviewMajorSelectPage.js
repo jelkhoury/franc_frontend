@@ -13,10 +13,9 @@ import {
   InputGroup,
   Select,
 } from "@chakra-ui/react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Footer from "../../components/Footer";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../../supabaseClient";
 
 const FeaturedCard = () => (
   <Box
@@ -111,49 +110,8 @@ const MajorCard = ({ major, selected, onClick }) => (
 
 const MockInterviewMajorSelectPage = () => {
   const [selectedMajor, setSelectedMajor] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [facultyFilter, setFacultyFilter] = useState("");
-  const [majors, setMajors] = useState([]);
   const toast = useToast();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchMajors = async () => {
-      try {
-        const { data, error, status, statusText } = await supabase
-          .from("Majors")
-          .select("*");
-
-        if (error) {
-          console.error("Supabase error:", error);
-          console.error(
-            "Error details:",
-            error.message,
-            error.details,
-            error.hint
-          );
-          return;
-        }
-
-        if (data) {
-          const majorsWithImageUrls = data.map((major) => ({
-            ...major,
-            img: major.image_path
-              ? supabase.storage
-                  .from("images")
-                  .getPublicUrl(major.image_path).data.publicUrl
-              : "/assets/images/default.svg",
-          }));
-
-          setMajors(majorsWithImageUrls);
-        } else {
-        }
-      } catch (err) {
-        console.error("Unexpected error:", err);
-      }
-    };
-    fetchMajors();
-  }, []);
 
   const handleSelect = (major) => {
     setSelectedMajor(major);
@@ -169,10 +127,8 @@ const MockInterviewMajorSelectPage = () => {
       });
       return;
     }
-    navigate("/mock-interview/questions", { state: { major: selectedMajor } });
+    navigate("/mock-interview/questions", { state: { major: selectedMajor.title } });
   };
-
-  const majorsToDisplay = majors.length > 0 ? majors : majorsWithInfo;
 
   return (
     <Box
@@ -207,40 +163,23 @@ const MockInterviewMajorSelectPage = () => {
         >
           <Select
             placeholder="Filter by faculty"
-            value={facultyFilter}
-            onChange={(e) => setFacultyFilter(e.target.value)}
             maxW="300px"
             bg="white"
-          >
-            <option value="Engineering">Engineering</option>
-            <option value="Business">Business</option>
-            <option value="Health">Health</option>
-            <option value="Arts">Arts</option>
-          </Select>
+            isDisabled
+          />
           <InputGroup maxW="400px">
-            <Input
-              placeholder="Search majors..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              bg="white"
-            />
+            <Input placeholder="Search majors..." bg="white" isDisabled />
           </InputGroup>
         </Flex>
         <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={6} mb={6}>
-          {majorsToDisplay
-            .filter(
-              (major) =>
-                (!facultyFilter || major.faculty === facultyFilter) &&
-                major.title.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-            .map((major) => (
-              <MajorCard
-                key={major.id}
-                major={major}
-                selected={selectedMajor?.id === major.id}
-                onClick={() => handleSelect(major)}
-              />
-            ))}
+          {majorsWithInfo.map((major) => (
+            <MajorCard
+              key={major.title}
+              major={major}
+              selected={selectedMajor?.title === major.title}
+              onClick={() => handleSelect(major)}
+            />
+          ))}
         </SimpleGrid>
         <Button
           colorScheme="green"
