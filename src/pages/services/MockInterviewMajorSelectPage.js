@@ -12,8 +12,9 @@ import {
   Input,
   InputGroup,
   Select,
+  Spinner,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Footer from "../../components/Footer";
 import { useNavigate } from "react-router-dom";
 
@@ -55,39 +56,6 @@ const FeaturedCard = () => (
   </Box>
 );
 
-const majorsWithInfo = [
-  {
-    title: "Engineering",
-    desc: "Focus on problem-solving and coding excellence.",
-    img: "/assets/images/cs_major.svg",
-    faculty: "Engineering",
-  },
-  {
-    title: "Marketing Strategy",
-    desc: "Master digital campaigns and brand positioning.",
-    img: "/assets/images/marketing_major.svg",
-    faculty: "Business",
-  },
-  {
-    title: "Finance & Banking",
-    desc: "Navigate market dynamics and financial analysis.",
-    img: "/assets/images/business_major.svg",
-    faculty: "Business",
-  },
-  {
-    title: "Nursing & Healthcare",
-    desc: "Prepare for patient care and medical scenarios.",
-    img: "/assets/images/nursing_major.svg",
-    faculty: "Health",
-  },
-  {
-    title: "Audio & Visual Arts",
-    desc: "Explore creative expression through media.",
-    img: "/assets/images/av_major.svg",
-    faculty: "Arts",
-  },
-];
-
 const MajorCard = ({ major, selected, onClick }) => (
   <Box
     p={4}
@@ -98,20 +66,96 @@ const MajorCard = ({ major, selected, onClick }) => (
     onClick={onClick}
     _hover={{ boxShadow: "lg" }}
   >
-    <Image src={major.img} alt={major.title} mb={4} boxSize="100px" mx="auto" />
+    <Image 
+      src={major.urlImage || major.img} 
+      alt={major.name || major.title} 
+      mb={4} 
+      boxSize="100px" 
+      mx="auto"
+      fallbackSrc="/assets/images/cs_major.svg"
+    />
     <Text fontWeight="bold" textAlign="center" mb={1}>
-      {major.title}
+      {major.name || major.title}
     </Text>
     <Text fontSize="sm" color="gray.600" textAlign="center">
-      {major.desc}
+      {major.description || major.desc}
     </Text>
   </Box>
 );
 
 const MockInterviewMajorSelectPage = () => {
   const [selectedMajor, setSelectedMajor] = useState(null);
+  const [faculties, setFaculties] = useState([]);
+  const [majors, setMajors] = useState([]);
+  const [filteredMajors, setFilteredMajors] = useState([]);
+  const [selectedFaculty, setSelectedFaculty] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const toast = useToast();
   const navigate = useNavigate();
+
+  // Fetch faculties and majors from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+        
+        // Fetch faculties
+        const facultiesResponse = await fetch(`${baseUrl}/BlobStorage/get-faculties`);
+        if (!facultiesResponse.ok) {
+          throw new Error('Failed to fetch faculties');
+        }
+        const facultiesData = await facultiesResponse.json();
+        setFaculties(facultiesData);
+
+        // Fetch majors
+        const majorsResponse = await fetch(`${baseUrl}/BlobStorage/get-majors`);
+        if (!majorsResponse.ok) {
+          throw new Error('Failed to fetch majors');
+        }
+        const majorsData = await majorsResponse.json();
+        setMajors(majorsData);
+        setFilteredMajors(majorsData);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError(err.message);
+        toast({
+          title: "Error loading data",
+          description: err.message,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [toast]);
+
+  // Filter majors based on faculty and search term
+  useEffect(() => {
+    let filtered = majors;
+
+    // Filter by faculty
+    if (selectedFaculty) {
+      const facultyId = parseInt(selectedFaculty);
+      filtered = filtered.filter(major => major.facultyId === facultyId);
+    }
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(major => 
+        major.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        major.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredMajors(filtered);
+  }, [majors, selectedFaculty, searchTerm]);
 
   const handleSelect = (major) => {
     setSelectedMajor(major);
@@ -127,8 +171,50 @@ const MockInterviewMajorSelectPage = () => {
       });
       return;
     }
-    navigate("/mock-interview/questions", { state: { major: selectedMajor.title } });
+    navigate("/mock-interview/questions", { state: { major: selectedMajor.name || selectedMajor.title } });
   };
+
+  const handleFacultyChange = (e) => {
+    setSelectedFaculty(e.target.value);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  if (loading) {
+    return (
+      <Box
+        minH="100vh"
+        bgGradient="linear(to-r, white, #ebf8ff)"
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+        alignItems="center"
+      >
+        <Spinner size="xl" color="blue.500" />
+        <Text mt={4} color="gray.600">Loading majors...</Text>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box
+        minH="100vh"
+        bgGradient="linear(to-r, white, #ebf8ff)"
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+        alignItems="center"
+      >
+        <Text color="red.500" fontSize="lg">Error: {error}</Text>
+        <Button mt={4} colorScheme="blue" onClick={() => window.location.reload()}>
+          Retry
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -165,28 +251,53 @@ const MockInterviewMajorSelectPage = () => {
             placeholder="Filter by faculty"
             maxW="300px"
             bg="white"
-            isDisabled
-          />
+            value={selectedFaculty}
+            onChange={handleFacultyChange}
+          >
+            {faculties.map((faculty) => (
+              <option key={faculty.id} value={faculty.id}>
+                {faculty.name}
+              </option>
+            ))}
+          </Select>
           <InputGroup maxW="400px">
-            <Input placeholder="Search majors..." bg="white" isDisabled />
+            <Input 
+              placeholder="Search majors..." 
+              bg="white" 
+              value={searchTerm}
+              onChange={handleSearchChange}
+            />
           </InputGroup>
         </Flex>
-        <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={6} mb={6}>
-          {majorsWithInfo.map((major) => (
-            <MajorCard
-              key={major.title}
-              major={major}
-              selected={selectedMajor?.title === major.title}
-              onClick={() => handleSelect(major)}
-            />
-          ))}
-        </SimpleGrid>
+        
+        {filteredMajors.length === 0 ? (
+          <Box textAlign="center" py={8}>
+            <Text color="gray.500" fontSize="lg">
+              {searchTerm || selectedFaculty 
+                ? "No majors found matching your criteria." 
+                : "No majors available at the moment."}
+            </Text>
+          </Box>
+        ) : (
+          <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={6} mb={6}>
+            {filteredMajors.map((major) => (
+              <MajorCard
+                key={major.id}
+                major={major}
+                selected={selectedMajor?.id === major.id}
+                onClick={() => handleSelect(major)}
+              />
+            ))}
+          </SimpleGrid>
+        )}
+        
         <Button
           colorScheme="green"
           size="lg"
           onClick={handleProceed}
           display="block"
           mx="auto"
+          isDisabled={!selectedMajor}
         >
           Proceed
         </Button>
