@@ -22,6 +22,7 @@ import AdminPanel from './pages/AdminPanel';
 import SdsPage from './pages/services/SdsPage';
 import SdsOnBoarding from './pages/services/SdsOnBoarding';
 import SdsTry from './pages/services/SdsTry';
+import SdsFunDemo from './pages/services/SdsFunDemo';
 
 const App = () => {
   return (
@@ -64,6 +65,7 @@ const MainLayout = () => {
         <Route path="/self-directed-search" element={<SdsPage />} />
         <Route path="/self-directed-search/brief" element={<SdsOnBoarding />} />
         <Route path="/self-directed-search/try" element={<SdsTry />} />
+        <Route path="/sds/fun-demo" element={<SdsFunDemo />} />
       </Routes>
     </>
   );

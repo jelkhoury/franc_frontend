@@ -1,24 +1,27 @@
-
-
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Badge,
   Box,
+  Button,
   Heading,
-  Text,
+  HStack,
   Accordion,
   AccordionItem,
   AccordionButton,
   AccordionPanel,
   AccordionIcon,
+  Divider,
   Spinner,
+  Text,
+  useColorModeValue,
+  useToast,
+  VStack,
   Alert,
   AlertIcon,
-  VStack,
-  HStack,
-  Divider,
-  Button,
-  useColorModeValue,
+  Progress,
 } from "@chakra-ui/react";
+
+import confetti from "canvas-confetti";
 
 import QuestionField from "../../components/QuestionField";
 
@@ -36,8 +39,29 @@ const SdsTry = () => {
   const [sections, setSections] = useState([]);
   const [answers, setAnswers] = useState({});
 
+  const toast = useToast();
+
   const cardBg = useColorModeValue("white", "gray.800");
   const cardBorder = useColorModeValue("gray.200", "gray.700");
+
+  const totalQs = sections.reduce((sum, s) => sum + ((s.questions || []).length), 0);
+  const answered = Object.keys(answers).length;
+
+  const riasecMeta = {
+    Realistic: { emoji: "🛠️", color: "teal" },
+    Investigative: { emoji: "🧪", color: "purple" },
+    Artistic: { emoji: "🎨", color: "pink" },
+    Social: { emoji: "🤝", color: "green" },
+    Enterprising: { emoji: "🚀", color: "orange" },
+    Conventional: { emoji: "📊", color: "blue" },
+  };
+
+  const progressPct = totalQs > 0 ? Math.round((answered / totalQs) * 100) : 0;
+
+  const earnedBadges = [];
+  if (answered > 0) earnedBadges.push({ label: "Getting Started", icon: "✨" });
+  if (answered >= Math.ceil(totalQs / 2) && totalQs > 0) earnedBadges.push({ label: "Halfway", icon: "🧭" });
+  if (answered === totalQs && totalQs > 0) earnedBadges.push({ label: "Finisher", icon: "🎖️" });
 
   useEffect(() => {
     const fetchSections = async () => {
@@ -78,7 +102,8 @@ const SdsTry = () => {
     // For now, just log it
     // eslint-disable-next-line no-console
     console.log("SDS payload", payload);
-    alert("Answers captured. Check console for payload.");
+    toast({ title: "Submitted!", description: "Great job — your answers were captured.", status: "success", duration: 2500, isClosable: true });
+    confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
   };
 
   return (
@@ -87,6 +112,19 @@ const SdsTry = () => {
         <Heading textAlign="center" mb={{ base: 6, md: 8 }}>
           SDS Sections & Questions
         </Heading>
+
+        {/* Progress & Badges */}
+        <Box mb={6}>
+          <Progress value={progressPct} rounded="full" size="sm" />
+          <HStack mt={2} justify="space-between">
+            <Text fontSize="sm" color="gray.600">{answered}/{totalQs} answered ({progressPct}%)</Text>
+            <HStack spacing={2}>
+              {earnedBadges.map((b, i) => (
+                <Badge key={i}  variant="subtle">{b.icon} {b.label}</Badge>
+              ))}
+            </HStack>
+          </HStack>
+        </Box>
 
         {loading && (
           <HStack justify="center" py={10}>
@@ -108,7 +146,15 @@ const SdsTry = () => {
                 <h2>
                   <AccordionButton py={5} px={6}>
                     <Box as="span" flex="1" textAlign="left">
-                      <Text fontWeight="semibold">{section.name}</Text>
+                      {(() => {
+                        const meta = riasecMeta[section.name] || { emoji: "⭐"};
+                        return (
+                          <HStack>
+                            <Badge colorScheme={meta.color}>{meta.emoji}</Badge>
+                            <Text fontWeight="semibold">{section.name}</Text>
+                          </HStack>
+                        );
+                      })()}
                       {section.description && (
                         <Text fontSize="sm" color="gray.600">{section.description}</Text>
                       )}

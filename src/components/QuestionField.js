@@ -14,6 +14,7 @@ import {
   SliderTrack,
   SliderFilledTrack,
   SliderThumb,
+  useColorModeValue,
 } from "@chakra-ui/react";
 
 /**
@@ -36,6 +37,10 @@ const QuestionField = ({
   options = [],
   onChange,
   sliderProps = {},
+  emojiChips = true,
+  sliderFaces = true,
+  helperText,
+  required = false,
 }) => {
   // Support numeric type codes: 1=radio, 2=checkbox, 3=select, 4=slider, 5=textbox, 6=textarea
   const resolvedType = (() => {
@@ -56,10 +61,17 @@ const QuestionField = ({
   const upper = (text || label) ? (
     <Box mb={3}>
       {text && (
-        <Text fontWeight="medium">{text}</Text>
+        <Text fontWeight="medium">
+          {text}{required ? ' *' : ''}
+        </Text>
       )}
       {label && !text && (
-        <Text fontWeight="medium">{label}</Text>
+        <Text fontWeight="medium">
+          {label}{required ? ' *' : ''}
+        </Text>
+      )}
+      {helperText && (
+        <Text fontSize="sm" color="gray.500" mt={1}>{helperText}</Text>
       )}
     </Box>
   ) : null;
@@ -70,12 +82,31 @@ const QuestionField = ({
         <Box>
           {upper}
           <RadioGroup value={value ?? ""} onChange={onChange}>
-            <Stack direction={{ base: "column", md: "row" }} spacing={4} wrap="wrap">
-              {options.map((opt) => (
-                <Radio key={opt.id ?? opt.value} value={String(opt.value)}>
-                  {opt.text}
-                </Radio>
-              ))}
+            <Stack direction={{ base: "column", md: "row" }} spacing={3} wrap="wrap">
+              {options.map((opt) => {
+                const selected = String(value) === String(opt.value);
+                return (
+                  <Box
+                    as="label"
+                    key={opt.id ?? opt.value}
+                    px={3}
+                    py={2}
+                    rounded="full"
+                    borderWidth="1px"
+                    borderColor={selected ? "blue.400" : useColorModeValue("gray.200", "gray.600")}
+                    bg={selected ? useColorModeValue("blue.50", "blue.900") : useColorModeValue("white", "gray.800")}
+                    cursor="pointer"
+                    _hover={{ shadow: "sm" }}
+                    display="inline-flex"
+                    alignItems="center"
+                    gap={2}
+                  >
+                    {/* hide the native radio when using chips */}
+                    <Radio value={String(opt.value)} display={emojiChips ? "none" : "inline-flex"} />
+                    <Text fontSize="sm" userSelect="none">{opt.text}</Text>
+                  </Box>
+                );
+              })}
             </Stack>
           </RadioGroup>
         </Box>
@@ -122,7 +153,13 @@ const QuestionField = ({
               <SliderTrack>
                 <SliderFilledTrack />
               </SliderTrack>
-              <SliderThumb />
+              <SliderThumb boxSize={sliderFaces ? 8 : 4}>
+                {sliderFaces && (
+                  <Text fontSize="lg">
+                    {num >= max * 0.8 ? "🤩" : num >= max * 0.6 ? "🙂" : num >= max * 0.4 ? "😐" : num >= max * 0.2 ? "🙁" : "😣"}
+                  </Text>
+                )}
+              </SliderThumb>
             </Slider>
             <Text mt={2} fontSize="sm" color="gray.600">{num}</Text>
           </Box>
