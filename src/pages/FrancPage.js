@@ -58,10 +58,11 @@ const services = [
     link: "/mock-interview",
   },
   {
-    heading: "Job Matchmaking",
-    description: "Get matched with opportunities that fit your career goals.",
+    heading: "Self Directed Search (SDS)",
+    description: "A comprehensive tool for career exploration.",
     icon: FcCollaboration,
-    isActive: false,
+    isActive: true,
+    link: "/self-directed-search",
   },
   {
     heading: "Career Coaching",

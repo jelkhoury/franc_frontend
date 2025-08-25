@@ -19,6 +19,9 @@ import OTPVerification from './components/OTPVerification';
 import { AuthProvider } from './components/AuthContext';
 import { MockInterviewPage, MockInterviewTryPage, MockInterviewMajorSelectPage, MockInterviewQuestionsPage } from './pages/services';
 import AdminPanel from './pages/AdminPanel';
+import SdsPage from './pages/services/SdsPage';
+import SdsOnBoarding from './pages/services/SdsOnBoarding';
+import SdsTry from './pages/services/SdsTry';
 
 const App = () => {
   return (
@@ -58,6 +61,9 @@ const MainLayout = () => {
         <Route path="/mock-interview/select-major" element={<MockInterviewMajorSelectPage />} />
         <Route path="/mock-interview/questions" element={<MockInterviewQuestionsPage />} />
         <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/self-directed-search" element={<SdsPage />} />
+        <Route path="/self-directed-search/brief" element={<SdsOnBoarding />} />
+        <Route path="/self-directed-search/try" element={<SdsTry />} />
       </Routes>
     </>
   );
