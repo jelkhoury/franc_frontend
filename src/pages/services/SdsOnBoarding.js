@@ -31,18 +31,53 @@ import { useNavigate } from "react-router-dom";
  * - searchQuery: fallback text to search for if no playlistId provided
  * - maxResults: how many videos to fetch (default 6)
  */
-const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxResults = 6 }) => {
+const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxResults = 6, embedSrcs = [] }) => {
   const [activeIndex, setActiveIndex] = useState(-1);
   const [videos, setVideos] = useState([]);
   const [selectedVideoId, setSelectedVideoId] = useState(null);
+  const [selectedEmbedSrc, setSelectedEmbedSrc] = useState(null);
   const apiKey = useMemo(() => process.env.REACT_APP_YOUTUBE_API_KEY, []);
   const navigate = useNavigate();
 
   const cardBg = useColorModeValue("white", "gray.800");
   const cardBorder = useColorModeValue("gray.200", "gray.700");
 
+  const getYouTubeId = (url) => {
+    try {
+      const u = new URL(url);
+      // Handle /embed/{id}
+      const embedMatch = u.pathname.match(/\/embed\/([^/]+)/);
+      if (embedMatch && embedMatch[1]) return embedMatch[1];
+      // Handle youtu.be/{id}
+      if (u.hostname.includes("youtu.be")) return u.pathname.slice(1);
+      // Handle watch?v=
+      const v = u.searchParams.get("v");
+      if (v) return v;
+    } catch (_) {}
+    return null;
+  };
+
   // Fetch videos only when the first item is opened the first time
   useEffect(() => {
+    // If explicit embed sources are provided, use them and skip API
+    if (activeIndex === 0 && videos.length === 0 && Array.isArray(embedSrcs) && embedSrcs.length > 0) {
+      const items = embedSrcs.map((src) => {
+        const id = getYouTubeId(src);
+        return {
+          id,
+          title: "",
+          thumb: id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : undefined,
+          channelTitle: "YouTube",
+          embedSrc: src,
+        };
+      });
+      setVideos(items);
+      setSelectedEmbedSrc(items[0]?.embedSrc || null);
+      setSelectedVideoId(items[0]?.id || null);
+      return;
+    }
+
+    // Otherwise, fall back to YouTube API when first item is opened
     const shouldFetch = activeIndex === 0 && videos.length === 0 && apiKey;
     if (!shouldFetch) return;
 
@@ -61,24 +96,28 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
         const items = (data.items || []).map((it) => {
           const sn = it.snippet || {};
           const videoId = it.contentDetails?.videoId || it.id?.videoId || it.resourceId?.videoId || sn?.resourceId?.videoId;
+          const embedSrc = videoId ? `https://www.youtube.com/embed/${videoId}` : null;
           return {
             id: videoId,
             title: sn.title,
             thumb: sn.thumbnails?.medium?.url || sn.thumbnails?.default?.url,
             channelTitle: sn.channelTitle,
-            publishedAt: sn.publishedAt,
+            embedSrc,
           };
         }).filter(v => !!v.id);
 
         setVideos(items);
-        if (items.length > 0) setSelectedVideoId(items[0].id);
+        if (items.length > 0) {
+          setSelectedVideoId(items[0].id);
+          setSelectedEmbedSrc(items[0].embedSrc);
+        }
       } catch (e) {
         console.error("Failed to load YouTube videos", e);
       }
     };
 
     fetchVideos();
-  }, [activeIndex, videos.length, apiKey, playlistId, searchQuery, maxResults]);
+  }, [activeIndex, videos.length, apiKey, playlistId, searchQuery, maxResults, embedSrcs]);
 
   return (
     <Box minH="100vh" bgGradient="linear(to-r, white, #ebf8ff)">
@@ -121,13 +160,13 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
             </h2>
             <AccordionPanel pb={6} px={{ base: 0, md: 6 }}>
               {/* Hero player */}
-              {selectedVideoId ? (
+              {selectedVideoId || selectedEmbedSrc ? (
                 <Box mb={4} rounded="md" overflow="hidden" border="1px" borderColor={cardBorder}>
                   <Box position="relative" pt="56.25%">
                     <Box
                       as="iframe"
                       title="SDS Video"
-                      src={`https://www.youtube.com/embed/${selectedVideoId}`}
+                      src={selectedEmbedSrc || (selectedVideoId ? `https://www.youtube.com/embed/${selectedVideoId}` : undefined)}
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                       position="absolute"
@@ -152,20 +191,20 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
                       <Box
                         key={v.id}
                         role="button"
-                        onClick={() => setSelectedVideoId(v.id)}
+                        onClick={() => { setSelectedVideoId(v.id); if (v.embedSrc) setSelectedEmbedSrc(v.embedSrc); else if (v.id) setSelectedEmbedSrc(`https://www.youtube.com/embed/${v.id}`); }}
                         borderWidth={selectedVideoId === v.id ? "2px" : "1px"}
                         borderColor={selectedVideoId === v.id ? "blue.400" : cardBorder}
                         rounded="md"
                         overflow="hidden"
                         minW="240px"
                       >
-                        <Image src={v.thumb} alt={v.title} w="240px" h="135px" objectFit="cover" />
+                        <Image src={v.thumb || (v.id ? `https://img.youtube.com/vi/${v.id}/mqdefault.jpg` : undefined)} alt={v.title} w="240px" h="135px" objectFit="cover" />
                         <Box p={3}>
                           <Text noOfLines={2} fontSize="sm" fontWeight="semibold">{v.title}</Text>
                           <HStack spacing={2} mt={1} color="gray.500" fontSize="xs">
                             <Text noOfLines={1}>{v.channelTitle}</Text>
                             <Box as="span">•</Box>
-                            <Link href={`https://youtu.be/${v.id}`} isExternal color="blue.500">
+                            <Link href={v.id ? `https://youtu.be/${v.id}` : v.embedSrc} isExternal color="blue.500">
                               Watch on YouTube
                             </Link>
                           </HStack>

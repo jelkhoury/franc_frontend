@@ -63,7 +63,21 @@ const MainLayout = () => {
         <Route path="/mock-interview/questions" element={<MockInterviewQuestionsPage />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/self-directed-search" element={<SdsPage />} />
-        <Route path="/self-directed-search/brief" element={<SdsOnBoarding />} />
+        <Route
+          path="/self-directed-search/brief"
+          element={
+            <SdsOnBoarding
+              embedSrcs={[
+                "https://www.youtube.com/embed/gNQ7n530Pkw?si=s7_iR263l08hDIao",
+                "https://www.youtube.com/embed/WNF1-gY6bNo?si=VulDTXSIm0-flCTW",
+                "https://www.youtube.com/embed/Bp1C1BULYdc?si=CMgX7jQ2O6o2El3e",
+                "https://www.youtube.com/embed/Lfs-Ww_VZJw?si=JfRIDiaMnWiPEYjB",
+                "https://www.youtube.com/embed/hXZVaf9ig20?si=1uWOdNCowGfwi6VW",
+                "https://www.youtube.com/embed/CYgCCDw0wys?si=-yQBiiCVjI8TKvza"
+              ]}
+            />
+          }
+        />
         <Route path="/self-directed-search/try" element={<SdsTry />} />
         <Route path="/sds/fun-demo" element={<SdsFunDemo />} />
       </Routes>

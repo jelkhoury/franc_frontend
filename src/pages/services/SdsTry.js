@@ -34,6 +34,42 @@ import QuestionField from "../../components/QuestionField";
  */
 const SdsTry = () => {
   const baseUrl = useMemo(() => process.env.REACT_APP_API_BASE_URL || "http://localhost:5121", []);
+
+  const sectionThemes = {
+  "Occupational Day Dreams": { color: "#6B46C1", scheme: "purple", bg: "paint", bgFile: "/assets/images/nnnoise.svg" },
+  "Activities":              { color: "#0D9488", scheme: "teal",   bg: "dots",  bgFile: "/assets/images/sds_bg.svg" },
+  "Competencies":            { color: "#2563EB", scheme: "blue",   bg: "paint", bgFile: "/assets/images/ssspot.svg" },
+  "Occupations":             { color: "#F59E0B", scheme: "orange", bg: "dots",  bgFile: "/assets/images/cccoil.svg" },
+  "Self-Estimates":          { color: "#EF4444", scheme: "red",    bg: "paint", bgFile: "/assets/images/bg-selfestimates.svg" },
+};
+  const svgPaint = (hex) => {
+    const svg = `
+      <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 300'>
+        <defs>
+          <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+            <stop offset='0%' stop-color='${hex}' stop-opacity='0.10'/>
+            <stop offset='100%' stop-color='${hex}' stop-opacity='0.03'/>
+          </linearGradient>
+          <filter id='f'>
+            <feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/>
+            <feColorMatrix type='saturate' values='0.2'/>
+            <feComponentTransfer><feFuncA type='table' tableValues='0 0.35'/></feComponentTransfer>
+          </filter>
+        </defs>
+        <rect width='100%' height='100%' fill='url(#g)'/>
+        <rect width='100%' height='100%' filter='url(#f)' fill='${hex}' opacity='0.18'/>
+      </svg>`;
+    return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+  };
+
+  const svgDots = (hex) => {
+    const svg = `
+      <svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'>
+        <circle cx='4' cy='4' r='2' fill='${hex}' fill-opacity='0.22'/>
+      </svg>`;
+    return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+  };
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sections, setSections] = useState([]);
@@ -112,7 +148,10 @@ const SdsTry = () => {
         <Heading textAlign="center" mb={{ base: 6, md: 8 }}>
           SDS Sections & Questions
         </Heading>
-
+        <Alert status="info" variant="subtle" mb={4} rounded="md">
+          <AlertIcon />
+          <Text>🚀 Tip: Answer by instinct — there are no wrong choices.</Text>
+        </Alert>
         {/* Progress & Badges */}
         <Box mb={6}>
           <Progress value={progressPct} rounded="full" size="sm" />
@@ -141,45 +180,102 @@ const SdsTry = () => {
 
         {!loading && !error && (
           <Accordion allowMultiple>
-            {sections.map((section) => (
-              <AccordionItem key={section.id} border="1px" borderColor={cardBorder} rounded="md" bg={cardBg} mb={4}>
-                <h2>
-                  <AccordionButton py={5} px={6}>
-                    <Box as="span" flex="1" textAlign="left">
-                      {(() => {
-                        const meta = riasecMeta[section.name] || { emoji: "⭐"};
-                        return (
-                          <HStack>
-                            <Badge colorScheme={meta.color}>{meta.emoji}</Badge>
-                            <Text fontWeight="semibold">{section.name}</Text>
-                          </HStack>
-                        );
-                      })()}
-                      {section.description && (
-                        <Text fontSize="sm" color="gray.600">{section.description}</Text>
-                      )}
-                    </Box>
-                    <AccordionIcon />
-                  </AccordionButton>
-                </h2>
-                <AccordionPanel pb={6} px={{ base: 4, md: 6 }}>
-                  <VStack align="stretch" spacing={6}>
-                    {(section.questions || []).map((q, idx) => (
-                      <Box key={q.id}>
-                        <QuestionField
-                          type={q.type}
-                          text={`${idx + 1}. ${q.text}`}
-                          value={answers[q.id]}
-                          options={(q.answerOptions || []).map(opt => ({ id: opt.id, text: opt.text, value: String(opt.value) }))}
-                          onChange={(val) => setAnswers((prev) => ({ ...prev, [q.id]: val }))}
-                        />
-                        <Divider mt={4} />
+            {sections.map((section) => {
+              const theme = sectionThemes[section.name] || { color: "#6366F1", scheme: "purple", bg: "dots", bgFile: "/assets/images/nnnoise.svg" };
+              const bgImage = theme.bg === "paint" ? svgPaint(theme.color) : svgDots(theme.color);
+
+              return (
+                  <AccordionItem
+                    key={section.id}
+                    border="1px"
+                    borderColor={cardBorder}
+                    rounded="md"
+                    mb={4}
+                    bg={cardBg}
+                    bgImage={`url('${theme.bgFile}')`}
+                    bgRepeat="no-repeat"
+                    bgSize="cover"
+                    bgPosition="center"
+                    boxShadow={`0 0 0 1px rgba(0,0,0,0.03), 0 6px 20px -8px ${theme.color}40`}
+                  >
+                  <h2>
+                    <AccordionButton py={5} px={6}>
+                      <Box as="span" flex="1" textAlign="left">
+                        {(() => {
+                          const meta = riasecMeta[section.name] || { emoji: "⭐" };
+                          return (
+                            <HStack>
+                              <Badge colorScheme={theme.scheme}>{meta.emoji}</Badge>
+                              <Text fontWeight="semibold" color={theme.color}>{section.name}</Text>
+                            </HStack>
+                          );
+                        })()}
+                        {section.description && (
+                          <Text fontSize="sm" color={`${theme.color}cc`}>{section.description}</Text>
+                        )}
                       </Box>
-                    ))}
-                  </VStack>
-                </AccordionPanel>
-              </AccordionItem>
-            ))}
+                      <AccordionIcon />
+                    </AccordionButton>
+                  </h2>
+<AccordionPanel
+  pb={6}
+  px={{ base: 4, md: 6 }}
+  position="relative"
+  overflow="hidden"
+  roundedBottom="md"
+>
+  {/* underlay bg */}
+  <Box
+    aria-hidden
+    position="absolute"
+    inset="0"
+    bgImage={`url('${theme.bgFile}')`}
+    bgRepeat="no-repeat"
+    bgSize="cover"
+    bgPosition="center"
+    opacity={0.3}
+    pointerEvents="none"
+    zIndex={0}
+  />
+
+  {/* content with solid white bg */}
+  <Box
+    position="relative"
+    zIndex={1}
+    bg="white"
+    rounded="md"
+    p={4}
+    boxShadow="sm"
+      border="0.5px solid"
+  borderColor={theme.color}
+  >
+    <VStack align="stretch" spacing={6}>
+      {(section.questions || []).map((q, idx) => (
+        <Box key={q.id}>
+          <QuestionField
+            type={q.type}
+            text={`${idx + 1}. ${q.text}`}
+            value={answers[q.id]}
+            options={(q.answerOptions || []).map(opt => ({
+              id: opt.id,
+              text: opt.text,
+              value: String(opt.value),
+            }))}
+            onChange={(val) =>
+              setAnswers((prev) => ({ ...prev, [q.id]: val }))
+            }
+            highlightColor={theme.color}
+            colorScheme={theme.scheme}
+          />
+          <Divider mt={4} />
+        </Box>
+      ))}
+    </VStack>
+  </Box>
+</AccordionPanel>
+                </AccordionItem>
+              );
+            })}
           </Accordion>
         )}
 

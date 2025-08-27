@@ -28,6 +28,8 @@ import {
  * - options?: Array<{ id?: number|string, text: string, value: string }>
  * - onChange: (newValue) => void
  * - sliderProps?: { min?: number; max?: number; step?: number }
+ * - highlightColor?: string (e.g. "#2563EB" or "teal.500")
+ * - colorScheme?: Chakra color scheme (e.g. "teal", "orange")
  */
 const QuestionField = ({
   type = "textbox",
@@ -41,6 +43,10 @@ const QuestionField = ({
   sliderFaces = true,
   helperText,
   required = false,
+
+  // NEW (optional theming)
+  highlightColor = "#6366F1", // fallback if parent doesn't pass a section color
+  colorScheme = "purple",
 }) => {
   // Support numeric type codes: 1=radio, 2=checkbox, 3=select, 4=slider, 5=textbox, 6=textarea
   const resolvedType = (() => {
@@ -57,6 +63,10 @@ const QuestionField = ({
     }
     return type;
   })();
+
+  const chipBorderDefault = useColorModeValue("gray.200", "gray.600");
+  const chipBgDefault = useColorModeValue("white", "gray.800");
+  const chipBgSelected = useColorModeValue(`${colorScheme}.50`, "rgba(0,0,0,0.3)");
 
   const upper = (text || label) ? (
     <Box mb={3}>
@@ -93,8 +103,8 @@ const QuestionField = ({
                     py={2}
                     rounded="full"
                     borderWidth="1px"
-                    borderColor={selected ? "blue.400" : useColorModeValue("gray.200", "gray.600")}
-                    bg={selected ? useColorModeValue("blue.50", "blue.900") : useColorModeValue("white", "gray.800")}
+                    borderColor={selected ? highlightColor : chipBorderDefault}
+                    bg={selected ? chipBgSelected : chipBgDefault}
                     cursor="pointer"
                     _hover={{ shadow: "sm" }}
                     display="inline-flex"
@@ -102,8 +112,20 @@ const QuestionField = ({
                     gap={2}
                   >
                     {/* hide the native radio when using chips */}
-                    <Radio value={String(opt.value)} display={emojiChips ? "none" : "inline-flex"} />
-                    <Text fontSize="sm" userSelect="none">{opt.text}</Text>
+                    <Radio
+                      value={String(opt.value)}
+                      colorScheme={colorScheme}
+                      display={emojiChips ? "none" : "inline-flex"}
+                      sx={{
+                        ".chakra-radio__control[data-checked]": {
+                          bg: highlightColor,
+                          borderColor: highlightColor,
+                        },
+                      }}
+                    />
+                    <Text fontSize="sm" userSelect="none" color={selected ? highlightColor : undefined}>
+                      {opt.text}
+                    </Text>
                   </Box>
                 );
               })}
@@ -111,6 +133,7 @@ const QuestionField = ({
           </RadioGroup>
         </Box>
       );
+
     case "checkbox":
       return (
         <Box>
@@ -118,7 +141,20 @@ const QuestionField = ({
           <CheckboxGroup value={value ?? []} onChange={onChange}>
             <Stack direction={{ base: "column", md: "row" }} spacing={4} wrap="wrap">
               {options.map((opt) => (
-                <Checkbox key={opt.id ?? opt.value} value={String(opt.value)}>
+                <Checkbox
+                  key={opt.id ?? opt.value}
+                  value={String(opt.value)}
+                  colorScheme={colorScheme}
+                  sx={{
+                    ".chakra-checkbox__control[data-checked]": {
+                      bg: highlightColor,
+                      borderColor: highlightColor,
+                    },
+                    ".chakra-checkbox__control:focus-visible": {
+                      boxShadow: `0 0 0 2px ${highlightColor}55`,
+                    },
+                  }}
+                >
                   {opt.text}
                 </Checkbox>
               ))}
@@ -126,11 +162,20 @@ const QuestionField = ({
           </CheckboxGroup>
         </Box>
       );
+
     case "select":
       return (
         <Box>
           {upper}
-          <Select value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
+          <Select
+            value={value ?? ""}
+            onChange={(e) => onChange(e.target.value)}
+            borderColor={`${colorScheme}.300`}
+            _focus={{
+              borderColor: highlightColor,
+              boxShadow: `0 0 0 1px ${highlightColor}`,
+            }}
+          >
             <option value="" disabled hidden>
               Select an option
             </option>
@@ -142,42 +187,65 @@ const QuestionField = ({
           </Select>
         </Box>
       );
-    case "slider":
-      {
-        const { min = 0, max = 10, step = 1 } = sliderProps || {};
-        const num = typeof value === "number" ? value : Number(value ?? min);
-        return (
-          <Box>
-            {upper}
-            <Slider value={num} min={min} max={max} step={step} onChange={(v) => onChange(v)}>
-              <SliderTrack>
-                <SliderFilledTrack />
-              </SliderTrack>
-              <SliderThumb boxSize={sliderFaces ? 8 : 4}>
-                {sliderFaces && (
-                  <Text fontSize="lg">
-                    {num >= max * 0.8 ? "🤩" : num >= max * 0.6 ? "🙂" : num >= max * 0.4 ? "😐" : num >= max * 0.2 ? "🙁" : "😣"}
-                  </Text>
-                )}
-              </SliderThumb>
-            </Slider>
-            <Text mt={2} fontSize="sm" color="gray.600">{num}</Text>
-          </Box>
-        );
-      }
+
+    case "slider": {
+      const { min = 0, max = 10, step = 1 } = sliderProps || {};
+      const num = typeof value === "number" ? value : Number(value ?? min);
+      return (
+        <Box>
+          {upper}
+          <Slider
+            value={num}
+            min={min}
+            max={max}
+            step={step}
+            onChange={(v) => onChange(v)}
+            colorScheme={colorScheme}
+          >
+            <SliderTrack>
+              <SliderFilledTrack bg={highlightColor} />
+            </SliderTrack>
+            <SliderThumb boxSize={sliderFaces ? 8 : 4} bg={highlightColor}>
+              {sliderFaces && (
+                <Text fontSize="lg" color="white">
+                  {num >= max * 0.8 ? "🤩" : num >= max * 0.6 ? "🙂" : num >= max * 0.4 ? "😐" : num >= max * 0.2 ? "🙁" : "😣"}
+                </Text>
+              )}
+            </SliderThumb>
+          </Slider>
+          <Text mt={2} fontSize="sm" color="gray.600">{num}</Text>
+        </Box>
+      );
+    }
+
     case "textarea":
       return (
         <Box>
           {upper}
-          <Textarea value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
+          <Textarea
+            value={value ?? ""}
+            onChange={(e) => onChange(e.target.value)}
+            _focus={{
+              borderColor: highlightColor,
+              boxShadow: `0 0 0 1px ${highlightColor}`,
+            }}
+          />
         </Box>
       );
+
     case "textbox":
     default:
       return (
         <Box>
           {upper}
-          <Input value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
+          <Input
+            value={value ?? ""}
+            onChange={(e) => onChange(e.target.value)}
+            _focus={{
+              borderColor: highlightColor,
+              boxShadow: `0 0 0 1px ${highlightColor}`,
+            }}
+          />
         </Box>
       );
   }
