@@ -21,6 +21,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@supabase/supabase-js": "^2.52.0",
+    "canvas-confetti": "^1.9.3",
     "chakra-ui-steps": "^2.2.0",
     "framer-motion": "^12.6.2",
     "jspdf": "^3.0.1",
