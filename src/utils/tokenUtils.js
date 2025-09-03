@@ -31,6 +31,15 @@ export const getUserName = (token) => {
   return null;
 };
 
+// Function to get user ID from token
+export const getUserId = (token) => {
+  const decodedToken = decodeToken(token);
+  if (decodedToken) {
+    return decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
+  }
+  return null;
+};
+
 // Function to check if token is expired
 export const isTokenExpired = (token) => {
   const decodedToken = decodeToken(token);
@@ -56,9 +65,15 @@ export const getStoredUserName = () => {
   return localStorage.getItem('userName');
 };
 
+// Function to get stored user ID from localStorage
+export const getStoredUserId = () => {
+  return localStorage.getItem('userId');
+};
+
 // Function to clear all stored authentication data
 export const clearAuthData = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('userRole');
   localStorage.removeItem('userName');
+  localStorage.removeItem('userId');
 }; 

@@ -20,7 +20,7 @@ import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { Link } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from './AuthContext';
-import { decodeToken, getUserRole, getUserName } from '../utils/tokenUtils';
+import { decodeToken, getUserRole, getUserName, getUserId } from '../utils/tokenUtils';
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -67,10 +67,12 @@ const Signup = () => {
       if (decodedToken) {
         const userRole = getUserRole(data.token);
         const userName = getUserName(data.token);
+        const userId = getUserId(data.token);
         
         // Store user info in localStorage
         localStorage.setItem('userRole', userRole);
         localStorage.setItem('userName', userName);
+        localStorage.setItem('userId', userId);
         
         // Update auth context
         login();

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useContext } from "react";
 import {
   Badge,
   Box,
@@ -24,6 +24,8 @@ import {
 import confetti from "canvas-confetti";
 
 import QuestionField from "../../components/QuestionField";
+import { AuthContext } from "../../components/AuthContext";
+import { getStoredUserId } from "../../utils/tokenUtils";
 
 /**
  * SDS Try page
@@ -33,6 +35,7 @@ import QuestionField from "../../components/QuestionField";
  * - Provides a Submit button (console.logs payload) – wire to your API as needed
  */
 const SdsTry = () => {
+  const { isLoggedIn } = useContext(AuthContext);
   const baseUrl = useMemo(() => process.env.REACT_APP_API_BASE_URL || "http://localhost:5121", []);
 
   const sectionThemes = {
@@ -71,6 +74,7 @@ const SdsTry = () => {
   };
 
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [sections, setSections] = useState([]);
   const [answers, setAnswers] = useState({});
@@ -125,21 +129,65 @@ const SdsTry = () => {
     setAnswers((prev) => ({ ...prev, [questionId]: values }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    
+
+    // For now, always use userId = 1
+    const userId = 1;
+
+    setSubmitting(true);
+
+    // Create responses array with the correct format
+    const responses = Object.entries(answers).map(([questionId, selectedValue]) => ({
+      questionId: Number(questionId),
+      selectedValue: selectedValue, // This will be the value from answerOptions (e.g., "R", "A", "I", etc.)
+      customAnswer: null
+    }));
+
     const payload = {
-      submittedAt: new Date().toISOString(),
-      answers: Object.entries(answers).map(([questionId, value]) => ({
-        questionId: Number(questionId),
-        value,
-      })),
+      userId: Number(userId),
+      responses: responses
     };
-    // TODO: POST to your backend endpoint
-    // await fetch(`${baseUrl}/api/Sds/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    // For now, just log it
-    // eslint-disable-next-line no-console
-    console.log("SDS payload", payload);
-    toast({ title: "Submitted!", description: "Great job — your answers were captured.", status: "success", duration: 2500, isClosable: true });
-    confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+
+    try {
+      const response = await fetch(`${baseUrl}/api/Sds/responses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      toast({ 
+        title: "Submitted Successfully!", 
+        description: `Your Holland code is: ${data.hollandCode}`, 
+        status: "success", 
+        duration: 5000, 
+        isClosable: true 
+      });
+      
+      confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+      
+      // eslint-disable-next-line no-console
+      console.log("SDS response:", data);
+    } catch (error) {
+      console.error("Error submitting SDS responses:", error);
+      toast({ 
+        title: "Submission Failed", 
+        description: error.message || "Failed to submit responses. Please try again.", 
+        status: "error", 
+        duration: 5000, 
+        isClosable: true 
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -252,21 +300,41 @@ const SdsTry = () => {
     <VStack align="stretch" spacing={6}>
       {(section.questions || []).map((q, idx) => (
         <Box key={q.id}>
-          <QuestionField
-            type={q.type}
-            text={`${idx + 1}. ${q.text}`}
-            value={answers[q.id]}
-            options={(q.answerOptions || []).map(opt => ({
-              id: opt.id,
-              text: opt.text,
-              value: String(opt.value),
-            }))}
-            onChange={(val) =>
-              setAnswers((prev) => ({ ...prev, [q.id]: val }))
-            }
-            highlightColor={theme.color}
-            colorScheme={theme.scheme}
-          />
+                     <QuestionField
+             type={q.type}
+             text={`${idx + 1}. ${q.text}`}
+             value={q.type === 4 ? (() => {
+             
+               if (answers[q.id]) {
+                 const option = q.answerOptions.find(opt => opt.value === answers[q.id]);
+                 return option ? Number(option.text) : 1;
+               }
+               return 1; 
+             })() : answers[q.id]}
+             options={(q.answerOptions || []).map(opt => ({
+               id: opt.id,
+               text: opt.text,
+               value: String(opt.value),
+             }))}
+             onChange={(val) => {
+              
+               if (q.type === 4) { 
+                 
+                 const sliderValue = Math.max(1, Math.min(7, Math.round(val))); 
+                 const selectedOption = q.answerOptions.find(opt => opt.text === String(sliderValue));
+                 setAnswers((prev) => ({ ...prev, [q.id]: selectedOption ? selectedOption.value : null }));
+               } else {
+                 setAnswers((prev) => ({ ...prev, [q.id]: val }));
+               }
+             }}
+             sliderProps={{
+               min: 1,
+               max: 7,
+               step: 1
+             }}
+             highlightColor={theme.color}
+             colorScheme={theme.scheme}
+           />
           <Divider mt={4} />
         </Box>
       ))}
@@ -281,7 +349,15 @@ const SdsTry = () => {
 
         {!loading && !error && sections.length > 0 && (
           <Box textAlign="center">
-            <Button colorScheme="blue" size="lg" mt={6} onClick={handleSubmit}>
+            <Button 
+              colorScheme="blue" 
+              size="lg" 
+              mt={6} 
+              onClick={handleSubmit}
+              isLoading={submitting}
+              loadingText="Submitting..."
+              disabled={submitting}
+            >
               Submit
             </Button>
           </Box>

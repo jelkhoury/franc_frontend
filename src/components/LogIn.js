@@ -18,7 +18,7 @@ import {
 import { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../components/AuthContext';
-import { decodeToken, getUserRole, getUserName } from '../utils/tokenUtils';
+import { decodeToken, getUserRole, getUserName, getUserId } from '../utils/tokenUtils';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -57,10 +57,12 @@ const Login = () => {
       if (decodedToken) {
         const userRole = getUserRole(data.token);
         const userName = getUserName(data.token);
+        const userId = getUserId(data.token);
         
         // Store user info in localStorage
         localStorage.setItem('userRole', userRole);
         localStorage.setItem('userName', userName);
+        localStorage.setItem('userId', userId);
         
         // Update auth context
         login();
