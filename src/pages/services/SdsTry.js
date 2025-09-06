@@ -20,6 +20,7 @@ import {
   AlertIcon,
   Progress,
 } from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom";
 
 import confetti from "canvas-confetti";
 
@@ -36,6 +37,7 @@ import { getStoredUserId } from "../../utils/tokenUtils";
  */
 const SdsTry = () => {
   const { isLoggedIn } = useContext(AuthContext);
+  const navigate = useNavigate();
   const baseUrl = useMemo(() => process.env.REACT_APP_API_BASE_URL || "http://localhost:5121", []);
 
   const sectionThemes = {
@@ -121,69 +123,122 @@ const SdsTry = () => {
     fetchSections();
   }, [baseUrl]);
 
-  const handleSingleChange = (questionId, value) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }));
-  };
-
-  const handleMultiChange = (questionId, values) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: values }));
-  };
 
   const handleSubmit = async () => {
-    
-
-    // For now, always use userId = 1
     const userId = 1;
-
     setSubmitting(true);
 
-    // Create responses array with the correct format
-    const responses = Object.entries(answers).map(([questionId, selectedValue]) => ({
-      questionId: Number(questionId),
-      selectedValue: selectedValue, // This will be the value from answerOptions (e.g., "R", "A", "I", etc.)
-      customAnswer: null
-    }));
+    const typeMap = {};
+    sections.forEach(s => {
+      (s.questions || []).forEach(q => {
+        typeMap[q.id] = q.type;
+      });
+    });
 
-    const payload = {
-      userId: Number(userId),
-      responses: responses
-    };
+    const responses = Object.entries(answers).map(([qid, val]) => {
+      const questionId = Number(qid);
+      const qType = typeMap[questionId];
+
+      let selectedValue = null;
+      let customAnswer = null;
+
+      if (qType === 5) {
+        const text = (val ?? "").toString().trim();
+        customAnswer = text.length ? text : null;
+      } else if (Array.isArray(val)) {
+        selectedValue = val.join(",");
+      } else {
+        selectedValue = val != null ? String(val) : null;
+      }
+
+      return { questionId, selectedValue, customAnswer };
+    });
+
+    const missingText = responses
+      .filter(r => typeMap[r.questionId] === 5 && (!r.customAnswer || !r.customAnswer.trim()))
+      .map(r => r.questionId);
+
+    if (missingText.length > 0) {
+      toast({
+        title: "Missing text answers",
+        description: `These questions need text: ${missingText.join(", ")}`,
+        status: "warning",
+        duration: 6000,
+        isClosable: true
+      });
+      setSubmitting(false);
+      return;
+    }
+
+    const payload = { userId: Number(userId), responses };
 
     try {
       const response = await fetch(`${baseUrl}/api/Sds/responses`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
+// Read raw so we can handle string or JSON from backend
+const raw = await response.text();
+if (!response.ok) throw new Error(raw || `HTTP ${response.status}`);
 
-      const data = await response.json();
-      
-      toast({ 
-        title: "Submitted Successfully!", 
-        description: `Your Holland code is: ${data.hollandCode}`, 
-        status: "success", 
-        duration: 5000, 
-        isClosable: true 
-      });
-      
-      confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
-      
-      // eslint-disable-next-line no-console
-      console.log("SDS response:", data);
+let data;
+try { data = JSON.parse(raw); } catch { data = raw; }
+
+// ---- Normalize to ALWAYS have a string code and an array of responses ----
+let code = null;
+let responses = [];
+
+// Cases handled:
+// - "RIA"
+// - { hollandCode: "RIA" }
+// - { message, hollandCode: { hollandCode: "RIA", responses: [...] } }
+if (typeof data === "string") {
+  code = data;
+} else if (data && typeof data === "object") {
+  if (typeof data.hollandCode === "string") {
+    code = data.hollandCode;
+  } else if (data.hollandCode && typeof data.hollandCode === "object") {
+    code = data.hollandCode.hollandCode ?? null;
+    responses = Array.isArray(data.hollandCode.responses) ? data.hollandCode.responses : [];
+  }
+}
+
+// Fallbacks to keep UI stable
+if (typeof code !== "string") code = "";
+if (!Array.isArray(responses)) responses = [];
+
+// ---- Navigate with normalized shape ----
+navigate("/self-directed-search/result", {
+  state: {
+    hollandCode: code,                 // always a string
+    responses,                         // array (for Q265/Q266 if present)
+    serverResponse: data,              // raw for debugging
+    answeredCount: Object.keys(answers).length,
+    submittedAt: new Date().toISOString()
+  }
+});
+
+toast({
+  title: "Submitted Successfully!",
+  description: code ? `Your Holland code is: ${code}` : "Responses submitted.",
+  status: "success",
+  duration: 5000,
+  isClosable: true
+});
+
+confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+// eslint-disable-next-line no-console
+console.log("SDS response (normalized):", { code, responses, data });
     } catch (error) {
       console.error("Error submitting SDS responses:", error);
-      toast({ 
-        title: "Submission Failed", 
-        description: error.message || "Failed to submit responses. Please try again.", 
-        status: "error", 
-        duration: 5000, 
-        isClosable: true 
+      toast({
+        title: "Submission Failed",
+        description: error.message || "Failed to submit responses. Please try again.",
+        status: "error",
+        duration: 5000,
+        isClosable: true
       });
     } finally {
       setSubmitting(false);
