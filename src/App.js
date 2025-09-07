@@ -18,6 +18,8 @@ import ResetPassword from './components/ResetPassword';
 import OTPVerification from './components/OTPVerification';
 import { AuthProvider } from './components/AuthContext';
 import { MockInterviewPage, MockInterviewTryPage, MockInterviewMajorSelectPage, MockInterviewQuestionsPage } from './pages/services';
+import AvatarDemoPage from './pages/services/AvatarDemoPage';
+import AvatarAdvancedDemoPage from './pages/services/AvatarAdvancedDemoPage';
 import AdminPanel from './pages/AdminPanel';
 import SdsPage from './pages/services/SdsPage';
 import SdsOnBoarding from './pages/services/SdsOnBoarding';
@@ -61,6 +63,8 @@ const MainLayout = () => {
         <Route path="/mock-interview/try" element={<MockInterviewTryPage />} />
         <Route path="/mock-interview/select-major" element={<MockInterviewMajorSelectPage />} />
         <Route path="/mock-interview/questions" element={<MockInterviewQuestionsPage />} />
+        <Route path="/mock-interview/avatar-demo" element={<AvatarDemoPage />} />
+        <Route path="/mock-interview/avatar-advanced" element={<AvatarAdvancedDemoPage />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/self-directed-search" element={<SdsPage />} />
         <Route

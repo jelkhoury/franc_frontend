@@ -17,12 +17,16 @@ import {
   ModalBody,
 } from '@chakra-ui/react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useContext } from 'react';
 import { CheckCircleIcon } from '@chakra-ui/icons';
 import Footer from '../../components/Footer';
 import Webcam from 'react-webcam';
 import { useTimer } from 'react-timer-hook';
 import { getStoredToken, decodeToken } from '../../utils/tokenUtils';
+import UI from '../../components/UI/UIScreen';
+import InterviewProvider, { InterviewContext } from '../../contexts/InterviewContext/InterviewContext';
+import ChatProvider, { ChatContext } from '../../contexts/ChatContext/ChatContext';
+import InterviewSetup from '../../components/InterviewSetup';
 
 const INTERVIEW_DURATION_MINUTES = 10; // Example: 10 min for the whole interview
 const ANSWER_DURATION_SECONDS = 5; // 1 min per answer
@@ -59,7 +63,15 @@ const MockInterviewQuestionsPage = () => {
   const [displayedQuestions, setDisplayedQuestions] = useState([]);
   const [canDoMock, setCanDoMock] = useState(true);
   const [checkingMockStatus, setCheckingMockStatus] = useState(false);
+  const [useAvatarMode, setUseAvatarMode] = useState(true); // Always use avatar mode
+  const [transcribedText, setTranscribedText] = useState(''); // For speech-to-text subtitles
+  const [isTranscribing, setIsTranscribing] = useState(false); // Loading state for transcription
+  const [isListening, setIsListening] = useState(false); // State for when speech recognition is active
   const navigate = useNavigate();
+
+  // Contexts
+  const { interviewer, setQuestion } = useContext(InterviewContext);
+  const { startQuestion, playAudioFile, setIsUserInteracted, message, onMessagePlayed } = useContext(ChatContext);
 
   // Check if user can do mock interview
   const checkMockInterviewStatus = async () => {
@@ -151,6 +163,157 @@ const MockInterviewQuestionsPage = () => {
   useEffect(() => {
     checkMockInterviewStatus();
   }, []);
+
+  // Handle audio completion - close modal and start recording process
+  useEffect(() => {
+    if (message === null && isVideoModalOpen && currentQuestionIdx !== null) {
+      // Audio finished playing, close modal and start recording process
+      setIsVideoModalOpen(false);
+      setVideoEnded(true);
+      setShowRecorder(true);
+      setWebcamReady(false);
+      setAnswerTimerExpired(false);
+
+      // Start countdown before recording
+      let countdown = 5;
+      toast({
+        title: `Starting in ${countdown}...`,
+        status: 'info',
+        duration: 1000,
+        isClosable: false,
+      });
+
+      const interval = setInterval(() => {
+        countdown -= 1;
+        if (countdown > 0) {
+          toast({
+            title: `Starting in ${countdown}...`,
+            status: 'info',
+            duration: 1000,
+            isClosable: false,
+          });
+        } else {
+          clearInterval(interval);
+          setCountdownActive(false);
+          // Wait for webcam to be ready, then start recording
+          if (webcamRef.current?.video?.srcObject) {
+            setWebcamReady(true);
+            handleStartRecording();
+            restartAnswerTimer(new Date(Date.now() + ANSWER_DURATION_SECONDS * 1000), true);
+            toast({ title: 'Recording started', status: 'info', duration: 2000 });
+          } else {
+            toast({ title: 'Waiting for webcam...', status: 'warning', duration: 2000 });
+          }
+        }
+      }, 1000);
+    }
+  }, [message, isVideoModalOpen, currentQuestionIdx]);
+
+  // Speech-to-text function for audio transcription
+  const transcribeAudio = (audioUrl) => {
+    return new Promise((resolve, reject) => {
+      try {
+        // Create audio element to analyze the audio
+        const audio = new Audio(audioUrl);
+        
+        // Check if Web Speech API is supported
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+          console.warn('Speech recognition not supported');
+          setTranscribedText(''); // No fallback, show empty
+          resolve('');
+          return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        let finalTranscript = '';
+
+        recognition.onstart = () => {
+          console.log('Speech recognition started');
+          setIsListening(true);
+          // Don't show "Listening..." - let transcribed text appear naturally
+        };
+
+        recognition.onresult = (event) => {
+          let interimTranscript = '';
+          
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + ' ';
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+          
+          // Update with both final and interim results
+          const currentText = finalTranscript + interimTranscript;
+          setTranscribedText(currentText.trim());
+        };
+
+        recognition.onend = () => {
+          console.log('Speech recognition ended');
+          setIsListening(false);
+          if (finalTranscript.trim()) {
+            setTranscribedText(finalTranscript.trim());
+            resolve(finalTranscript.trim());
+          } else {
+            setTranscribedText(''); // No fallback, show empty
+            resolve('');
+          }
+        };
+
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+          setTranscribedText(''); // No fallback, show empty
+          resolve('');
+        };
+
+        // Set up audio event listeners
+        audio.addEventListener('canplaythrough', () => {
+          console.log('Audio ready to play');
+        });
+
+        audio.addEventListener('play', () => {
+          console.log('Audio started playing');
+          recognition.start();
+        });
+
+        audio.addEventListener('ended', () => {
+          console.log('Audio ended');
+          recognition.stop();
+        });
+
+        audio.addEventListener('error', (err) => {
+          console.error('Audio error:', err);
+          setTranscribedText('');
+          resolve('');
+        });
+
+        // Play the audio silently (volume 0) for transcription
+        audio.volume = 0;
+        audio.crossOrigin = 'anonymous';
+        
+        // Start playing the audio
+        audio.play().catch(err => {
+          console.error('Audio play failed:', err);
+          setTranscribedText(''); // No fallback, show empty
+          resolve('');
+        });
+
+      } catch (error) {
+        console.error('Transcription error:', error);
+        setTranscribedText(''); // No fallback, show empty
+        resolve('');
+      }
+    });
+  };
 
   // Submit recorded videos to backend
   const handleSubmitVideos = async () => {
@@ -318,7 +481,7 @@ const MockInterviewQuestionsPage = () => {
     },
   });
 
-  // Open video (no modal)
+  // Open video or start avatar question
   const handlePlay = (video, title, idx) => {
     setSelectedVideo(video);
     setSelectedTitle(title);
@@ -330,6 +493,49 @@ const MockInterviewQuestionsPage = () => {
     setRecordedChunks([]);
     setWebcamReady(false);
     setAnswerTimerExpired(false);
+    setTranscribedText(''); // Clear previous transcription
+    
+    // If using avatar mode, start the question with the avatar and audio
+    if (useAvatarMode) {
+      const question = questions[idx];
+      setQuestion(question);
+      
+      // Show loading state and start transcription
+      setIsTranscribing(true);
+      setTranscribedText('');
+      setIsListening(false);
+      
+      // Start transcription of the audio first (without playing audio)
+      const transcriptionPromise = transcribeAudio(question.videoUrl);
+      
+      // Add timeout to transcription (10 seconds max)
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => {
+          console.log('Transcription timeout, no fallback');
+          setTranscribedText('');
+          resolve();
+        }, 10000);
+      });
+      
+      Promise.race([transcriptionPromise, timeoutPromise]).then(() => {
+        // After transcription is complete or timeout, open modal and start avatar
+        console.log('Transcription process completed, opening modal');
+        setIsTranscribing(false);
+        setIsVideoModalOpen(true);
+        playAudioFile(question.videoUrl, question.title);
+        setIsUserInteracted(true);
+      }).catch((error) => {
+        // If transcription fails, still open modal with fallback
+        console.log('Transcription failed, using fallback:', error);
+        setIsTranscribing(false);
+        setIsVideoModalOpen(true);
+        playAudioFile(question.videoUrl, question.title);
+        setIsUserInteracted(true);
+      });
+    } else {
+      // For video mode, open modal immediately
+      setIsVideoModalOpen(true);
+    }
   };
 
   // When video ends, show a countdown before starting recorder/timer
@@ -608,9 +814,7 @@ const MockInterviewQuestionsPage = () => {
                           size="sm"
                           colorScheme="blue"
                           onClick={() => {
-                            setSelectedTitle(questions[idx]?.title);
-                            setSelectedVideo(questions[idx]?.videoUrl);
-                            setCurrentQuestionIdx(idx);
+                            handlePlay(questions[idx]?.videoUrl, questions[idx]?.title, idx);
                             setIsVideoModalOpen(true);
                           }}
                           isDisabled={recording || countdownActive}
@@ -623,22 +827,6 @@ const MockInterviewQuestionsPage = () => {
                 ))}
               </Box>
             </Flex>
-            {currentQuestionIdx !== null &&
-              !selectedVideo &&
-              !isQuestionAnswered(currentQuestionIdx) && (
-                <Box mt={6} p={4} bg="gray.100" borderRadius="md" boxShadow="sm">
-                  <Text fontWeight="bold">Q{currentQuestionIdx + 1}: {questions[currentQuestionIdx]?.title}</Text>
-                  <Button mt={3} colorScheme="blue" onClick={() => {
-                    const idx = currentQuestionIdx;
-                    setSelectedTitle(questions[idx]?.title);
-                    setSelectedVideo(questions[idx]?.videoUrl);
-                    setCurrentQuestionIdx(idx);
-                    setIsVideoModalOpen(true);
-                  }} isDisabled={recording || countdownActive}>
-                    Show
-                  </Button>
-                </Box>
-            )}
             {(showRecorder || showControls) && (
               <Box mt={4}>
                 <AnswerTimer
@@ -656,8 +844,7 @@ const MockInterviewQuestionsPage = () => {
                   colorScheme="gray"
                   onClick={() => {
                     setShowControls(false);
-                    setSelectedTitle(questions[currentQuestionIdx]?.title);
-                    setSelectedVideo(questions[currentQuestionIdx]?.videoUrl);
+                    handlePlay(questions[currentQuestionIdx]?.videoUrl, questions[currentQuestionIdx]?.title, currentQuestionIdx);
                     setRecordedChunks([]);
                     setRecording(false);
                     setIsVideoModalOpen(true);
@@ -740,46 +927,98 @@ const MockInterviewQuestionsPage = () => {
                 </Text>
               </Box>
             )}
-            <Button
-              colorScheme="blue"
-              size="lg"
-              onClick={() => {
-                setInterviewStarted(true);
-                setInterviewStartTime(Date.now());
-                setInterviewDuration(0);
-                setCurrentQuestionIdx(0);
-                setDisplayedQuestions([0]);
-                setTimeout(() => handlePlay(questions[0]?.videoUrl, questions[0]?.title, 0), 500);
-              }}
-              display="block"
-              mx="auto"
-              isDisabled={questions.length === 0 || !canDoMock || checkingMockStatus}
-              isLoading={checkingMockStatus}
-            >
-              {checkingMockStatus ? 'Checking...' : !canDoMock ? 'Cannot Start Interview' : 'Start Interview'}
-            </Button>
+            <VStack spacing={4}>
+              <Button
+                colorScheme="blue"
+                size="lg"
+                onClick={() => {
+                  setUseAvatarMode(true); // Always use avatar mode now
+                  setInterviewStarted(true);
+                  setInterviewStartTime(Date.now());
+                  setInterviewDuration(0);
+                  setCurrentQuestionIdx(0);
+                  setDisplayedQuestions([0]);
+                  // Don't automatically start the first question - let user click "Show"
+                }}
+                isDisabled={questions.length === 0 || !canDoMock || checkingMockStatus}
+                isLoading={checkingMockStatus}
+              >
+                {checkingMockStatus ? 'Checking...' : !canDoMock ? 'Cannot Start Interview' : 'Start Interview'}
+              </Button>
+              <Text fontSize="sm" color="gray.600" textAlign="center">
+                Start your mock interview with an interactive 3D avatar interviewer
+              </Text>
+            </VStack>
           </>
         )}
       </Box>
       <Footer />
-      <Modal isOpen={isVideoModalOpen} onClose={() => setIsVideoModalOpen(false)} size="6xl" isCentered>
+      <Modal isOpen={isVideoModalOpen} onClose={() => setIsVideoModalOpen(false)} size="full" isCentered>
         <ModalOverlay />
-        <ModalContent borderRadius="lg" p={4} bg="gray.50">
+        <ModalContent borderRadius="lg" p={6} bg="gray.50" maxW="95vw" maxH="95vh">
           <ModalHeader fontSize="xl" fontWeight="bold">{selectedTitle}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <Box overflow="hidden" borderRadius="md" boxShadow="lg">
-              <video
-                src={selectedVideo}
-                controls
-                width="100%"
-                style={{ borderRadius: '8px' }}
-                onEnded={handleVideoEnded}
-              />
+              {useAvatarMode ? (
+                // Show 3D Avatar with audio from videoUrl
+                <Box position="relative" height="80vh" width="100%">
+                  <UI />
+                  {/* Subtitles overlay - show when avatar is speaking or listening */}
+                  {message && (
+                    <Box
+                      position="absolute"
+                      bottom="20px"
+                      left="50%"
+                      transform="translateX(-50%)"
+                      bg="rgba(0, 0, 0, 0.8)"
+                      color="white"
+                      px={6}
+                      py={3}
+                      borderRadius="lg"
+                      maxW="80%"
+                      textAlign="center"
+                      zIndex={10}
+                      transition="all 0.3s ease-in-out"
+                      opacity={message ? 1 : 0}
+                    >
+                      <Text fontSize="lg" fontWeight="medium">
+                        {transcribedText}
+                      </Text>
+                    </Box>
+                  )}
+                </Box>
+              ) : (
+                // Show traditional video
+                <video
+                  src={selectedVideo}
+                  controls
+                  width="100%"
+                  style={{ borderRadius: '8px' }}
+                  onEnded={handleVideoEnded}
+                />
+              )}
             </Box>
           </ModalBody>
         </ModalContent>
       </Modal>
+
+      {/* Loading Modal */}
+      <Modal isOpen={isTranscribing} onClose={() => {}} size="md" isCentered>
+        <ModalOverlay />
+        <ModalContent borderRadius="lg" p={6} bg="gray.50">
+          <ModalBody textAlign="center">
+            <Spinner size="xl" color="blue.500" mb={4} />
+            <Heading size="md" mb={2} color="gray.700">
+              Loading Question
+            </Heading>
+            <Text color="gray.600">
+              Please wait...
+            </Text>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+      
     </Box>
   );
 };
@@ -803,4 +1042,15 @@ const AnswerTimer = ({ duration, onExpire, recording }) => {
   );
 };
 
-export default MockInterviewQuestionsPage;
+// Wrapper component with context providers
+const MockInterviewQuestionsPageWithProviders = () => {
+  return (
+    <InterviewProvider>
+      <ChatProvider>
+        <MockInterviewQuestionsPage />
+      </ChatProvider>
+    </InterviewProvider>
+  );
+};
+
+export default MockInterviewQuestionsPageWithProviders;
