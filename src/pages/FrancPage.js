@@ -29,64 +29,73 @@ const MotionBox = motion(Box);
 
 const services = [
   {
-    heading: "Resume Evaluation",
-    description: "Fast, reliable at anytime anywhere CV Evaluation.",
-    icon: FcDiploma1,
+    heading: "Resume Feedback",
+    description: "A resume is like Wi-Fi — without it, you’re not connecting anywhere.",
+    gif:"/assets/images/cv_icon.gif",
     isActive: true,
     link: "/resume-evaluation",
+    buttonText:"Fix It"
   },
   {
-    heading: "Chatting",
-    description: "Designed to help you explore your university options.",
-    icon: FcComments,
+    heading: "Any help?",
+    description: "SOS! Someone save me from my own confusion?",
+    gif:"/assets/images/chatting_icon.gif",
     isActive: true,
     link: "/chatting",
+    buttonText:"Save me"
+
   },
   {
-    heading: "Cover Letter Evaluation",
-    description: "Scalable and flexible Cover Letter Evaluation.",
-    icon: FcDiploma2,
+    heading: "Cover Letter feedback",
+    description: "A cover letter is the handshake before the meeting",
+    gif:"/assets/images/cover_letter_icon.gif",
     isActive: true,
     link: "/cover-letter-evaluation",
+    buttonText:"Make it happen"
   },
   {
-    heading: "Mock Interviews",
-    description:
-      "Practice with AI-driven mock interviews tailored to your industry.",
-    icon: FcAssistant,
+    heading: "Mock Interview",
+    description:"See yourself, hear yourself and repeat.",
+    gif:"/assets/images/interview_icon.gif",
     isActive: true,
     link: "/mock-interview",
+    buttonText:"Dare Me"
   },
   {
-    heading: "Self Directed Search (SDS)",
-    description: "A comprehensive tool for career exploration.",
-    icon: FcCollaboration,
+    heading: "Personality Test",
+    description: "A personality test is your compass for your career",
+    gif:"/assets/images/compass_icon.gif",
     isActive: true,
     link: "/self-directed-search",
+    buttonText:"Discover me"
   },
   {
-    heading: "Career Coaching",
-    description:
-      "Access personalized coaching based on your resume and interests.",
-    icon: FcManager,
+     heading: 'Job comparison',
+     description: 'Try the shoes before you choose the path.',
+    gif:"/assets/images/comparison.gif",
     isActive: false,
   },
   {
-    heading: "AI Cover Letter Builder",
-    description: "Generate job-specific cover letters in seconds.",
-    icon: FcDonate,
+     heading: 'Job Matchmaking',
+     description: 'The right key opens the right door.',
+    gif:"/assets/images/job_matching.gif",
     isActive: false,
   },
   {
-    heading: "Personality Insights",
-    description:
-      "Understand your strengths better through AI-powered analysis.",
-    icon: FcAbout,
+      heading: 'Values and Interests',
+      description: 'Choose a job you love and you will never have to work a day in your life.',
+    gif:"/assets/images/values.gif",
+    isActive: false,
+  },
+   {
+      heading: 'Gamification',
+      description: 'Level up your skills, level up your future.',
+    gif:"/assets/images/gamification.gif",
     isActive: false,
   },
 ];
 
-const ServiceCard = ({ heading, description, icon, isActive, link }) => {
+const ServiceCard = ({ heading, description, icon, gif, isActive, link, buttonText }) => {
   const cardBg = useColorModeValue("white", "gray.800");
   const activeBg = useColorModeValue("brand.50", "gray.700");
   const iconBg = isActive ? "brand.100" : "gray.200";
@@ -95,6 +104,7 @@ const ServiceCard = ({ heading, description, icon, isActive, link }) => {
   return (
     <Box
       h="100%"
+      minH="250px"
       borderRadius="xl"
       p={6}
       bg={isActive ? activeBg : cardBg}
@@ -102,11 +112,11 @@ const ServiceCard = ({ heading, description, icon, isActive, link }) => {
       border={isActive ? "2px solid" : "1px solid"}
       borderColor={isActive ? "brand.300" : "gray.200"}
       transition="all 0.3s ease"
-      _hover={
-        isActive ? { transform: "translateY(-4px)", boxShadow: "xl" } : {}
-      }
+      _hover={isActive ? { transform: "translateY(-4px)", boxShadow: "xl" } : {}}
+      display="flex"
+      flexDirection="column"
     >
-      <Stack spacing={4} h="100%">
+      <Stack spacing={4} flex="1">
         <Flex
           w={14}
           h={14}
@@ -117,11 +127,16 @@ const ServiceCard = ({ heading, description, icon, isActive, link }) => {
           color={iconColor}
           fontSize="2xl"
           mx="auto"
+          overflow="hidden"
         >
-          <Icon as={icon} boxSize={8} />
+          {gif ? (
+            <Image src={gif} alt={heading} boxSize="40px" objectFit="contain" />
+          ) : (
+            <Icon as={icon} boxSize={8} />
+          )}
         </Flex>
 
-        <Box textAlign="center">
+        <Box textAlign="center" flex="1">
           <Heading size="md" mb={1}>
             {heading}
           </Heading>
@@ -129,52 +144,54 @@ const ServiceCard = ({ heading, description, icon, isActive, link }) => {
             {description}
           </Text>
         </Box>
-
-        <Box textAlign="center" mt="auto">
-          {isActive ? (
-            <Button
-              as={RouterLink}
-              to={link}
-              colorScheme="brand"
-              size="sm"
-              px={6}
-              borderRadius="full"
-              fontWeight="semibold"
-            >
-              Learn More
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              borderRadius="full"
-              isDisabled
-              variant="outline"
-              opacity={0.7}
-            >
-              Coming Soon
-            </Button>
-          )}
-        </Box>
       </Stack>
+
+      <Box textAlign="center" mt={4}>
+        {isActive ? (
+          <Button
+            as={RouterLink}
+            to={link}
+            colorScheme="brand"
+            size="sm"
+            px={6}
+            borderRadius="full"
+            fontWeight="semibold"
+            minW={120}
+          >
+            {buttonText || "Learn More"}
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            borderRadius="full"
+            isDisabled
+            variant="outline"
+            opacity={0.7}
+          >
+            Coming Soon
+          </Button>
+        )}
+      </Box>
     </Box>
   );
 };
 
+
+
 const FrancPage = () => {
   return (
     <Box
-      py={{ base: 24, md: 40 }}
+      py={{ base: 24, md: 35 }}
       px={6}
       bgGradient="linear(to-r, white, #ebf8ff)"
     >
-      {/* Intro Section */}
-      <VStack spacing={6} textAlign="center" maxW="3xl" mx="auto">
         <Heading
           size="2xl"
           display="flex"
           alignItems="center"
           justifyContent="center"
           gap={4}
+          py={8}
         >
           Meet
           <Image
@@ -186,20 +203,47 @@ const FrancPage = () => {
             ignoreFallback
           />
         </Heading>
-        <Text fontSize="lg" color="gray.600">
-          <Text as="span" color="brand.500" fontWeight="semibold">
-            Franc
-          </Text>{" "}
-          started as a Final Year Project and grew into Lebanon's first
-          AI-powered career adviser. His mission is to guide students and
-          professionals toward their ideal path using smart tools like resume
-          evaluation, AI coaching, and interactive chat support. From job
-          seekers to career changers,{" "}
-          <Text as="span" color="brand.500" fontWeight="semibold">
-            Franc
-          </Text>{" "}
-          is here to assist every step of the way.
-        </Text>
+    <VStack spacing={6} textAlign="left"  align="flex-start" maxW="6xl" mx="auto">
+    <VStack align="flex-start" spacing={4}>
+      <Text fontSize="lg" color="gray.600">
+        <Text as="span" color="brand.500" fontWeight="semibold">Franc</Text>{" "}
+        was born from a dream—and a lot of hard work. Brainstormed by the passionate team at the Center for Career Development (CCD){" "}
+        <Text as="span" fontWeight="semibold">in June 2024</Text>, pre-launched{" "}
+        <Text as="span" fontWeight="semibold">in March 2025</Text>, and officially released{" "}
+        <Text as="span" fontWeight="semibold">in September 2025</Text>, FRANC is the{" "}
+        <Text as="span" fontWeight="semibold">Lebanon’s first digital career advisor</Text>, designed to guide students on their journey toward professional success.
+      </Text>
+
+      <Text fontSize="lg" color="gray.600">
+        The name FRANC comes from <Text as="span" fontWeight="semibold">Frank Parsons</Text>, the{" "}
+        <Text as="span" fontWeight="semibold">Father of Career Counseling</Text> and Founder of{" "}
+        <Text as="span" fontWeight="semibold">Vocational Guidance</Text>—a pioneer whose legacy inspired us to create a tool that truly makes a difference in students’ lives.
+      </Text>
+
+      <Text fontSize="lg" color="gray.600">
+        FRANC provides personalized career guidance in multiple forms using advanced methods, embodying the values of{" "}
+        <Text as="span" fontWeight="semibold">Focus, Reshape, Advise, Navigate, and Connect</Text>. We created FRANC because we recognized the challenges students face: limited access to the Career Center outside working hours, uncertainty about career goals, and low levels of career readiness.
+      </Text>
+
+      <Text fontSize="lg" color="gray.600">
+        <Text as="span" fontWeight="semibold">Our mission is simple yet powerful:</Text> to offer personalized guidance{" "}
+        <Text as="span" fontWeight="semibold">anytime, anywhere</Text>. FRANC acts as a helper, providing AI-powered career assessments and services that reduce anxiety, enhance confidence, and make the job search experience stress-free. Students can explore career paths, sharpen their skills, and gain the self-assurance they need to succeed—all at their own pace.
+      </Text>
+
+      <Text fontSize="lg" color="gray.600">
+        FRANC’s creation was a team effort fueled by feedback, creativity, and expertise. Its design was crafted by{" "}
+        <Text as="span" fontWeight="semibold">UA graphic design students</Text>, and the final version was{" "}
+        <Text as="span" fontWeight="semibold">chosen by a student vote</Text>—because this project is for students, by students. The platform was built using the cumulative experience of the CCD team and developed in collaboration with the{" "}
+        <Text as="span" fontWeight="semibold">Department of Computer Science at the Faculty of Engineering and Technology (FET)</Text> and its students.
+      </Text>
+
+      <Text fontSize="lg" color="gray.600">
+        With FRANC, we are proud to say: we did a lot—and we’re just getting started. It’s more than a tool; it’s a{" "}
+        <Text as="span" fontWeight="semibold">companion</Text>, a <Text as="span" fontWeight="semibold">guide</Text>, and a{" "}
+        <Text as="span" fontWeight="semibold">source of confidence</Text> for every student stepping into the world of work.
+      </Text>
+    </VStack>
+
       </VStack>
 
       {/* Services Grid */}

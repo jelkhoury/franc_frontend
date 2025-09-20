@@ -12,7 +12,30 @@ import {
 import Footer from '../../components/Footer';
 import { useContext } from 'react';
 import { AuthContext } from "../../components/AuthContext"; // Assuming you have the AuthContext in this path
+import { FaBolt } from "react-icons/fa";
 
+
+const PlainStep = ({ icon, title, desc }) => (
+  <VStack
+    spacing={3}
+    align="center"
+    w="auto"
+    minW={{ base: "auto", md: "240px" }}
+    maxW="260px"
+  >
+    <Circle size="64px" bg="blue.50" color="blue.700">
+      <Icon as={icon} boxSize={6} />
+    </Circle>
+
+    <Text fontWeight="bold" noOfLines={2} textAlign="center">
+      {title}
+    </Text>
+
+    <Text fontSize="sm" color="gray.600" textAlign="center">
+      {desc}
+    </Text>
+  </VStack>
+);
 const ChattingPage = () => {
   const { isLoggedIn } = useContext(AuthContext);  // Get the login state from context
   const { isOpen, onOpen, onClose } = useDisclosure();  // For handling the modal
@@ -48,7 +71,7 @@ const ChattingPage = () => {
       >
         {/* Right - Image */}
         <Image
-          src="/assets/images/chat_service.svg"
+          src="/assets/images/franc_support.gif"
           alt="Chatting Service"
           maxW="400px"
           objectFit="contain"
@@ -67,12 +90,11 @@ const ChattingPage = () => {
           borderColor="gray.100"
         >
           <Heading size="xl" mb={4}>
-            Chatting Service
+            Any Help?
           </Heading>
 
           <Text fontSize="lg" mb={6}>
-            You can ask Franc any question related to Antonine University or career advising — 
-            and he'll do his best to help! Just don’t get mad at him if he doesn’t know something... he’s still learning!
+            Got questions about your career or your next move? Franc got your back! He’s smart, fast and always learning. Despite he’s available “24/7”, Don’t forget to go easy on him if he gets it a little wrong!
           </Text>
 
           {/* Icons Row */}
@@ -86,7 +108,7 @@ const ChattingPage = () => {
               <Text fontSize="sm">Professional</Text>
             </VStack>
             <VStack spacing={1}>
-              <Icon as={TimeIcon} color="blue.400" boxSize={6} />
+              <Icon as={FaBolt} color="blue.400" boxSize={6} />
               <Text fontSize="sm">Fast</Text>
             </VStack>
           </HStack>
@@ -96,66 +118,62 @@ const ChattingPage = () => {
             colorScheme="brand"
             size="md"
           >
-            Try It Now
+           Save me
           </Button>
         </Box>
       </Flex>
 
       {/* How It Works Section */}
-      <Box py={16} px={{ base: 6, md: 16 }} bg="white" textAlign="center">
-        <Heading size="lg" mb={10}>
-          How It Works
-        </Heading>
+  
+     <Box py={16} px={{ base: 6, md: 16 }} bg="white">
+  <Heading size="lg" mb={10} textAlign="center">
+    How It Works
+  </Heading>
 
-        <HStack
-          spacing={10}
-          maxW="6xl"
-          mx="auto"
-          justify="center"
-          flexWrap="wrap"
-          align="center"
-        >
-          {/* Step 1 */}
-          <VStack spacing={4}>
-            <Circle size="60px" bg="blue.100" color="blue.700">
-              <Icon as={AttachmentIcon} boxSize={6} />
-            </Circle>
-            <Text fontWeight="bold">Start a Chat</Text>
-            <Text fontSize="sm" color="gray.600" maxW="150px">
-              Send your question to FRANC.
-            </Text>
-          </VStack>
+  {/* Desktop: steps with arrows */}
+  <HStack
+    spacing={10}
+    maxW="6xl"
+    mx="auto"
+    justify="center"
+    align="center"
+    display={{ base: "none", md: "flex" }}
+  >
+    <PlainStep
+      icon={AttachmentIcon}
+      title="Ask any question"
+      desc="Be curious."
+    />
+    <PlainStep
+      icon={ArrowUpIcon}
+      title="Get an instant answer"
+      desc="Get insights about your career related questions."
+    />
+  </HStack>
 
-          <Icon as={ArrowForwardIcon} color="gray.400" boxSize={6} display={{ base: 'none', md: 'block' }} />
+  {/* Mobile: stacked, no arrows */}
+  <VStack
+    spacing={8}
+    maxW="lg"
+    mx="auto"
+    display={{ base: "flex", md: "none" }}
+  >
+    <PlainStep
+      icon={AttachmentIcon}
+      title="Ask any question"
+      desc="Be curious."
+    />
+    <PlainStep
+      icon={ArrowUpIcon}
+      title="Get an instant answer"
+      desc="Get insights about your career related questions."
+    />
+  </VStack>
+</Box>
 
-          {/* Step 2 */}
-          <VStack spacing={4}>
-            <Circle size="60px" bg="blue.100" color="blue.700">
-              <Icon as={ArrowUpIcon} boxSize={6} />
-            </Circle>
-            <Text fontWeight="bold">Get a Response</Text>
-            <Text fontSize="sm" color="gray.600" maxW="150px">
-              Franc will reply in seconds.
-            </Text>
-          </VStack>
-
-          <Icon as={ArrowForwardIcon} color="gray.400" boxSize={6} display={{ base: 'none', md: 'block' }} />
-
-          {/* Step 3 */}
-          <VStack spacing={4}>
-            <Circle size="60px" bg="blue.100" color="blue.700">
-              <Icon as={StarIcon} boxSize={6} />
-            </Circle>
-            <Text fontWeight="bold">That’s It!</Text>
-            <Text fontSize="sm" color="gray.600" maxW="150px">
-              Quick, simple, helpful.
-            </Text>
-          </VStack>
-        </HStack>
-      </Box>
 
       {/* Call to Action Section */}
-      <Box
+      {/* <Box
         bg="brand.500"
         color="white"
         py={16}
@@ -178,7 +196,7 @@ const ChattingPage = () => {
         >
           Start Chatting Now
         </Button>
-      </Box>
+      </Box> */}
 
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
   <ModalOverlay />

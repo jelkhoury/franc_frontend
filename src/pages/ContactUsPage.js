@@ -80,10 +80,12 @@ const ContactUsPage = () => {
         >
           {/* Friendly Avatar */}
           <Image
-            src="/assets/images/franc_white_blue bg-01.svg"
+            src="/assets/images/francyellow_transparentbg-01.svg"
             alt="Franc Avatar"
-            boxSize="180px"
-            objectFit="cover"
+            maxW="120px"        
+            w="100%"           
+            h="auto"
+            objectFit="contain" 
             borderRadius="lg"
             mx="auto"
             mb={4}
@@ -91,11 +93,12 @@ const ContactUsPage = () => {
             _hover={{ transform: "scale(1.05)" }}
           />
 
+
           <Heading size="lg" mb={2} color="gray.700">
             Contact Us
           </Heading>
           <Text fontSize="md" color="gray.600" mb={6}>
-            Reach out to us anytime!
+            For inquires or creative ideas contact us
           </Text>
 
           {/* Contact Info Section */}
