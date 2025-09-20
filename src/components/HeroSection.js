@@ -29,13 +29,14 @@ const HeroSection = ({ onGetStartedClick }) => {
                 fontSize={{ base: "2xl", sm: "4xl", md: "5xl" }}
                 lineHeight="110%"
               >
-                Welcome to{" "}
+                {/* Welcome to{" "}
                 <Text as="span" color="brand.500">
                   Franc's
                 </Text>{" "}
                 <Text as="span" color="secondary.50">
                   Platform
-                </Text>
+                </Text> */}
+                <Text as="span" color="brand.500">Welcome to the Future of Career Support </Text>
               </Heading>
 
               <Text
@@ -43,9 +44,7 @@ const HeroSection = ({ onGetStartedClick }) => {
                 fontSize={{ base: "md", sm: "lg" }}
                 maxW="2xl"
               >
-                Discover our amazing services and grow with us. Franc is the
-                first AI-powered career adviser in Lebanon, launched by Antonine
-                University and the Center for Career Development (CCD).
+                Franc is Lebanon’s first AI powered career advisor launched by Antonine University - Center for Career Development (C.C.D). to make your career journey smarter, faster, and easier.
               </Text>
 
               <Stack
@@ -53,7 +52,7 @@ const HeroSection = ({ onGetStartedClick }) => {
                 spacing={4}
                 justify={{ base: "center", md: "flex-start" }}
               >
-                <Button
+                {/* <Button
                   onClick={onGetStartedClick}
                   colorScheme="brand"
                   bg="brand.500"
@@ -62,13 +61,17 @@ const HeroSection = ({ onGetStartedClick }) => {
                   _hover={{ bg: "brand.600" }}
                 >
                   Get Started
-                </Button>
+                </Button> */}
                 <Button
                   as={RouterLink}
                   to="/franc"
-                  variant="link"
-                  colorScheme="gray"
+                  bg="brand.500"
+                  colorScheme="brand"
+                                    rounded="full"
+                  
                   size="sm"
+                  px={6}
+                  _hover={{ bg: "brand.600" }}
                 >
                   Learn more
                 </Button>
@@ -82,7 +85,6 @@ const HeroSection = ({ onGetStartedClick }) => {
               as="video"
               src="/assets/videos/franclogo.mp4"
               autoPlay
-              loop
               muted
               playsInline
               width={{ base: "280px", md: "500px" }}

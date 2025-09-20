@@ -13,24 +13,28 @@ import {
   Heading,
   Text,
   useColorModeValue,
+  useToast,
 } from '@chakra-ui/react';
 import { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../components/AuthContext'; // Import AuthContext
+import { AuthContext } from '../components/AuthContext';
+import { decodeToken, getUserRole, getUserName, getUserId } from '../utils/tokenUtils';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useContext(AuthContext);
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
+  const toast = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await fetch('https://localhost:7022/api/users/sign-in', {
+      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+      const response = await fetch(`${baseUrl}/users/sign-in`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -44,12 +48,57 @@ const Login = () => {
         throw new Error(data.message || 'Invalid credentials');
       }
 
-      login();
-      // If sign-in is successful, navigate to the home page
-      navigate('/');
+      // Store token in localStorage
+      localStorage.setItem('token', data.token);
+      
+      // Decode token to get user role
+      const decodedToken = decodeToken(data.token);
+      
+      if (decodedToken) {
+        const userRole = getUserRole(data.token);
+        const userName = getUserName(data.token);
+        const userId = getUserId(data.token);
+        
+        // Store user info in localStorage
+        localStorage.setItem('userRole', userRole);
+        localStorage.setItem('userName', userName);
+        localStorage.setItem('userId', userId);
+        
+        // Update auth context
+        login();
+        
+        // Navigate based on role
+        if (userRole === 'Admin') {
+          navigate('/admin');
+          toast({
+            title: "Login successful!",
+            description: `Welcome back, ${userName}!`,
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+        } else {
+          navigate('/');
+          toast({
+            title: "Login successful!",
+            description: `Welcome back, ${userName}!`,
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+        }
+      } else {
+        throw new Error('Invalid token received');
+      }
     } catch (err) {
-      // Handle error (e.g., show a toast or alert)
-      alert(err.message);
+      console.error('Login error:', err);
+      toast({
+        title: "Login failed",
+        description: err.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -76,7 +125,7 @@ const Login = () => {
           p={8}
         >
           <Stack spacing={4} as="form" onSubmit={handleSubmit}>
-            <FormControl id="email">
+            <FormControl id="email" isRequired>
               <FormLabel>Email address</FormLabel>
               <Input
                 type="email"
@@ -84,7 +133,7 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </FormControl>
-            <FormControl id="password">
+            <FormControl id="password" isRequired>
               <FormLabel>Password</FormLabel>
               <Input
                 type="password"
@@ -109,15 +158,15 @@ const Login = () => {
                 _hover={{
                   bg: 'blue.500',
                 }}
-                type="submit" // Ensure form is submitted correctly
-                isLoading={loading} // Show loading spinner while processing
+                type="submit"
+                isLoading={loading}
               >
                 Log in
               </Button>
             </Stack>
             <Stack pt={4}>
               <Text textAlign={'center'}>
-                Don’t have an account?{' '}
+                Don't have an account?{' '}
                 <Link to="/signup">
                   <Text as="span" color={'blue.400'} fontWeight="medium">
                     Sign up

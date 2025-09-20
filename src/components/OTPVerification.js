@@ -48,8 +48,9 @@ const OTPVerification = () => {
     setLoading(true);
 
     try {
+      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
       const response = await fetch(
-        `https://localhost:7022/api/users/verify-code?email=${encodeURIComponent(
+        `${baseUrl}/users/verify-code?email=${encodeURIComponent(
           email
         )}&code=${otp}`,
         {
@@ -65,6 +66,7 @@ const OTPVerification = () => {
 
       toast({
         title: "Verification Successful!",
+        description: "Your email has been verified successfully.",
         status: "success",
         duration: 3000,
         isClosable: true,
@@ -74,13 +76,13 @@ const OTPVerification = () => {
       navigate("/");
     } catch (err) {
       toast({
-        title: "Error",
+        title: "Verification Failed",
         description: err.message,
         status: "error",
         duration: 3000,
         isClosable: true,
       });
-      setOtp(""); // Optionally clear OTP
+      setOtp(""); // Clear OTP on error
     } finally {
       setLoading(false);
     }
@@ -101,30 +103,21 @@ const OTPVerification = () => {
         rounded={"xl"}
         boxShadow={"lg"}
         p={6}
-        my={10}
+        my={12}
       >
         <Center>
-          <Heading lineHeight={1.1} fontSize={{ base: "2xl", md: "3xl" }}>
-            Verify your Email
-          </Heading>
+          <Heading size={"lg"}>Verify your email</Heading>
         </Center>
-        <Center
-          fontSize={{ base: "sm", sm: "md" }}
-          color={useColorModeValue("gray.800", "gray.400")}
-        >
+        <Center fontSize={"md"}>
           We have sent a code to your email
         </Center>
-        <Center
-          fontSize={{ base: "sm", sm: "md" }}
-          fontWeight="bold"
-          color={useColorModeValue("gray.800", "gray.400")}
-        >
-          {email || "unknown@email.com"}
+        <Center fontSize={"sm"} color={"gray.500"}>
+          {email}
         </Center>
         <FormControl>
           <Center>
             <HStack>
-              <PinInput otp size="lg" onChange={handleChange} autoFocus>
+              <PinInput otp size="lg" value={otp} onChange={handleChange}>
                 <PinInputField />
                 <PinInputField />
                 <PinInputField />
@@ -133,17 +126,23 @@ const OTPVerification = () => {
             </HStack>
           </Center>
         </FormControl>
-        <Stack spacing={6}>
-          <Button
-            bg={"brand.500"}
-            color={"white"}
-            _hover={{ bg: "blue.500" }}
-            onClick={handleSubmit}
-            isDisabled={otp.length !== 4}
-            isLoading={loading}
-          >
-            Verify
-          </Button>
+        <Button
+          colorScheme="blue"
+          size="lg"
+          fontSize="md"
+          onClick={handleSubmit}
+          isLoading={loading}
+          isDisabled={otp.length !== 4}
+        >
+          Verify
+        </Button>
+        <Stack pt={6}>
+          <Text textAlign={"center"}>
+            Didn't receive the code?{" "}
+            <Text as="span" color={"blue.400"} fontWeight="medium">
+              Resend
+            </Text>
+          </Text>
         </Stack>
       </Stack>
     </Flex>

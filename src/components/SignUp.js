@@ -14,9 +14,13 @@ import {
   Heading,
   Text,
   useColorModeValue,
+  useToast,
 } from '@chakra-ui/react';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { Link } from 'react-router-dom';
+import { useContext } from 'react';
+import { AuthContext } from './AuthContext';
+import { decodeToken, getUserRole, getUserName, getUserId } from '../utils/tokenUtils';
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -26,12 +30,15 @@ const Signup = () => {
   const [passwordHash, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUpSuccessful, setIsSignUpSuccessful] = useState(false);
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { login } = useContext(AuthContext);
 
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://localhost:7022/api/users/signup', {
+      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+      const response = await fetch(`${baseUrl}/users/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -47,19 +54,66 @@ const Signup = () => {
       const data = await response.json();
       
       if (!response.ok) {
-        console.error('API Error:', data.error); // Log the detailed error response
+        console.error('API Error:', data.error);
         throw new Error(data.error || 'Something went wrong');
       }
-  
-      setIsSignUpSuccessful(true);
-      navigate('/OTP-Verification', { state: { email } });
+
+      // Store token in localStorage
+      localStorage.setItem('token', data.token);
+      
+      // Decode token to get user role
+      const decodedToken = decodeToken(data.token);
+      
+      if (decodedToken) {
+        const userRole = getUserRole(data.token);
+        const userName = getUserName(data.token);
+        const userId = getUserId(data.token);
+        
+        // Store user info in localStorage
+        localStorage.setItem('userRole', userRole);
+        localStorage.setItem('userName', userName);
+        localStorage.setItem('userId', userId);
+        
+        // Update auth context
+        login();
+        
+        // Navigate based on role
+        if (userRole === 'Admin') {
+          navigate('/admin');
+          toast({
+            title: "Signup successful!",
+            description: `Welcome, ${userName}!`,
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+        } else {
+          navigate('/');
+          toast({
+            title: "Signup successful!",
+            description: `Welcome, ${userName}!`,
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+        }
+      } else {
+        throw new Error('Invalid token received');
+      }
     } catch (error) {
       console.error('Error during sign-up:', error);
-      alert(error.message); // Show the error message to the user
+      toast({
+        title: "Signup failed",
+        description: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <Flex
       minH={'100vh'}
@@ -143,13 +197,6 @@ const Signup = () => {
                   </Text>
                 </Link>
               </Text>
-              {/* Show OTP Link only after sign-up is successful */}
-              {isSignUpSuccessful && (
-                <Text textAlign={'center'} mt={4}>
-                  Please verify your email using the OTP sent to{' '}
-                  <strong>{email}</strong>.
-                </Text>
-              )}
             </Stack>
           </Stack>
         </Box>
