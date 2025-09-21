@@ -10,77 +10,110 @@ import {
   Button,
   Badge,
   useColorModeValue,
+  Link,
 } from '@chakra-ui/react'
 
-export default function SocialProfileSimple({ name, username, avatar, description, badges = [], linkedin }) {
+export default function SocialProfileSimple({
+  name, // required
+  role, // required
+  contact, // required
+  username,
+  avatar,
+  description,
+  badges = [],
+  linkedin,
+}) {
   return (
-    <Center py={6}>
+    <Center py={4}>
       <Box
-        maxW={'320px'}
+        maxW={'280px'}       // ⬅ smaller width
         w={'full'}
         bg={useColorModeValue('white', 'gray.900')}
-        boxShadow={'2xl'}
-        rounded={'lg'}
-        p={6}
-        textAlign={'center'}
+        boxShadow={'lg'}     // ⬅ lighter shadow
+        rounded={'md'}       // ⬅ smaller radius
+        p={4}                // ⬅ less padding
+        textAlign={'left'}
       >
-        <Avatar
-          size={'xl'}
-          src={avatar}
-          name={name}
-          mb={4}
-          pos={'relative'}
-          _after={{
-            content: '""',
-            w: 4,
-            h: 4,
-            bg: 'green.300',
-            border: '2px solid white',
-            rounded: 'full',
-            pos: 'absolute',
-            bottom: 0,
-            right: 3,
-          }}
-        />
-        <Heading fontSize={'2xl'} fontFamily={'body'}>
+        {/* Avatar (optional) */}
+        {avatar && (
+          <Avatar
+            size={'lg'}      // ⬅ smaller avatar
+            src={avatar}
+            name={name}
+            mb={3}
+          />
+        )}
+
+        <Heading fontSize={'lg'} fontFamily={'body'}>
           {name}
         </Heading>
-        <Text fontWeight={600} color={'gray.500'} mb={4}>
-          {username}
-        </Text>
-        <Text minH="60px" maxH={60} color={useColorModeValue('gray.700', 'gray.400')} px={3}>
-          {description}
+
+        <Text fontSize="sm" fontWeight={600} color={'gray.600'} mb={1}>
+          {role}
         </Text>
 
-        <Stack align={'center'} justify={'center'} direction={'row'} mt={6} flexWrap="wrap">
-          {badges.map((badge, i) => (
-            <Badge
-              key={i}
-              px={2}
-              py={1}
-              m={0.5}
-              bg={useColorModeValue('gray.50', 'gray.800')}
-              fontWeight={'400'}
-            >
-              #{badge}
-            </Badge>
-          ))}
-        </Stack>
+        {username && (
+          <Text fontSize="xs" fontWeight={500} color={'gray.500'} mb={2}>
+            {username}
+          </Text>
+        )}
 
-        <Stack mt={8}>
-          <Button
-            fontSize={'sm'}
-            rounded={'full'}
-            bg={'brand.500'}
-            color={'white'}
-            onClick={() => window.open(linkedin, '_blank')}
-            boxShadow={'0px 1px 25px -5px rgb(66 153 225 / 48%), 0 10px 10px -5px rgb(66 153 225 / 43%)'}
-            _hover={{ bg: 'blue.500' }}
-            _focus={{ bg: 'blue.500' }}
+        {description && (
+          <Text
+            fontSize="sm"
+            minH="40px"
+            maxH={40}
+            color={useColorModeValue('gray.700', 'gray.400')}
+            px={2}
           >
-            Connect
-          </Button>
-        </Stack>
+            {description}
+          </Text>
+        )}
+
+        {badges.length > 0 && (
+          <Stack
+            align={'center'}
+            justify={'center'}
+            direction={'row'}
+            mt={3}
+            flexWrap="wrap"
+            spacing={1}
+          >
+            {badges.map((badge, i) => (
+              <Badge
+                key={i}
+                px={1.5}
+                py={0.5}
+                m={0.5}
+                fontSize="0.7em"
+                bg={useColorModeValue('gray.50', 'gray.800')}
+              >
+                #{badge}
+              </Badge>
+            ))}
+          </Stack>
+        )}
+
+        {/* Contact */}
+        <Text mt={3} fontSize="sm" color={'blue.500'} fontWeight="bold">
+          <Link href={contact} isExternal>
+            {contact}
+          </Link>
+        </Text>
+
+        {linkedin && (
+          <Stack mt={3}>
+            <Button
+              fontSize={'xs'}
+              rounded={'full'}
+              size="sm"
+              variant="outline"
+              onClick={() => window.open(linkedin, '_blank')}
+            >
+              LinkedIn
+            </Button>
+          </Stack>
+        )}
       </Box>
     </Center>
   )

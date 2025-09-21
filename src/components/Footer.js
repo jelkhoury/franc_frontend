@@ -15,9 +15,17 @@ import { Link as ChakraLink } from '@chakra-ui/react';
 
 
 const Logo = () => (
-  <Link to="/">
-    <chakra.img src="/assets/logos/ccdlogo.png" alt="Franc Platform Logo" height="60px" />
-  </Link>
+    <a
+      href="https://ccd.ua.edu.lb/center-for-career-development/home"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <chakra.img
+        src="/assets/logos/ccdlogo.png"
+        alt="Franc Platform Logo"
+        height="60px"
+      />
+    </a>
 );
 
 const SocialButton = ({ children, label, href }) => {

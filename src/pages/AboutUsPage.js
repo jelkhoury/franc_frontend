@@ -5,6 +5,7 @@ import {
   Flex,
   Image,
   Stack,
+  SimpleGrid 
 } from '@chakra-ui/react';
 import Footer from '../components/Footer';
 import SocialProfileSimple from '../components/SocialProfileSimple';
@@ -15,43 +16,43 @@ const MotionBox = motion(Box);
 const teamMembers = [
   {
     name: "Fouad Abdallah",
-    role: "CCD Director",
+    role: "CCD Director – at Antonine University ",
     image: "/assets/images/Fouad.jpg",
-    description: "Leading the CCD Department.",
-    linkedin: "https://www.linkedin.com/in/fouad-r-abdallah/",
-    badges: ["Leadership", "CCD"],
+    contact: <>fouad.abdallah@ua.edu.lb<br />Ext: 1130</>,
   },
   {
     name: "Elie Najem",
-    role: "CCD Officer",
+    role: "CCD Coordinator – at Antonine University",
     image: "/assets/images/Elie.jpg",
-    description: "Facilitating collaboration between CCD and CS.",
-    linkedin: "https://www.linkedin.com/in/elienajm/",
-    badges: ["CCD", "Advising"],
+    contact: <>e.najem@ua.edu.lb<br />Ext: 1131</>,
+
+  },
+    {
+    name: "Karen Souki",
+    role: "CCD Officer – at Antonine University",
+    image: "/assets/images/Elie.jpg",
+    contact: <>karen.souki@ua.edu.lb<br />Ext: 1133</>,
+
   },
   {
     name: "Charbel Gemayel",
-    role: "Head of CS Department",
+    role: "Head of CS Department – at Antonine University",
     image: "/assets/images/Charbel.jpg",
-    description: "Supervising the development of Franc.",
-    linkedin: "https://www.linkedin.com/in/charbel-el-gemayel-1105ab203/",
-    badges: ["Supervision", "Academic"],
-  },
-  {
-    name: "Rani Hijazi",
-    role: "Developer",
-    image: "/assets/images/Rani Hijazi.jpg",
-    description: "One of the developers behind the Franc project.",
-    linkedin: "https://www.linkedin.com/in/rani-hijazi-903181270/",
-    badges: ["React", "AI", "Backend"],
+    contact: <>c.gemayel@ua.edu.lb<br />Ext: 1100</>,
   },
   {
     name: "Wadih Issa",
     role: "Developer",
     image: "/assets/images/Wadih Issa.jpg",
-    description: "One of the developers behind the Franc project.",
+    contact: "wadih_issa@outlook.com",
     linkedin: "https://www.linkedin.com/in/wadih-issa-6b2a801a8/",
-    badges: ["Frontend", "UI/UX", "AI"],
+  },
+  {
+    name: "Rani Hijazi",
+    role: "Developer",
+    image: "/assets/images/Rani Hijazi.jpg",
+    contact: "rani_hijazy@outlook.com",
+    linkedin: "https://www.linkedin.com/in/rani-hijazi-903181270/",
   },
 ];
 
@@ -72,7 +73,7 @@ const AboutUsPage = () => {
         >
           {/* Right - Image */}
           <Image
-            src="/assets/images/about_us.svg"
+            src="/assets/images/about_us.gif"
             alt="Team Illustration"
             maxW="450px"
             objectFit="contain"
@@ -92,15 +93,12 @@ const AboutUsPage = () => {
             borderColor="gray.100"
           >
             <Heading size="xl" mb={4}>
-              About the Project Team - Franc
+              About Franc
             </Heading>
 
             <Text fontSize="lg" color="gray.600" lineHeight="1.8">
-              Franc is a project developed through collaboration between the CCD
-              and CS departments. It was supported by Mr. Fouad Abdallah and
-              Instructor Elie Najem from CCD, and supervised by Dr. Charbel
-              Gemayel, Head of CS. The development was carried out by alumni
-              Rani Hijazi and Wadih Issa.
+              FRANC is the first digital career advisor in Lebanon, created by the Center for Career Development (CCD) in collaboration with the Department of Computer Science at the Faculty of Engineering and Technology (FET) and its alumni
+
             </Text>
           </Box>
         </Flex>
@@ -109,10 +107,14 @@ const AboutUsPage = () => {
       {/* Team Section with Motion */}
       <Box px={6} py={16} bg="white">
         <Heading size="lg" textAlign="center" mb={10} color="gray.700">
-          Meet Our Team Members
+          Members
         </Heading>
 
-        <Flex wrap="wrap" justify="center" gap={6}>
+         <SimpleGrid
+            columns={{ base: 1, sm: 2, md: 6 }}  
+            spacing={6}
+            justifyItems="center"
+          >
           {teamMembers.map((member, idx) => (
             <MotionBox
               key={idx}
@@ -125,15 +127,13 @@ const AboutUsPage = () => {
             >
               <SocialProfileSimple
                 name={member.name}
-                username={member.role}
-                avatar={member.image}
-                description={member.description}
-                badges={member.badges}
+                role={member.role}
+                contact={member.contact}
                 linkedin={member.linkedin}
               />
             </MotionBox>
           ))}
-        </Flex>
+       </SimpleGrid>
       </Box>
 
       <Footer />
