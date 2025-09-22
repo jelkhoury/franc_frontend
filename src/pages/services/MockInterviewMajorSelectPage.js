@@ -135,59 +135,75 @@ const MockInterviewMajorSelectPage = () => {
   const toast = useToast();
   const navigate = useNavigate();
 
-  // Fetch faculties and majors from API
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       setLoading(true);
-  //       const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
-        
-  //       // Fetch faculties
-  //       const facultiesResponse = await fetch(`${baseUrl}/BlobStorage/get-faculties`);
-  //       if (!facultiesResponse.ok) {
-  //         throw new Error('Failed to fetch faculties');
-  //       }
-  //       const facultiesData = await facultiesResponse.json();
-  //       setFaculties(facultiesData);
-
-  //       // Fetch majors
-  //       const majorsResponse = await fetch(`${baseUrl}/BlobStorage/get-majors`);
-  //       if (!majorsResponse.ok) {
-  //         throw new Error('Failed to fetch majors');
-  //       }
-  //       const majorsData = await majorsResponse.json();
-  //       setMajors(majorsData);
-  //       setFilteredMajors(majorsData);
-  //     } catch (err) {
-  //       console.error('Error fetching data:', err);
-  //       setError(err.message);
-  //       toast({
-  //         title: "Error loading data",
-  //         description: err.message,
-  //         status: "error",
-  //         duration: 5000,
-  //         isClosable: true,
-  //       });
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchData();
-  // }, [toast]);
-
+  // Fetch faculties and majors from API with fallback to dummy data
   useEffect(() => {
-  setLoading(true);
-  try {
-    setFaculties(dummyFaculties);
-    setMajors(dummyMajors);
-    setFilteredMajors(dummyMajors);
-  } catch (err) {
-    setError("Failed to load dummy data");
-  } finally {
-    setLoading(false);
-  }
-}, []);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+        
+        let facultiesData = [];
+        let majorsData = [];
+        let apiSuccess = false;
+
+        try {
+          // Try to fetch faculties
+          const facultiesResponse = await fetch(`${baseUrl}/BlobStorage/get-faculties`);
+          if (facultiesResponse.ok) {
+            facultiesData = await facultiesResponse.json();
+            if (facultiesData && facultiesData.length > 0) {
+              apiSuccess = true;
+            }
+          }
+
+          // Try to fetch majors
+          const majorsResponse = await fetch(`${baseUrl}/BlobStorage/get-majors`);
+          if (majorsResponse.ok) {
+            majorsData = await majorsResponse.json();
+            if (majorsData && majorsData.length > 0) {
+              apiSuccess = true;
+            }
+          }
+        } catch (apiError) {
+          console.warn('API endpoints not available, using dummy data:', apiError.message);
+        }
+
+        // Use API data if available, otherwise fallback to dummy data
+        if (apiSuccess && facultiesData.length > 0 && majorsData.length > 0) {
+          setFaculties(facultiesData);
+          setMajors(majorsData);
+          setFilteredMajors(majorsData);
+          console.log('Using API data for faculties and majors');
+        } else {
+          // Fallback to dummy data
+          setFaculties(dummyFaculties);
+          setMajors(dummyMajors);
+          setFilteredMajors(dummyMajors);
+          console.log('Using dummy data for faculties and majors');
+          
+          // Show a subtle notification that dummy data is being used
+          toast({
+            title: "Using sample data",
+            description: "API endpoints are not available. Showing sample majors for demonstration.",
+            status: "info",
+            duration: 3000,
+            isClosable: true,
+          });
+        }
+      } catch (err) {
+        console.error('Error in data loading:', err);
+        // Final fallback to dummy data
+        setFaculties(dummyFaculties);
+        setMajors(dummyMajors);
+        setFilteredMajors(dummyMajors);
+        setError(null); // Clear any previous errors since we have fallback data
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [toast]);
 
   // Filter majors based on faculty and search term
   useEffect(() => {

@@ -651,7 +651,10 @@ const MockInterviewQuestionsPage = () => {
                           setSelectedTitle(q.title);
                           playQuestionPrompt(q.videoUrl, q.title, idx);
                         }}
-                        isDisabled={recording || countdownActive}
+                        isDisabled={
+                          (recording && idx === currentQuestionIdx) || 
+                          (countdownActive && idx === currentQuestionIdx)
+                        }
                       >
                         Show
                       </Button>
