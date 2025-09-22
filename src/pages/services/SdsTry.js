@@ -19,8 +19,16 @@ import {
   Alert,
   AlertIcon,
   Progress,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
+import { WarningIcon } from "@chakra-ui/icons";
 
 import confetti from "canvas-confetti";
 
@@ -80,14 +88,62 @@ const SdsTry = () => {
   const [error, setError] = useState(null);
   const [sections, setSections] = useState([]);
   const [answers, setAnswers] = useState({});
+  const [showExitWarning, setShowExitWarning] = useState(false);
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
 
   const toast = useToast();
 
   const cardBg = useColorModeValue("white", "gray.800");
   const cardBorder = useColorModeValue("gray.200", "gray.700");
 
+  // Browser back button warning handlers
+  const handleExitConfirm = () => {
+    setShowExitWarning(false);
+    navigate("/self-directed-search");
+  };
+
+  const handleExitCancel = () => {
+    setShowExitWarning(false);
+  };
+
   const totalQs = sections.reduce((sum, s) => sum + ((s.questions || []).length), 0);
   const answered = Object.keys(answers).length;
+
+  // Check if all questions are answered
+  const isAllQuestionsAnswered = () => {
+    return sections.every(section => 
+      (section.questions || []).every(q => {
+        const answer = answers[q.id];
+        if (q.type === 5) {
+          // Text questions need non-empty text
+          return answer && answer.toString().trim().length > 0;
+        } else if (q.type === 2) {
+          // Multi-select questions need at least one selection
+          return Array.isArray(answer) && answer.length > 0;
+        } else {
+          // Single select, slider, etc.
+          return answer !== null && answer !== undefined && answer !== "";
+        }
+      })
+    );
+  };
+
+  const allAnswered = isAllQuestionsAnswered();
+
+  // Check if a specific question is answered
+  const isQuestionAnswered = (question) => {
+    const answer = answers[question.id];
+    if (question.type === 5) {
+      // Text questions need non-empty text
+      return answer && answer.toString().trim().length > 0;
+    } else if (question.type === 2) {
+      // Multi-select questions need at least one selection
+      return Array.isArray(answer) && answer.length > 0;
+    } else {
+      // Single select, slider, etc.
+      return answer !== null && answer !== undefined && answer !== "";
+    }
+  };
 
   const riasecMeta = {
     Realistic: { emoji: "🛠️", color: "teal" },
@@ -123,8 +179,59 @@ const SdsTry = () => {
     fetchSections();
   }, [baseUrl]);
 
+  // Browser back button and page unload warning
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "Are you sure you want to leave? Your answers will be lost and the test will be incomplete.";
+      return "Are you sure you want to leave? Your answers will be lost and the test will be incomplete.";
+    };
+
+    const handlePopState = (e) => {
+      e.preventDefault();
+      setShowExitWarning(true);
+      // Push the current state back to prevent navigation
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    // Add event listeners
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", handlePopState);
+    
+    // Push initial state to enable popstate detection
+    window.history.pushState(null, "", window.location.href);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
 
   const handleSubmit = async () => {
+    // Show validation errors if not all questions are answered
+    if (!allAnswered) {
+      setShowValidationErrors(true);
+      toast({
+        title: "Incomplete Assessment",
+        description: "Please answer all questions before submitting.",
+        status: "warning",
+        duration: 5000,
+        isClosable: true
+      });
+      return;
+    }
+
+    await performSubmission();
+  };
+
+  const handleTestSubmit = async () => {
+    // Skip validation for testing purposes
+    await performSubmission();
+  };
+
+  const performSubmission = async () => {
     const userId = 1;
     setSubmitting(true);
 
@@ -295,10 +402,6 @@ console.log("SDS response (normalized):", { code, responses, data });
                     rounded="md"
                     mb={4}
                     bg={cardBg}
-                    bgImage={`url('${theme.bgFile}')`}
-                    bgRepeat="no-repeat"
-                    bgSize="cover"
-                    bgPosition="center"
                     boxShadow={`0 0 0 1px rgba(0,0,0,0.03), 0 6px 20px -8px ${theme.color}40`}
                   >
                   <h2>
@@ -323,41 +426,34 @@ console.log("SDS response (normalized):", { code, responses, data });
 <AccordionPanel
   pb={6}
   px={{ base: 4, md: 6 }}
-  position="relative"
-  overflow="hidden"
   roundedBottom="md"
 >
-  {/* underlay bg */}
-  <Box
-    aria-hidden
-    position="absolute"
-    inset="0"
-    bgImage={`url('${theme.bgFile}')`}
-    bgRepeat="no-repeat"
-    bgSize="cover"
-    bgPosition="center"
-    opacity={0.3}
-    pointerEvents="none"
-    zIndex={0}
-  />
-
   {/* content with solid white bg */}
   <Box
-    position="relative"
-    zIndex={1}
     bg="white"
     rounded="md"
     p={4}
     boxShadow="sm"
-      border="0.5px solid"
-  borderColor={theme.color}
+    border="0.5px solid"
+    borderColor={theme.color}
   >
     <VStack align="stretch" spacing={6}>
-      {(section.questions || []).map((q, idx) => (
+      {(section.questions || []).map((q, idx) => {
+        const isAnswered = isQuestionAnswered(q);
+        const showError = showValidationErrors && !isAnswered;
+        return (
         <Box key={q.id}>
+          <HStack spacing={2} mb={2}>
+            <Text fontWeight="semibold" color={showError ? "red.500" : "inherit"}>
+              {idx + 1}. {q.text}
+            </Text>
+            {showError && (
+              <WarningIcon color="red.500" boxSize={4} />
+            )}
+          </HStack>
                      <QuestionField
              type={q.type}
-             text={`${idx + 1}. ${q.text}`}
+             text=""
              value={q.type === 4 ? (() => {
              
                if (answers[q.id]) {
@@ -392,7 +488,8 @@ console.log("SDS response (normalized):", { code, responses, data });
            />
           <Divider mt={4} />
         </Box>
-      ))}
+        );
+      })}
     </VStack>
   </Box>
 </AccordionPanel>
@@ -404,19 +501,78 @@ console.log("SDS response (normalized):", { code, responses, data });
 
         {!loading && !error && sections.length > 0 && (
           <Box textAlign="center">
-            <Button 
-              colorScheme="blue" 
-              size="lg" 
-              mt={6} 
-              onClick={handleSubmit}
-              isLoading={submitting}
-              loadingText="Submitting..."
-              disabled={submitting}
-            >
-              Submit
-            </Button>
+            <VStack spacing={4}>
+              <Button 
+                colorScheme="blue" 
+                size="lg" 
+                mt={6} 
+                onClick={handleSubmit}
+                isLoading={submitting}
+                loadingText="Submitting..."
+                disabled={submitting}
+              >
+                Submit
+              </Button>
+              
+              {/* Test Submit Button - for testing purposes */}
+              <Button 
+                colorScheme="orange" 
+                size="md" 
+                variant="outline"
+                onClick={handleTestSubmit}
+                isLoading={submitting}
+                loadingText="Submitting..."
+                disabled={submitting}
+              >
+                Submit Test (Skip Validation)
+              </Button>
+            </VStack>
           </Box>
         )}
+
+        {/* Exit Warning Modal */}
+        <Modal isOpen={showExitWarning} onClose={handleExitCancel} isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader color="red.500">
+              ⚠️ Warning: Leaving Test
+            </ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <Alert status="error" mb={4}>
+                <AlertIcon />
+                <Text fontWeight="bold">Your answers will be lost!</Text>
+              </Alert>
+              
+              <VStack align="stretch" spacing={4}>
+                <Text>
+                  You are about to leave the SDS assessment. If you continue:
+                </Text>
+                
+                <VStack align="stretch" spacing={2}>
+                  <Text>• <strong>All your answers will be deleted</strong></Text>
+                  <Text>• <strong>The test will be marked as incomplete</strong></Text>
+                  <Text>• <strong>You'll need to start over from the beginning</strong></Text>
+                </VStack>
+                
+                <Alert status="warning" mt={4}>
+                  <AlertIcon />
+                  <Text fontSize="sm">
+                    <strong>Progress:</strong> You have answered {answered} out of {totalQs} questions ({progressPct}% complete).
+                  </Text>
+                </Alert>
+              </VStack>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={handleExitCancel}>
+                Stay and Continue
+              </Button>
+              <Button colorScheme="red" onClick={handleExitConfirm}>
+                Leave Anyway
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </Box>
     </Box>
   );

@@ -16,6 +16,17 @@ import {
   Link,
   Button,
   useColorModeValue,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
+  Alert,
+  AlertIcon,
+  List,
+  ListItem,
 } from "@chakra-ui/react";
 import { TimeIcon, InfoIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
@@ -36,11 +47,25 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
   const [videos, setVideos] = useState([]);
   const [selectedVideoId, setSelectedVideoId] = useState(null);
   const [selectedEmbedSrc, setSelectedEmbedSrc] = useState(null);
+  const [showAttentionModal, setShowAttentionModal] = useState(false);
   const apiKey = useMemo(() => process.env.REACT_APP_YOUTUBE_API_KEY, []);
   const navigate = useNavigate();
 
   const cardBg = useColorModeValue("white", "gray.800");
   const cardBorder = useColorModeValue("gray.200", "gray.700");
+
+  const handleContinueClick = () => {
+    setShowAttentionModal(true);
+  };
+
+  const handleStartTest = () => {
+    setShowAttentionModal(false);
+    navigate("/self-directed-search/try");
+  };
+
+  const handleCancelTest = () => {
+    setShowAttentionModal(false);
+  };
 
   const getYouTubeId = (url) => {
     try {
@@ -267,11 +292,65 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
             backgroundColor="brand.500"
             color="white"
             size="lg"
-            onClick={() => navigate("/self-directed-search/try")}
+            onClick={handleContinueClick}
           >
             Continue
           </Button>
         </Flex>
+
+        {/* Attention Modal */}
+        <Modal isOpen={showAttentionModal} onClose={handleCancelTest} isCentered size="lg">
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader color="orange.500">
+              ⚠️ Attention Required
+            </ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <Alert status="warning" mb={4}>
+                <AlertIcon />
+                <Text fontWeight="bold">Important: Test will start immediately!</Text>
+              </Alert>
+              
+              <VStack align="stretch" spacing={4}>
+                <Text fontSize="lg" fontWeight="semibold">
+                  Before you begin the SDS Assessment:
+                </Text>
+                
+                <List spacing={2}>
+                  <ListItem>
+                    <Text>• <strong>Check your internet connection</strong> - ensure it's stable</Text>
+                  </ListItem>
+                  <ListItem>
+                    <Text>• <strong>Find a quiet place</strong> - minimize distractions</Text>
+                  </ListItem>
+                  <ListItem>
+                    <Text>• <strong>Set aside 20-25 minutes</strong> - complete the test in one session</Text>
+                  </ListItem>
+                  <ListItem>
+                    <Text>• <strong>Do not navigate away</strong> - if you go back, the test will be finished</Text>
+                  </ListItem>
+                </List>
+                
+                <Alert status="error" mt={4}>
+                  <AlertIcon />
+                  <Text fontSize="sm">
+                    <strong>Warning:</strong> Once you start, navigating back or closing the browser will end your session. 
+                    Make sure you're ready to complete the entire assessment.
+                  </Text>
+                </Alert>
+              </VStack>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={handleCancelTest}>
+                I'm Not Ready
+              </Button>
+              <Button colorScheme="orange" onClick={handleStartTest}>
+                I'm Ready - Start Test
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </Box>
     </Box>
   );

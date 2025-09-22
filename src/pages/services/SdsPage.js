@@ -20,9 +20,9 @@ const SdsPage = () => {
 
   const handleTryNowClick = () => {
     if (isLoggedIn) {
-      onOpen();
-    } else {
       navigate("/self-directed-search/brief");
+    } else {
+      onOpen();
     }
   };
 

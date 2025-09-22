@@ -191,29 +191,63 @@ const QuestionField = ({
     case "slider": {
       const { min = 0, max = 10, step = 1 } = sliderProps || {};
       const num = typeof value === "number" ? value : Number(value ?? min);
+      
+      // Generate divider marks
+      const marks = [];
+      for (let i = min; i <= max; i += step) {
+        marks.push(i);
+      }
+      
       return (
         <Box>
           {upper}
-          <Slider
-            value={num}
-            min={min}
-            max={max}
-            step={step}
-            onChange={(v) => onChange(v)}
-            colorScheme={colorScheme}
-          >
-            <SliderTrack>
-              <SliderFilledTrack bg={highlightColor} />
-            </SliderTrack>
-            <SliderThumb boxSize={sliderFaces ? 8 : 4} bg={highlightColor}>
-              {sliderFaces && (
-                <Text fontSize="lg" color="white">
-                  {num >= max * 0.8 ? "🤩" : num >= max * 0.6 ? "🙂" : num >= max * 0.4 ? "😐" : num >= max * 0.2 ? "🙁" : "😣"}
-                </Text>
-              )}
-            </SliderThumb>
-          </Slider>
-          <Text mt={2} fontSize="sm" color="gray.600">{num}</Text>
+          <Box position="relative">
+            <Slider
+              value={num}
+              min={min}
+              max={max}
+              step={step}
+              onChange={(v) => onChange(v)}
+              colorScheme={colorScheme}
+            >
+              <SliderTrack>
+                <SliderFilledTrack bg={highlightColor} />
+              </SliderTrack>
+              <SliderThumb boxSize={sliderFaces ? 8 : 4} bg={highlightColor}>
+                {sliderFaces && (
+                  <Text fontSize="lg" color="white">
+                    {num >= max * 0.8 ? "🤩" : num >= max * 0.6 ? "🙂" : num >= max * 0.4 ? "😐" : num >= max * 0.2 ? "🙁" : "😣"}
+                  </Text>
+                )}
+              </SliderThumb>
+            </Slider>
+            
+            {/* Divider marks */}
+            <Box position="relative" mt={2}>
+              <Box position="relative" height="20px">
+                {marks.map((mark) => (
+                  <Box
+                    key={mark}
+                    position="absolute"
+                    left={`${((mark - min) / (max - min)) * 100}%`}
+                    transform="translateX(-50%)"
+                    textAlign="center"
+                  >
+                    <Box
+                      width="2px"
+                      height="8px"
+                      bg="gray.400"
+                      mx="auto"
+                      mb={1}
+                    />
+                    <Text fontSize="xs" color="gray.600" fontWeight="medium">
+                      {mark}
+                    </Text>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          </Box>
         </Box>
       );
     }
