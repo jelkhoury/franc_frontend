@@ -26,6 +26,9 @@ import SdsOnBoarding from './pages/services/SdsOnBoarding';
 import SdsTry from './pages/services/SdsTry';
 import SdsFunDemo from './pages/services/SdsFunDemo';
 import SdsResult from './pages/services/SdsResult';
+import DemoMockInterviewStandalone from './pages/demo/DemoMockInterviewStandalone';
+
+
 
 const App = () => {
   return (
@@ -86,6 +89,7 @@ const MainLayout = () => {
         <Route path="/self-directed-search/try" element={<SdsTry />} />
         <Route path="/self-directed-search/result" element={<SdsResult />} />
         <Route path="/sds/fun-demo" element={<SdsFunDemo />} />
+        <Route path="/mock/fun-demo" element={<DemoMockInterviewStandalone />} />
       </Routes>
     </>
   );

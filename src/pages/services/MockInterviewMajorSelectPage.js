@@ -18,6 +18,46 @@ import { useState, useEffect } from "react";
 import Footer from "../../components/Footer";
 import { useNavigate } from "react-router-dom";
 
+// Dummy faculties
+const dummyFaculties = [
+  { id: 1, name: "Faculty of Engineering" },
+  { id: 2, name: "Faculty of Business" },
+  { id: 3, name: "Faculty of Arts & Sciences" },
+];
+
+// Dummy majors
+const dummyMajors = [
+  {
+    id: 1,
+    facultyId: 1,
+    name: "Computer Science",
+    description: "Focus on software development, algorithms, and systems.",
+    urlImage: "/assets/images/cs_major.svg",
+  },
+  {
+    id: 2,
+    facultyId: 1,
+    name: "Electrical Engineering",
+    description: "Learn about circuits, electronics, and power systems.",
+    urlImage: "/assets/images/ee_major.svg",
+  },
+  {
+    id: 3,
+    facultyId: 2,
+    name: "Business Administration",
+    description: "Study management, finance, and entrepreneurship.",
+    urlImage: "/assets/images/business_major.svg",
+  },
+  {
+    id: 4,
+    facultyId: 3,
+    name: "Psychology",
+    description: "Explore human behavior, cognition, and mental health.",
+    urlImage: "/assets/images/psych_major.svg",
+  },
+];
+
+
 const FeaturedCard = () => (
   <Box
     bg="white"
@@ -96,45 +136,58 @@ const MockInterviewMajorSelectPage = () => {
   const navigate = useNavigate();
 
   // Fetch faculties and majors from API
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       setLoading(true);
+  //       const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
         
-        // Fetch faculties
-        const facultiesResponse = await fetch(`${baseUrl}/BlobStorage/get-faculties`);
-        if (!facultiesResponse.ok) {
-          throw new Error('Failed to fetch faculties');
-        }
-        const facultiesData = await facultiesResponse.json();
-        setFaculties(facultiesData);
+  //       // Fetch faculties
+  //       const facultiesResponse = await fetch(`${baseUrl}/BlobStorage/get-faculties`);
+  //       if (!facultiesResponse.ok) {
+  //         throw new Error('Failed to fetch faculties');
+  //       }
+  //       const facultiesData = await facultiesResponse.json();
+  //       setFaculties(facultiesData);
 
-        // Fetch majors
-        const majorsResponse = await fetch(`${baseUrl}/BlobStorage/get-majors`);
-        if (!majorsResponse.ok) {
-          throw new Error('Failed to fetch majors');
-        }
-        const majorsData = await majorsResponse.json();
-        setMajors(majorsData);
-        setFilteredMajors(majorsData);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError(err.message);
-        toast({
-          title: "Error loading data",
-          description: err.message,
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  //       // Fetch majors
+  //       const majorsResponse = await fetch(`${baseUrl}/BlobStorage/get-majors`);
+  //       if (!majorsResponse.ok) {
+  //         throw new Error('Failed to fetch majors');
+  //       }
+  //       const majorsData = await majorsResponse.json();
+  //       setMajors(majorsData);
+  //       setFilteredMajors(majorsData);
+  //     } catch (err) {
+  //       console.error('Error fetching data:', err);
+  //       setError(err.message);
+  //       toast({
+  //         title: "Error loading data",
+  //         description: err.message,
+  //         status: "error",
+  //         duration: 5000,
+  //         isClosable: true,
+  //       });
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchData();
-  }, [toast]);
+  //   fetchData();
+  // }, [toast]);
+
+  useEffect(() => {
+  setLoading(true);
+  try {
+    setFaculties(dummyFaculties);
+    setMajors(dummyMajors);
+    setFilteredMajors(dummyMajors);
+  } catch (err) {
+    setError("Failed to load dummy data");
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   // Filter majors based on faculty and search term
   useEffect(() => {
