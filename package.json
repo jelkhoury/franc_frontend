@@ -27,6 +27,7 @@
     "chakra-ui-steps": "^2.2.0",
     "framer-motion": "^12.6.2",
     "jspdf": "^3.0.1",
+    "lottie-react": "^2.4.1",
     "lucide-react": "^0.542.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

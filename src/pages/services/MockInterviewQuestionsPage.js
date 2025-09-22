@@ -1,574 +1,344 @@
+import React, { useState, useRef, useEffect } from 'react';
 import {
-  Box,
-  Button,
-  Heading,
-  Text,
-  VStack,
-  Image,
-  useToast,
-  Spinner,
-  HStack,
-  Flex,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
+  Box, Button, Heading, Text, VStack, HStack, Flex, SimpleGrid, useToast, Spinner,
 } from '@chakra-ui/react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useState, useRef, useEffect, useContext } from 'react';
 import { CheckCircleIcon } from '@chakra-ui/icons';
-import Footer from '../../components/Footer';
 import Webcam from 'react-webcam';
 import { useTimer } from 'react-timer-hook';
+import Footer from '../../components/Footer';
 import { getStoredToken, decodeToken } from '../../utils/tokenUtils';
-import UI from '../../components/UI/UIScreen';
-import InterviewProvider, { InterviewContext } from '../../contexts/InterviewContext/InterviewContext';
-import ChatProvider, { ChatContext } from '../../contexts/ChatContext/ChatContext';
-import InterviewSetup from '../../components/InterviewSetup';
 
-const INTERVIEW_DURATION_MINUTES = 10; // Example: 10 min for the whole interview
-const ANSWER_DURATION_SECONDS = 5; // 1 min per answer
+import Lottie from 'lottie-react';
+import gptTalking from '../../assets/animations/chat_animation.json';
+import fallbackVoiceover from '../../assets/audio/voiceover.m4a';
+
+const INTERVIEW_DURATION_MINUTES = 10;
+const ANSWER_DURATION_SECONDS = 5;
+
+/** Lottie segments @ ~24fps */
+const SEGMENTS = {
+  listening:  [0, 90],  
+  start_talk: [70, 90],
+  talkingA:   [90, 130],
+  talkingB:   [129, 170],
+  talkingC:   [168, 190],
+  thinking:   [206, 273],  // idle
+  end_talk2:  [0, 43],     // post-prompt flourish
+};
+const TRIM = 1;
+const trim = ([s, e]) => [s + TRIM, Math.max(s + TRIM + 1, e - TRIM)];
+const THINKING_LOOP = [trim(SEGMENTS.thinking)];
+const LISTENING_LOOP = [trim(SEGMENTS.listening)];
+const TALKING_CHAIN = [SEGMENTS.talkingA, SEGMENTS.talkingB, SEGMENTS.talkingC].map(trim);
+const END_TALK2_ONCE = [trim(SEGMENTS.end_talk2)];
+const START_TALK_ONCE = [trim(SEGMENTS.start_talk)];
+
+const MODE_COPY = {
+  thinkingLoop: {
+    text: '🤔 idle mode: thinking deep thoughts… about snacks.',
+    bg: 'purple.50', color: 'purple.700'
+  },
+  start_talk: {
+    text: '🎬 warming up… “check, check, 1–2–3.”',
+    bg: 'orange.50', color: 'orange.700'
+  },
+  talkingChain: {
+    text: '🗣️ talking through the prompt—no heckling from the peanut gallery.',
+    bg: 'blue.100', color: 'blue.700'
+  },
+  listeningLoop: {
+    text: '👂 your turn! i’m all ears (metaphorically).',
+    bg: 'green.50', color: 'green.700'
+  },
+  end_talk2: {
+    text: '✨ wrap-up sparkle… aaand scene!',
+    bg: 'pink.50', color: 'pink.700'
+  },
+};
+
+
 
 const MockInterviewQuestionsPage = () => {
   const location = useLocation();
   const major = location.state?.major || 'Nursing & Healthcare';
+  const navigate = useNavigate();
+  const toast = useToast();
+
+  // lottie mode (and a ref so we don't fight with segments)
+  const [mode, setModeState] = useState('thinkingLoop');
+
+  // data
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedVideo, setSelectedVideo] = useState(null);
+
+  // flow
+  const [interviewStarted, setInterviewStarted] = useState(false);
+  const [showThankYou, setShowThankYou] = useState(false);
+  const [canDoMock, setCanDoMock] = useState(true);
+  const [checkingMockStatus, setCheckingMockStatus] = useState(false);
+
+  // prompt/audio
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(null);
   const [selectedTitle, setSelectedTitle] = useState('');
-  const [videoEnded, setVideoEnded] = useState(false);
+  const [audioBlocked, setAudioBlocked] = useState(false);
+  const [countdownActive, setCountdownActive] = useState(false);
+
+  // recording
   const [showRecorder, setShowRecorder] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordedAnswers, setRecordedAnswers] = useState([]); // {questionIdx, blob}
-  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(null);
-  const [mediaRecorder, setMediaRecorder] = useState(null);
   const [recordedChunks, setRecordedChunks] = useState([]);
-  const [saving, setSaving] = useState(false);
-  const [answeredQuestions, setAnsweredQuestions] = useState([]); // [idx]
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [answeredQuestions, setAnsweredQuestions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [interviewDuration, setInterviewDuration] = useState(0); // Duration in seconds
+
+  // timers
+  const [interviewDuration, setInterviewDuration] = useState(0);
   const [interviewStartTime, setInterviewStartTime] = useState(null);
+  const [answerTimerKey, setAnswerTimerKey] = useState(0);
+
+  // refs
   const webcamRef = useRef(null);
-  const toast = useToast();
-  const [webcamReady, setWebcamReady] = useState(false);
-  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-  const [countdownActive, setCountdownActive] = useState(false);
+  const lottieRef = useRef(null);
+  const audioRef = useRef(null);
+  const pendingStartRef = useRef(false); // begin countdown after end_talk2 completes
 
-  const [interviewStarted, setInterviewStarted] = useState(false);
-  const [showThankYou, setShowThankYou] = useState(false);
-  const [displayedQuestions, setDisplayedQuestions] = useState([]);
-  const [canDoMock, setCanDoMock] = useState(true);
-  const [checkingMockStatus, setCheckingMockStatus] = useState(false);
-  const [useAvatarMode, setUseAvatarMode] = useState(true); // Always use avatar mode
-  const [transcribedText, setTranscribedText] = useState(''); // For speech-to-text subtitles
-  const [isTranscribing, setIsTranscribing] = useState(false); // Loading state for transcription
-  const [isListening, setIsListening] = useState(false); // State for when speech recognition is active
-  const navigate = useNavigate();
+  // lottie mode
+  const modeRef = useRef('thinkingLoop'); // 'thinkingLoop' | 'listeningLoop' | 'talkingChain' | 'end_talk2'
 
-  // Contexts
-  const { interviewer, setQuestion } = useContext(InterviewContext);
-  const { startQuestion, playAudioFile, setIsUserInteracted, message, onMessagePlayed } = useContext(ChatContext);
+  // queue helper
+  const queueSegments = (segments, { forceFirst = true } = {}) => {
+    const inst = lottieRef.current;
+    if (!inst || !segments?.length) return;
+    inst.playSegments(segments[0], forceFirst);
+    for (let i = 1; i < segments.length; i++) inst.playSegments(segments[i], false);
+  };
 
-  // Check if user can do mock interview
-  const checkMockInterviewStatus = async () => {
-    try {
-      setCheckingMockStatus(true);
-      const token = getStoredToken();
-      if (!token) {
-        throw new Error('User not authenticated');
-      }
+  const setMode = (m) => {
+    if (modeRef.current === m) return;
+    modeRef.current = m;
+    setModeState(m); // <-- make UI reactive
 
-      const decodedToken = decodeToken(token);
-      if (!decodedToken) {
-        throw new Error('Invalid token');
-      }
-
-      const userId = parseInt(decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
-      
-      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
-      const response = await fetch(`${baseUrl}/Evaluation/can-do-mock/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to check mock interview status');
-      }
-      
-      const data = await response.json();
-      setCanDoMock(data.canDoMock);
-      
-      if (!data.canDoMock) {
-        toast({
-          title: "Cannot Start Interview",
-          description: "You cannot do another interview right now. Please try again later.",
-          status: "warning",
-          duration: 5000,
-          isClosable: true,
-        });
-      }
-    } catch (err) {
-      console.error('Error checking mock interview status:', err);
-      toast({
-        title: "Error",
-        description: err.message,
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setCheckingMockStatus(false);
+    switch (m) {
+      case 'listeningLoop':
+        queueSegments(LISTENING_LOOP, { forceFirst: true });
+        break;
+      case 'talkingChain':
+        queueSegments(TALKING_CHAIN, { forceFirst: true });
+        break;
+      case 'end_talk2':
+        queueSegments(END_TALK2_ONCE, { forceFirst: true });
+        break;
+      case 'start_talk':
+        queueSegments(START_TALK_ONCE, { forceFirst: true });
+        break;
+      case 'thinkingLoop':
+      default:
+        queueSegments(THINKING_LOOP, { forceFirst: true });
+        break;
     }
   };
 
-  // Fetch questions from API
-  useEffect(() => {
-    const fetchQuestions = async () => {
-      try {
-        setLoading(true);
-        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
-        const encodedMajorName = encodeURIComponent(major);
-        const response = await fetch(`${baseUrl}/BlobStorage/random-questions?majorName=${encodedMajorName}&count=5`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch questions');
-        }
-        
-        const questionsData = await response.json();
-        setQuestions(questionsData);
-      } catch (err) {
-        console.error('Error fetching questions:', err);
-        setError(err.message);
-        toast({
-          title: "Error loading questions",
-          description: err.message,
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchQuestions();
-  }, [major, toast]);
-
-  // Check mock interview status on component mount
-  useEffect(() => {
-    checkMockInterviewStatus();
-  }, []);
-
-  // Handle audio completion - close modal and start recording process
-  useEffect(() => {
-    if (message === null && isVideoModalOpen && currentQuestionIdx !== null) {
-      // Audio finished playing, close modal and start recording process
-      setIsVideoModalOpen(false);
-      setVideoEnded(true);
-      setShowRecorder(true);
-      setWebcamReady(false);
-      setAnswerTimerExpired(false);
-
-      // Start countdown before recording
-      let countdown = 5;
-      toast({
-        title: `Starting in ${countdown}...`,
-        status: 'info',
-        duration: 1000,
-        isClosable: false,
-      });
-
-      const interval = setInterval(() => {
-        countdown -= 1;
-        if (countdown > 0) {
-          toast({
-            title: `Starting in ${countdown}...`,
-            status: 'info',
-            duration: 1000,
-            isClosable: false,
-          });
-        } else {
-          clearInterval(interval);
-          setCountdownActive(false);
-          // Wait for webcam to be ready, then start recording
-          if (webcamRef.current?.video?.srcObject) {
-            setWebcamReady(true);
-            handleStartRecording();
-            restartAnswerTimer(new Date(Date.now() + ANSWER_DURATION_SECONDS * 1000), true);
-            toast({ title: 'Recording started', status: 'info', duration: 2000 });
-          } else {
-            toast({ title: 'Waiting for webcam...', status: 'warning', duration: 2000 });
-          }
-        }
-      }, 1000);
-    }
-  }, [message, isVideoModalOpen, currentQuestionIdx]);
-
-  // Speech-to-text function for audio transcription
-  const transcribeAudio = (audioUrl) => {
-    return new Promise((resolve, reject) => {
-      try {
-        // Create audio element to analyze the audio
-        const audio = new Audio(audioUrl);
-        
-        // Check if Web Speech API is supported
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-          console.warn('Speech recognition not supported');
-          setTranscribedText(''); // No fallback, show empty
-          resolve('');
-          return;
-        }
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
-
-        let finalTranscript = '';
-
-        recognition.onstart = () => {
-          console.log('Speech recognition started');
-          setIsListening(true);
-          // Don't show "Listening..." - let transcribed text appear naturally
-        };
-
-        recognition.onresult = (event) => {
-          let interimTranscript = '';
-          
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-              finalTranscript += transcript + ' ';
-            } else {
-              interimTranscript += transcript;
-            }
-          }
-          
-          // Update with both final and interim results
-          const currentText = finalTranscript + interimTranscript;
-          setTranscribedText(currentText.trim());
-        };
-
-        recognition.onend = () => {
-          console.log('Speech recognition ended');
-          setIsListening(false);
-          if (finalTranscript.trim()) {
-            setTranscribedText(finalTranscript.trim());
-            resolve(finalTranscript.trim());
-          } else {
-            setTranscribedText(''); // No fallback, show empty
-            resolve('');
-          }
-        };
-
-        recognition.onerror = (event) => {
-          console.error('Speech recognition error:', event.error);
-          setIsListening(false);
-          setTranscribedText(''); // No fallback, show empty
-          resolve('');
-        };
-
-        // Set up audio event listeners
-        audio.addEventListener('canplaythrough', () => {
-          console.log('Audio ready to play');
-        });
-
-        audio.addEventListener('play', () => {
-          console.log('Audio started playing');
-          recognition.start();
-        });
-
-        audio.addEventListener('ended', () => {
-          console.log('Audio ended');
-          recognition.stop();
-        });
-
-        audio.addEventListener('error', (err) => {
-          console.error('Audio error:', err);
-          setTranscribedText('');
-          resolve('');
-        });
-
-        // Play the audio silently (volume 0) for transcription
-        audio.volume = 0;
-        audio.crossOrigin = 'anonymous';
-        
-        // Start playing the audio
-        audio.play().catch(err => {
-          console.error('Audio play failed:', err);
-          setTranscribedText(''); // No fallback, show empty
-          resolve('');
-        });
-
-      } catch (error) {
-        console.error('Transcription error:', error);
-        setTranscribedText(''); // No fallback, show empty
-        resolve('');
-      }
-    });
-  };
-
-  // Submit recorded videos to backend
-  const handleSubmitVideos = async () => {
-    if (recordedAnswers.length === 0) {
-      toast({
-        title: "No recordings to submit",
-        description: "Please record at least one answer before submitting.",
-        status: "warning",
-        duration: 3000,
-        isClosable: true,
-      });
+  const onLottieComplete = () => {
+    // keep looping current mode
+    if (modeRef.current === 'thinkingLoop') queueSegments(THINKING_LOOP, { forceFirst: true });
+    if (modeRef.current === 'listeningLoop') queueSegments(LISTENING_LOOP, { forceFirst: true });
+    if (modeRef.current === 'talkingChain') queueSegments(TALKING_CHAIN, { forceFirst: true });
+    if (modeRef.current === 'start_talk') {
+      // Intro finished → switch to the chain once
+      setMode('talkingChain');
       return;
     }
-
-    setSubmitting(true);
-    try {
-      // Get user token and decode to get user ID
-      const token = getStoredToken();
-      if (!token) {
-        throw new Error('User not authenticated');
+    if (modeRef.current === 'end_talk2') {
+      setMode('thinkingLoop');
+      if (pendingStartRef.current) {
+        pendingStartRef.current = false;
+        beginAnswerCountdown();
       }
-
-      const decodedToken = decodeToken(token);
-      if (!decodedToken) {
-        throw new Error('Invalid token');
-      }
-
-      const userId = parseInt(decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
-      
-      console.log('Uploading videos for user:', userId);
-      console.log('Recorded answers:', recordedAnswers);
-      console.log('Questions:', questions);
-      
-      // Debug recorded answers
-      recordedAnswers.forEach((answer, index) => {
-        console.log(`Answer ${index + 1}:`, {
-          questionIdx: answer.questionIdx,
-          blobSize: answer.blob?.size || 0,
-          blobType: answer.blob?.type || 'unknown'
-        });
-      });
-      
-      // Prepare form data
-      const formData = new FormData();
-      
-      // Add videos - each video needs a unique name for the backend to recognize them as separate files
-      const validAnswers = recordedAnswers.filter(answer => answer.blob && answer.blob.size > 0);
-      
-      validAnswers.forEach((answer, index) => {
-        const videoFile = new File([answer.blob], `answer_${answer.questionIdx + 1}.webm`, {
-          type: 'video/webm'
-        });
-        formData.append('Videos', videoFile);
-        console.log(`Added video: answer_${answer.questionIdx + 1}.webm, size: ${answer.blob.size} bytes`);
-      });
-
-      // Ensure we have valid videos before proceeding
-      if (validAnswers.length === 0) {
-        throw new Error('No valid video recordings found');
-      }
-
-      // Calculate interview duration
-      const duration = interviewDuration;
-      const durationString = `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}`;
-
-      // Add user ID
-      formData.append('UserId', userId.toString());
-      console.log('Added UserId:', userId);
-
-      // Add duration
-      formData.append('Duration', durationString);
-      console.log('Added Duration:', durationString);
-
-      // Add question IDs - ensure they match the order of videos
-      validAnswers.forEach(answer => {
-        const questionId = questions[answer.questionIdx]?.questionId;
-        if (questionId) {
-          formData.append('QuestionIds', questionId.toString());
-          console.log('Added QuestionId:', questionId);
-        }
-      });
-
-      // Log FormData contents for debugging
-      for (let [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-      }
-      
-      // Send to backend
-      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
-      const response = await fetch(`${baseUrl}/BlobStorage/upload-mock-interview`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          // Don't set Content-Type for FormData, let the browser set it with boundary
-        },
-        body: formData,
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Backend error:', errorData);
-        throw new Error(errorData.message || 'Failed to upload videos');
-      }
-
-      const result = await response.json();
-      console.log('Upload result:', result);
-      
-      toast({
-        title: "Mock Interview completed successfully!",
-        description: `Interview ID: ${result.mockInterviewId}. Duration: ${durationString}. Uploaded ${result.videoUrls.length} videos.`,
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-      });
-
-      setShowThankYou(true);
-      // Stop the interview duration timer
-      setInterviewStartTime(null);
-      setInterviewDuration(0);
-    } catch (err) {
-      console.error('Error uploading videos:', err);
-      toast({
-        title: "Upload failed",
-        description: err.message,
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setSubmitting(false);
     }
   };
 
-  // Interview timer
+  // ensure idle (thinking) starts once Lottie instance exists
+  useEffect(() => {
+    let tries = 0;
+    const t = setInterval(() => {
+      const inst = lottieRef.current;
+      if (inst && typeof inst.playSegments === 'function') {
+        setMode('thinkingLoop'); // autoplay idle on load
+        clearInterval(t);
+      } else if (++tries > 60) {
+        clearInterval(t);
+      }
+    }, 50);
+    return () => clearInterval(t);
+    // eslint-disable-next-line
+  }, []);
+
+  // interview timer
   const interviewEnd = new Date();
   interviewEnd.setMinutes(interviewEnd.getMinutes() + INTERVIEW_DURATION_MINUTES);
   const {
     seconds: interviewSeconds,
     minutes: interviewMinutes,
     hours: interviewHours,
-    isRunning: interviewRunning,
     restart: restartInterviewTimer,
   } = useTimer({ expiryTimestamp: interviewEnd, autoStart: true });
 
-  // Per-answer timer
-  const [answerTimerKey, setAnswerTimerKey] = useState(0);
-  const [answerTimerActive, setAnswerTimerActive] = useState(false);
-  const [answerTimerExpired, setAnswerTimerExpired] = useState(false);
   const {
     seconds: answerSeconds,
     minutes: answerMinutes,
-    isRunning: answerRunning,
     start: startAnswerTimer,
     pause: pauseAnswerTimer,
     restart: restartAnswerTimer,
   } = useTimer({
     expiryTimestamp: new Date(),
     autoStart: false,
-    onExpire: () => {
-      setAnswerTimerExpired(true);
-      handleAnswerTimeout();
-    },
+    onExpire: () => handleAnswerTimeout(),
   });
 
-  // Open video or start avatar question
-  const handlePlay = (video, title, idx) => {
-    setSelectedVideo(video);
-    setSelectedTitle(title);
+  // duration ticker
+  useEffect(() => {
+    let interval;
+    if (interviewStarted && interviewStartTime) {
+      interval = setInterval(() => {
+        setInterviewDuration(Math.floor((Date.now() - interviewStartTime) / 1000));
+      }, 1000);
+    }
+    return () => interval && clearInterval(interval);
+  }, [interviewStarted, interviewStartTime]);
+
+  useEffect(() => {
+    const end = new Date();
+    end.setMinutes(end.getMinutes() + INTERVIEW_DURATION_MINUTES);
+    restartInterviewTimer(end, true);
+    // eslint-disable-next-line
+  }, []);
+
+  // can-do status
+  const checkMockInterviewStatus = async () => {
+    try {
+      setCheckingMockStatus(true);
+      const token = getStoredToken();
+      if (!token) throw new Error('User not authenticated');
+      const decoded = decodeToken(token);
+      if (!decoded) throw new Error('Invalid token');
+      const userId = parseInt(decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
+      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+      const res = await fetch(`${baseUrl}/Evaluation/can-do-mock/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to check mock interview status');
+      const data = await res.json();
+      setCanDoMock(data.canDoMock);
+      if (!data.canDoMock) {
+        toast({
+          title: 'Cannot Start Interview',
+          description: 'You cannot do another interview right now. Please try again later.',
+          status: 'warning',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Error', description: err.message, status: 'error', duration: 5000, isClosable: true });
+    } finally {
+      setCheckingMockStatus(false);
+    }
+  };
+  useEffect(() => { checkMockInterviewStatus(); /* eslint-disable-line */ }, []);
+
+  // fetch questions with fallback
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        setLoading(true);
+        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+        const encodedMajorName = encodeURIComponent(major);
+        const res = await fetch(`${baseUrl}/BlobStorage/random-questions?majorName=${encodedMajorName}&count=5`);
+        if (!res.ok) throw new Error('Failed to fetch questions');
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) {
+          setQuestions([{ questionId: 'fallback-1', title: 'Tell me about yourself.', videoUrl: fallbackVoiceover }]);
+        } else {
+          setQuestions(data);
+        }
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+        setQuestions([{ questionId: 'fallback-1', title: 'Tell me about yourself.', videoUrl: fallbackVoiceover }]);
+        toast({ title: 'Error loading questions', description: err.message, status: 'error', duration: 5000, isClosable: true });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuestions();
+    // eslint-disable-next-line
+  }, [major]);
+
+  // ---- prompt audio & animation ----
+    const playQuestionPrompt = async (audioUrl, title, idx) => {
     setCurrentQuestionIdx(idx);
-    setVideoEnded(false);
-    setShowRecorder(false);
-    setShowControls(false);
-    setRecording(false);
-    setRecordedChunks([]);
-    setWebcamReady(false);
-    setAnswerTimerExpired(false);
-    setTranscribedText(''); // Clear previous transcription
-    
-    // If using avatar mode, start the question with the avatar and audio
-    if (useAvatarMode) {
-      const question = questions[idx];
-      setQuestion(question);
-      
-      // Show loading state and start transcription
-      setIsTranscribing(true);
-      setTranscribedText('');
-      setIsListening(false);
-      
-      // Start transcription of the audio first (without playing audio)
-      const transcriptionPromise = transcribeAudio(question.videoUrl);
-      
-      // Add timeout to transcription (10 seconds max)
-      const timeoutPromise = new Promise((resolve) => {
-        setTimeout(() => {
-          console.log('Transcription timeout, no fallback');
-          setTranscribedText('');
-          resolve();
-        }, 10000);
+    setSelectedTitle(title);
+    setAudioBlocked(false);
+    setCountdownActive(true);
+
+    // 1) Play the start_talk intro ONCE
+    setMode('start_talk');
+
+    // 2) Start the audio right away; when intro completes, onComplete switches to the chain
+    try {
+      if (audioRef.current) {
+        audioRef.current.src = audioUrl || '';
+        audioRef.current.currentTime = 0;
+        await audioRef.current.play(); // user gesture
+      }
+    } catch (e) {
+      console.error('Audio play blocked:', e);
+      setAudioBlocked(true);
+      toast({
+        title: 'Enable audio',
+        description: 'Click “Enable Audio” to start the question audio.',
+        status: 'warning',
+        duration: 3000,
       });
-      
-      Promise.race([transcriptionPromise, timeoutPromise]).then(() => {
-        // After transcription is complete or timeout, open modal and start avatar
-        console.log('Transcription process completed, opening modal');
-        setIsTranscribing(false);
-        setIsVideoModalOpen(true);
-        playAudioFile(question.videoUrl, question.title);
-        setIsUserInteracted(true);
-      }).catch((error) => {
-        // If transcription fails, still open modal with fallback
-        console.log('Transcription failed, using fallback:', error);
-        setIsTranscribing(false);
-        setIsVideoModalOpen(true);
-        playAudioFile(question.videoUrl, question.title);
-        setIsUserInteracted(true);
-      });
-    } else {
-      // For video mode, open modal immediately
-      setIsVideoModalOpen(true);
     }
   };
 
-  // When video ends, show a countdown before starting recorder/timer
-  const handleVideoEnded = () => {
-    setIsVideoModalOpen(false);
-    setVideoEnded(true);
-    setShowRecorder(true);
-    setWebcamReady(false);
-    setAnswerTimerExpired(false);
+  const onAudioPlaying = () => {
+    // ensure we’re in talk mode as soon as audio actually starts
+    setMode('talkingChain');
+  };
 
+  const onAudioEnded = () => {
+    // After prompt: end_talk2 once, then idle → begin countdown
+    pendingStartRef.current = true;
+    setMode('end_talk2');
+  };
+
+  const onAudioError = () => {
+    // Treat as ended
+    pendingStartRef.current = true;
+    setMode('end_talk2');
+  };
+
+  // ---- countdown & recording ----
+  const beginAnswerCountdown = () => {
     let countdown = 5;
-    toast({
-      title: `Starting in ${countdown}...`,
-      status: 'info',
-      duration: 1000,
-      isClosable: false,
-    });
-
+    toast({ title: `Starting in ${countdown}...`, status: 'info', duration: 1000, isClosable: false });
     const interval = setInterval(() => {
       countdown -= 1;
       if (countdown > 0) {
-        toast({
-          title: `Starting in ${countdown}...`,
-          status: 'info',
-          duration: 1000,
-          isClosable: false,
-        });
+        toast({ title: `Starting in ${countdown}...`, status: 'info', duration: 1000, isClosable: false });
       } else {
         clearInterval(interval);
-        setCountdownActive(false);
-        // Wait for webcam to be ready, then start recording
+        setShowRecorder(true);
+        // start recording (switch Lottie to listening)
         if (webcamRef.current?.video?.srcObject) {
-          setWebcamReady(true);
           handleStartRecording();
           restartAnswerTimer(new Date(Date.now() + ANSWER_DURATION_SECONDS * 1000), true);
           toast({ title: 'Recording started', status: 'info', duration: 2000 });
@@ -579,18 +349,11 @@ const MockInterviewQuestionsPage = () => {
     }, 1000);
   };
 
-  useEffect(() => {
-    if (showRecorder && webcamReady && !recording) {
-      handleStartRecording();
-      restartAnswerTimer(new Date(Date.now() + ANSWER_DURATION_SECONDS * 1000), true);
-      toast({ title: 'Recording started', status: 'info', duration: 2000 });
-    }
-  }, [showRecorder, webcamReady]);
-
-  // Start recording and answer timer
   const handleStartRecording = () => {
     setRecordedChunks([]);
     setShowControls(false);
+    setMode('listeningLoop'); // rule #2
+
     const videoElement = webcamRef.current?.video;
     if (!videoElement || !videoElement.srcObject) {
       toast({ title: 'Webcam not ready', status: 'error' });
@@ -599,161 +362,125 @@ const MockInterviewQuestionsPage = () => {
     const stream = videoElement.srcObject;
     const mr = new window.MediaRecorder(stream, { mimeType: 'video/webm' });
     setMediaRecorder(mr);
-    
-    // Set up data collection for the state (for debugging)
-    mr.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        setRecordedChunks((prev) => [...prev, e.data]);
-        console.log(`Data available: ${e.data.size} bytes`);
-      }
-    };
-    
-    mr.onstop = () => {
-      setRecording(false);
-    };
-    
+
+    mr.ondataavailable = (e) => { if (e.data.size > 0) setRecordedChunks((prev) => [...prev, e.data]); };
+    mr.onstop = () => { setRecording(false); setMode('thinkingLoop'); };
+
     mr.start();
     setRecording(true);
-    console.log('Recording started');
-
-    // Start answer timer
-    setAnswerTimerKey((k) => k + 1); // This will force the timer to remount
   };
 
-  // Stop recording and save
   const handleStopRecording = (auto = false) => {
-    if (mediaRecorder) {
-      setShowControls(true); // Ensure controls are shown immediately
-      setSaving(true);
-      
-      // Create a local array to collect chunks
-      const chunks = [];
-      
-      // Override the ondataavailable to collect chunks immediately
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
-        }
-      };
-      
-      // Override onstop to handle the blob creation
-      mediaRecorder.onstop = () => {
-        setRecording(false);
-        if (chunks.length > 0) {
-          const blob = new Blob(chunks, { type: 'video/webm' });
-          console.log(`Created blob for question ${currentQuestionIdx + 1}, size: ${blob.size} bytes`);
-          setRecordedAnswers((prev) => [
-            ...prev.filter((a) => a.questionIdx !== currentQuestionIdx),
-            { questionIdx: currentQuestionIdx, blob },
-          ]);
-          setAnsweredQuestions((prev) => [...prev, currentQuestionIdx]);
-        } else {
-          console.warn(`No chunks recorded for question ${currentQuestionIdx + 1}`);
-        }
-        setSaving(false);
-        setShowRecorder(false);
-        setMediaRecorder(null);
-        setAnswerTimerActive(false);
-        if (auto) toast({ title: 'Recording stopped', status: 'info', duration: 2000 });
-      };
-      
-      mediaRecorder.stop();
-    }
-  };
-
-  // When answer timer expires
-  const handleAnswerTimeout = () => {
-    if (recording) {
-      handleStopRecording(true);
-      setShowControls(true); // Ensure it's explicitly shown after timer expires
-    }
-  };
-
-  // Allow user to stop and save early
-  const handleUserStop = () => {
-    pauseAnswerTimer();
-    handleStopRecording(false);
-  };
-
-  // Disable question if answered
-  const isQuestionAnswered = (idx) => answeredQuestions.includes(idx);
-
-  // Interview timer display
-  const interviewTimerDisplay = `${interviewHours.toString().padStart(2, '0')}:${interviewMinutes
-    .toString()
-    .padStart(2, '0')}:${interviewSeconds.toString().padStart(2, '0')}`;
-
-  // Per-answer timer display
-  const answerTimerDisplay = `${answerMinutes.toString().padStart(2, '0')}:${answerSeconds
-    .toString()
-    .padStart(2, '0')}`;
-
-  // Interview duration timer
-  useEffect(() => {
-    let interval;
-    if (interviewStarted && interviewStartTime) {
-      interval = setInterval(() => {
-        const now = Date.now();
-        const elapsed = Math.floor((now - interviewStartTime) / 1000);
-        setInterviewDuration(elapsed);
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
+    if (!mediaRecorder) return;
+    setShowControls(true);
+    const chunks = [];
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      setRecording(false);
+      if (chunks.length > 0) {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        setRecordedAnswers((prev) => [
+          ...prev.filter((a) => a.questionIdx !== currentQuestionIdx),
+          { questionIdx: currentQuestionIdx, blob },
+        ]);
+        setAnsweredQuestions((prev) => [...prev, currentQuestionIdx]);
+      }
+      setShowRecorder(false);
+      setMode('thinkingLoop');
     };
-  }, [interviewStarted, interviewStartTime]);
+    mediaRecorder.stop();
+  };
 
-  // Reset interview timer on mount
-  useEffect(() => {
-    const end = new Date();
-    end.setMinutes(end.getMinutes() + INTERVIEW_DURATION_MINUTES);
-    restartInterviewTimer(end, true);
-    // eslint-disable-next-line
-  }, []);
+  const handleAnswerTimeout = () => { if (recording) handleStopRecording(true); };
+  const handleUserStop = () => { pauseAnswerTimer(); handleStopRecording(false); };
 
+  // ---- upload ----
+  const handleSubmitVideos = async () => {
+    if (recordedAnswers.length === 0) {
+      toast({ title: 'No recordings to submit', description: 'Record at least one answer.', status: 'warning', duration: 3000, isClosable: true });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const token = getStoredToken();
+      if (!token) throw new Error('User not authenticated');
+      const decoded = decodeToken(token);
+      if (!decoded) throw new Error('Invalid token');
+      const userId = parseInt(decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
+
+      const formData = new FormData();
+      const validAnswers = recordedAnswers.filter(a => a.blob && a.blob.size > 0);
+      if (validAnswers.length === 0) throw new Error('No valid video recordings found');
+
+      validAnswers.forEach((answer) => {
+        const file = new File([answer.blob], `answer_${answer.questionIdx + 1}.webm`, { type: 'video/webm' });
+        formData.append('Videos', file);
+      });
+
+      const duration = interviewDuration;
+      const durationString = `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}`;
+      formData.append('Duration', durationString);
+      formData.append('UserId', String(userId));
+      validAnswers.forEach((answer) => {
+        const qid = questions[answer.questionIdx]?.questionId;
+        if (qid) formData.append('QuestionIds', String(qid));
+      });
+
+      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+      const res = await fetch(`${baseUrl}/BlobStorage/upload-mock-interview`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) {
+        let msg = 'Failed to upload videos';
+        try { const err = await res.json(); msg = err.message || msg; } catch {}
+        throw new Error(msg);
+      }
+      const result = await res.json();
+      toast({
+        title: 'Mock Interview completed successfully!',
+        description: `Interview ID: ${result.mockInterviewId}. Duration: ${durationString}. Uploaded ${result.videoUrls.length} videos.`,
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+      setShowThankYou(true);
+      setInterviewStartTime(null);
+      setInterviewDuration(0);
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Upload failed', description: err.message, status: 'error', duration: 5000, isClosable: true });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ---- UI helpers ----
+  const isQuestionAnswered = (idx) => answeredQuestions.includes(idx);
+  const interviewTimerDisplay = `${String(interviewHours).padStart(2, '0')}:${String(interviewMinutes).padStart(2, '0')}:${String(interviewSeconds).padStart(2, '0')}`;
+  const answerTimerDisplay = `${String(answerMinutes).padStart(2, '0')}:${String(answerSeconds).padStart(2, '0')}`;
+
+  // loading / error
   if (loading) {
     return (
-      <Box
-        minH="100vh"
-        bgGradient="linear(to-r, white, #ebf8ff)"
-        display="flex"
-        flexDirection="column"
-        justifyContent="center"
-        alignItems="center"
-      >
+      <Box minH="100vh" bgGradient="linear(to-r, white, #ebf8ff)" display="flex" flexDirection="column" justifyContent="center" alignItems="center">
         <Spinner size="xl" color="blue.500" />
         <Text mt={4} color="gray.600">Loading questions...</Text>
       </Box>
     );
   }
-
-  if (error) {
+  if (error && questions.length === 0) {
     return (
-      <Box
-        minH="100vh"
-        bgGradient="linear(to-r, white, #ebf8ff)"
-        display="flex"
-        flexDirection="column"
-        justifyContent="center"
-        alignItems="center"
-      >
+      <Box minH="100vh" bgGradient="linear(to-r, white, #ebf8ff)" display="flex" flexDirection="column" justifyContent="center" alignItems="center">
         <Text color="red.500" fontSize="lg">Error: {error}</Text>
-        <Button mt={4} colorScheme="blue" onClick={() => window.location.reload()}>
-          Retry
-        </Button>
+        <Button mt={4} colorScheme="blue" onClick={() => window.location.reload()}>Retry</Button>
       </Box>
     );
   }
 
   return (
-    <Box
-      minH="100vh"
-      bgGradient="linear(to-r, white, #ebf8ff)"
-      display="flex"
-      flexDirection="column"
-      justifyContent="space-between"
-    >
-      {/* Interview Duration Timer */}
+    <Box minH="100vh" bgGradient="linear(to-r, white, #ebf8ff)" display="flex" flexDirection="column" justifyContent="space-between">
       {interviewStarted && !showThankYou && (
         <Box textAlign="center" py={4} bg="blue.50" borderBottom="1px" borderColor="blue.200">
           <Text fontSize="lg" fontWeight="bold" color="blue.600">
@@ -761,184 +488,270 @@ const MockInterviewQuestionsPage = () => {
           </Text>
         </Box>
       )}
+
       <Box px={4} py={8}>
-        <Heading size="lg" mb={4} textAlign="center">
-          Interview Questions - {major}
-        </Heading>
+        <Heading size="lg" mb={4} textAlign="center">Interview Questions - {major}</Heading>
+
         {showThankYou ? (
           <Box textAlign="center" py={10} px={6}>
             <CheckCircleIcon boxSize={'50px'} color={'green.500'} />
-            <Heading as="h2" size="xl" mt={6} mb={2}>
-              Interview Complete
-            </Heading>
-            <Text color={'gray.500'} mb={6}>
-              Thank you! Your responses have been submitted successfully.
-            </Text>
-            <Button colorScheme="blue" onClick={() => navigate('/')}>
-              Return to Home
-            </Button>
+            <Heading as="h2" size="xl" mt={6} mb={2}>Interview Complete</Heading>
+            <Text color={'gray.500'} mb={6}>Thank you! Your responses have been submitted successfully.</Text>
+            <Button colorScheme="blue" onClick={() => navigate('/')}>Return to Home</Button>
           </Box>
         ) : interviewStarted ? (
           <>
-            <Flex direction={{ base: 'column', md: 'row' }} gap={6} align="start">
-              <Box flex="1">
-                <Webcam
-                  audio={true}
-                  ref={webcamRef}
-                  screenshotFormat="image/jpeg"
-                  videoConstraints={{ width: 480, height: 360 }}
-                  style={{ borderRadius: '10px', display: 'block', width: '100%' }}
-                  mirrored={true}
-                  onUserMedia={() => setWebcamReady(true)}
-                />
-                {recording && (
-                  <Text mt={2} fontWeight="bold" color="red.500" textAlign="center">
-                    Recording...
-                  </Text>
-                )}
+            {/* Top row: webcam | lottie */}
+            <Flex gap={6} direction={{ base: 'column', md: 'row' }} align="stretch">
+              <Box flex="1" bg="white" borderRadius="lg" borderWidth="1px" boxShadow="md" p={4}>
+                <Heading size="sm" mb={3} color="gray.700">Your Camera</Heading>
+                <Box overflow="hidden" borderRadius="md" borderWidth="1px" borderColor="gray.200">
+                  <Webcam
+                    //audio
+                    ref={webcamRef}
+                    screenshotFormat="image/jpeg"
+                    videoConstraints={{ width: 480, height: 360 }}
+                    style={{ borderRadius: '10px', display: 'block', width: '100%' }}
+                    mirrored
+                  />
+                </Box>
+                {recording && <Text mt={2} fontWeight="bold" color="red.500" textAlign="center">Recording...</Text>}
               </Box>
-              <Box flex="1" bg="gray.50" p={4} borderRadius="lg" boxShadow="sm" maxH="400px" overflowY="auto">
-                <Heading size="sm" mb={2}>Questions</Heading>
-                {displayedQuestions.map((idx) => (
-                  <Box
-                    key={idx}
-                    p={3}
-                    mb={3}
-                    bg={idx === currentQuestionIdx ? 'blue.50' : 'gray.100'}
-                    borderRadius="md"
+
+<Box flex="1" bg="white" borderRadius="lg" borderWidth="1px" boxShadow="md" p={4}>
+  <Heading size="sm" mb={3} color="gray.700">Interviewer</Heading>
+
+  <Box
+    // single card
+    overflow="hidden"
+    borderRadius="md"
+    borderWidth="1px"
+    borderColor="gray.200"
+    bg="blue.50"                 // 👈 very light blue background
+    display="flex"
+    alignItems="center"
+    justifyContent="center"      // 👈 centers Lottie both ways
+    height="500px"
+    position="relative"
+  >
+    {/* Title */}
+    <Box
+      position="absolute"
+      top="8px"
+      left="50%"
+      transform="translateX(-50%)"
+      bg="whiteAlpha.900"
+      px={3}
+      py={1}
+      borderRadius="md"
+      boxShadow="sm"
+      zIndex={3}
+    >
+      <Text fontSize="sm" fontWeight="semibold">
+        {selectedTitle || '—'}
+      </Text>
+    </Box>
+
+    {/* Lottie directly in the container */}
+    <Lottie
+      lottieRef={lottieRef}
+      animationData={gptTalking}
+      loop={false}
+      autoplay={false}
+      onComplete={onLottieComplete}
+      style={{
+        width: '70%',        // responsive fit
+        maxWidth: 340,       // prevent huge scaling
+        minWidth: 220,
+        height: 'auto',
+        pointerEvents: 'none'
+      }}
+    />
+
+    {/* Status pill */}
+    {(() => {
+      const s = MODE_COPY[mode] || MODE_COPY.thinkingLoop;
+      return (
+        <Box
+          position="absolute"
+          bottom="10px"
+          left="50%"
+          transform="translateX(-50%)"
+          bg={s.bg}
+          color={s.color}
+          px={4}
+          py={2}
+          borderRadius="md"
+          boxShadow="sm"
+          zIndex={3}
+        >
+          <Text fontSize="sm" fontWeight="medium">{s.text}</Text>
+        </Box>
+      );
+    })()}
+
+    {/* Hidden audio element */}
+    <audio
+      ref={audioRef}
+      preload="auto"
+      onPlaying={onAudioPlaying}
+      onEnded={onAudioEnded}
+      onError={onAudioError}
+    />
+  </Box>
+
+
+                <HStack mt={3} spacing={2} wrap="wrap">
+                  <Button
+                    size="sm"
+                    colorScheme="blue"
+                    onClick={() => {
+                      if (currentQuestionIdx == null) return;
+                      const q = questions[currentQuestionIdx];
+                      playQuestionPrompt(q?.videoUrl, q?.title, currentQuestionIdx);
+                    }}
+                    isDisabled={currentQuestionIdx == null}
                   >
-                    <Flex justify="space-between" align="center">
-                      <Text fontWeight="bold">Q{idx + 1}: {questions[idx]?.title}</Text>
-                      {!isQuestionAnswered(idx) && (
-                        <Button
-                          size="sm"
-                          colorScheme="blue"
-                          onClick={() => {
-                            handlePlay(questions[idx]?.videoUrl, questions[idx]?.title, idx);
-                            setIsVideoModalOpen(true);
-                          }}
-                          isDisabled={recording || countdownActive}
-                        >
-                          Show
-                        </Button>
-                      )}
-                    </Flex>
-                  </Box>
-                ))}
+                    Replay Prompt
+                  </Button>
+
+                  {audioBlocked && (
+                    <Button
+                      size="sm"
+                      colorScheme="pink"
+                      onClick={async () => {
+                        try {
+                          setAudioBlocked(false);
+                          await audioRef.current?.play();
+                        } catch (e) { console.error(e); }
+                      }}
+                    >
+                      Enable Audio
+                    </Button>
+                  )}
+                </HStack>
               </Box>
             </Flex>
-            {(showRecorder || showControls) && (
-              <Box mt={4}>
-                <AnswerTimer
-                  key={answerTimerKey}
-                  duration={ANSWER_DURATION_SECONDS}
-                  onExpire={handleUserStop}
-                  recording={recording}
-                />
-              </Box>
-            )}
 
+            {/* Questions */}
+            <Box mt={8} bg="white" borderRadius="lg" borderWidth="1px" boxShadow="md" p={4}>
+              <Heading size="sm" mb={3} color="gray.700">Questions</Heading>
+              <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={3}>
+                {questions.map((q, idx) => (
+                  <Box key={q.questionId ?? idx} p={3} borderRadius="md" bg={idx === currentQuestionIdx ? 'blue.50' : 'gray.50'} borderWidth="1px" borderColor={idx === currentQuestionIdx ? 'blue.200' : 'gray.200'}>
+                    <VStack align="stretch" spacing={2}>
+                      <Text fontWeight="semibold">Q{idx + 1}</Text>
+                      <Text fontSize="sm" color="gray.700">{q.title}</Text>
+                      <Button
+                        size="sm"
+                        colorScheme="blue"
+                        variant={idx === currentQuestionIdx ? 'solid' : 'outline'}
+                        onClick={() => {
+                          setCurrentQuestionIdx(idx);
+                          setSelectedTitle(q.title);
+                          playQuestionPrompt(q.videoUrl, q.title, idx);
+                        }}
+                        isDisabled={recording || countdownActive}
+                      >
+                        Show
+                      </Button>
+                    </VStack>
+                  </Box>
+                ))}
+              </SimpleGrid>
+            </Box>
+
+            {/* Answer timer & controls */}
             {(showRecorder || showControls) && (
-              <HStack mt={4} justify="center">
-                <Button
-                  colorScheme="gray"
-                  onClick={() => {
-                    setShowControls(false);
-                    handlePlay(questions[currentQuestionIdx]?.videoUrl, questions[currentQuestionIdx]?.title, currentQuestionIdx);
-                    setRecordedChunks([]);
-                    setRecording(false);
-                    setIsVideoModalOpen(true);
-                  }}
-                  isDisabled={recording}
-                >
-                  Retry
-                </Button>
-                {currentQuestionIdx === questions.length - 1 ? (
+              <>
+                <Box mt={4}>
+                  <AnswerTimer
+                    key={answerTimerKey}
+                    duration={ANSWER_DURATION_SECONDS}
+                    onExpire={handleUserStop}
+                    recording={recording}
+                  />
+                </Box>
+                <HStack mt={4} justify="center">
                   <Button
-                    colorScheme="green"
-                    onClick={handleSubmitVideos}
-                    isLoading={submitting}
-                    isDisabled={recording || recordedAnswers.length === 0}
-                  >
-                    Submit
-                  </Button>
-                ) : (
-                  <Button
-                    colorScheme="blue"
-                    onClick={async () => {
+                    colorScheme="gray"
+                    onClick={() => {
                       setShowControls(false);
-                      await handleUserStop();
-
-                      const nextIdx = currentQuestionIdx + 1;
-                      if (nextIdx < questions.length) {
-                        if (!displayedQuestions.includes(nextIdx)) {
-                          setDisplayedQuestions(prev => [...prev, nextIdx]);
-                        }
-                        setTimeout(() => {
-                          setSelectedTitle(questions[nextIdx]?.title);
-                          setSelectedVideo(questions[nextIdx]?.videoUrl);
-                          setCurrentQuestionIdx(nextIdx);
-                          setIsVideoModalOpen(true);
-                        }, 500);
+                      if (currentQuestionIdx != null) {
+                        const q = questions[currentQuestionIdx];
+                        playQuestionPrompt(q?.videoUrl, q?.title, currentQuestionIdx);
                       }
-                    }} isDisabled={countdownActive}                  
-                    >
-                    Next Question
+                      setRecordedChunks([]);
+                      setRecording(false);
+                    }}
+                    isDisabled={recording}
+                  >
+                    Retry
                   </Button>
-                )}
-              </HStack>
+
+                  {currentQuestionIdx === questions.length - 1 ? (
+                    <Button
+                      colorScheme="green"
+                      onClick={handleSubmitVideos}
+                      isLoading={submitting}
+                      isDisabled={recording || recordedAnswers.length === 0}
+                    >
+                      Submit
+                    </Button>
+                  ) : (
+                    <Button
+                      colorScheme="blue"
+                      onClick={() => {
+                        setShowControls(false);
+                        handleUserStop();
+                        const nextIdx = (currentQuestionIdx ?? -1) + 1;
+                        if (nextIdx < questions.length) {
+                          const q = questions[nextIdx];
+                          setCurrentQuestionIdx(nextIdx);
+                          setSelectedTitle(q.title);
+                          setTimeout(() => { playQuestionPrompt(q.videoUrl, q.title, nextIdx); }, 300);
+                        }
+                      }}
+                      isDisabled={countdownActive}
+                    >
+                      Next Question
+                    </Button>
+                  )}
+                </HStack>
+              </>
             )}
           </>
         ) : (
           <>
-            <Box
-              mb={6}
-              maxW="2xl"
-              mx="auto"
-              p={6}
-              bg="white"
-              borderRadius="lg"
-              borderWidth="1px"
-              boxShadow="md"
-            >
+            <Box mb={6} maxW="2xl" mx="auto" p={6} bg="white" borderRadius="lg" borderWidth="1px" boxShadow="md">
               <Heading size="md" mb={2} textAlign="center" color="gray.700">How the Interview Works</Heading>
               <VStack spacing={3} align="start" fontSize="sm" color="gray.600" as="ul" pl={4}>
                 <Text as="li">Click "Start Interview" to begin.</Text>
-                <Text as="li">You'll see the first interview question as a card with a "Show" button.</Text>
-                <Text as="li">Click "Show" to watch a short video prompt for that question.</Text>
-                <Text as="li">After the video ends, you'll get a 5-second countdown.</Text>
-                <Text as="li">Your webcam will start recording your answer for a limited time.</Text>
-                <Text as="li">You can either "Retry" the question or click "Next Question" to move on.</Text>
-                <Text as="li">At the end, all your recorded answers will be saved.</Text>
+                <Text as="li">Click "Show" to hear the prompt in the right container (avatar “talks”).</Text>
+                <Text as="li">When the audio ends, the avatar plays a close (end_talk2) and a 5-second countdown starts.</Text>
+                <Text as="li">Your webcam records your answer (avatar “listens”).</Text>
+                <Text as="li">Retry or go to the next question, then submit.</Text>
               </VStack>
             </Box>
+
             {!canDoMock && !checkingMockStatus && (
-              <Box
-                mt={4}
-                p={4}
-                bg="orange.50"
-                border="1px"
-                borderColor="orange.200"
-                borderRadius="md"
-                textAlign="center"
-              >
-                <Text color="orange.700" fontWeight="medium">
-                  You cannot start another interview right now. Please try again later.
-                </Text>
+              <Box mt={4} p={4} bg="orange.50" border="1px" borderColor="orange.200" borderRadius="md" textAlign="center">
+                <Text color="orange.700" fontWeight="medium">You cannot start another interview right now. Please try again later.</Text>
               </Box>
             )}
+
             <VStack spacing={4}>
               <Button
                 colorScheme="blue"
                 size="lg"
                 onClick={() => {
-                  setUseAvatarMode(true); // Always use avatar mode now
                   setInterviewStarted(true);
                   setInterviewStartTime(Date.now());
                   setInterviewDuration(0);
                   setCurrentQuestionIdx(0);
-                  setDisplayedQuestions([0]);
-                  // Don't automatically start the first question - let user click "Show"
+                  setSelectedTitle(questions[0]?.title || '');
+                  // ensure idle animation is running
+                  setMode('thinkingLoop');
                 }}
                 isDisabled={questions.length === 0 || !canDoMock || checkingMockStatus}
                 isLoading={checkingMockStatus}
@@ -946,79 +759,14 @@ const MockInterviewQuestionsPage = () => {
                 {checkingMockStatus ? 'Checking...' : !canDoMock ? 'Cannot Start Interview' : 'Start Interview'}
               </Button>
               <Text fontSize="sm" color="gray.600" textAlign="center">
-                Start your mock interview with an interactive 3D avatar interviewer
+                Start your mock interview with an animated assistant.
               </Text>
             </VStack>
           </>
         )}
       </Box>
-      <Footer />
-      <Modal isOpen={isVideoModalOpen} onClose={() => setIsVideoModalOpen(false)} size="full" isCentered>
-        <ModalOverlay />
-        <ModalContent borderRadius="lg" p={6} bg="gray.50" maxW="95vw" maxH="95vh">
-          <ModalHeader fontSize="xl" fontWeight="bold">{selectedTitle}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Box overflow="hidden" borderRadius="md" boxShadow="lg">
-              {useAvatarMode ? (
-                // Show 3D Avatar with audio from videoUrl
-                <Box position="relative" height="80vh" width="100%">
-                  <UI />
-                  {/* Subtitles overlay - show when avatar is speaking or listening */}
-                  {message && (
-                    <Box
-                      position="absolute"
-                      bottom="20px"
-                      left="50%"
-                      transform="translateX(-50%)"
-                      bg="rgba(0, 0, 0, 0.8)"
-                      color="white"
-                      px={6}
-                      py={3}
-                      borderRadius="lg"
-                      maxW="80%"
-                      textAlign="center"
-                      zIndex={10}
-                      transition="all 0.3s ease-in-out"
-                      opacity={message ? 1 : 0}
-                    >
-                      <Text fontSize="lg" fontWeight="medium">
-                        {transcribedText}
-                      </Text>
-                    </Box>
-                  )}
-                </Box>
-              ) : (
-                // Show traditional video
-                <video
-                  src={selectedVideo}
-                  controls
-                  width="100%"
-                  style={{ borderRadius: '8px' }}
-                  onEnded={handleVideoEnded}
-                />
-              )}
-            </Box>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
 
-      {/* Loading Modal */}
-      <Modal isOpen={isTranscribing} onClose={() => {}} size="md" isCentered>
-        <ModalOverlay />
-        <ModalContent borderRadius="lg" p={6} bg="gray.50">
-          <ModalBody textAlign="center">
-            <Spinner size="xl" color="blue.500" mb={4} />
-            <Heading size="md" mb={2} color="gray.700">
-              Loading Question
-            </Heading>
-            <Text color="gray.600">
-              Please wait...
-            </Text>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-      
+      <Footer />
     </Box>
   );
 };
@@ -1037,20 +785,9 @@ const AnswerTimer = ({ duration, onExpire, recording }) => {
 
   return (
     <Heading size="md" color="brand.500" mt={4} textAlign="center">
-      Answer Timer: {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+      Answer Timer: {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
     </Heading>
   );
 };
 
-// Wrapper component with context providers
-const MockInterviewQuestionsPageWithProviders = () => {
-  return (
-    <InterviewProvider>
-      <ChatProvider>
-        <MockInterviewQuestionsPage />
-      </ChatProvider>
-    </InterviewProvider>
-  );
-};
-
-export default MockInterviewQuestionsPageWithProviders;
+export default MockInterviewQuestionsPage;
