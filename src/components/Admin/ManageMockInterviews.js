@@ -708,6 +708,7 @@ const ManageMockInterviews = () => {
               <Th>Email</Th>
               <Th>Interview</Th>
               <Th>Questions Count</Th>
+              <Th>Replays Used</Th>
               <Th>Actions</Th>
             </Tr>
           </Thead>
@@ -717,6 +718,14 @@ const ManageMockInterviews = () => {
                 <Td fontWeight="bold">{interview.email}</Td>
                 <Td>{interview.mockInterviewTitle}</Td>
                 <Td>{interview.answers.length}</Td>
+                <Td>
+                  <Text 
+                    fontWeight="semibold" 
+                    color={interview.nbOfTry > 0 ? "orange.500" : "green.500"}
+                  >
+                    {interview.nbOfTry || 0}
+                  </Text>
+                </Td>
                 <Td>
                   <Button colorScheme="blue" onClick={() => setSelectedInterview(interview)}>
                     Review

@@ -90,6 +90,7 @@ const SdsTry = () => {
   const [answers, setAnswers] = useState({});
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
+  const [riasecValidationErrors, setRiasecValidationErrors] = useState({});
 
   const toast = useToast();
 
@@ -156,6 +157,48 @@ const SdsTry = () => {
 
   const progressPct = totalQs > 0 ? Math.round((answered / totalQs) * 100) : 0;
 
+  // Validation function for RIASEC personality traits question
+  const validateRiasecInput = (questionText, inputValue) => {
+    const riasecQuestionText = "From the RIASEC videos, list your top three personality traits ranked from most dominant to least";
+    
+    if (questionText && questionText.includes(riasecQuestionText)) {
+      if (!inputValue || typeof inputValue !== 'string') {
+        return "Please enter your top 3 RIASEC personality traits";
+      }
+      
+      const trimmedValue = inputValue.trim().toUpperCase();
+      
+      // Check if exactly 3 characters
+      if (trimmedValue.length !== 3) {
+        return "Please enter exactly 3 letters (e.g., RIA, SEC, AIR)";
+      }
+      
+      // Check if all characters are valid RIASEC letters
+      const validLetters = ['R', 'I', 'A', 'S', 'E', 'C'];
+      const invalidChars = [];
+      
+      for (let i = 0; i < trimmedValue.length; i++) {
+        if (!validLetters.includes(trimmedValue[i])) {
+          invalidChars.push(trimmedValue[i]);
+        }
+      }
+      
+      if (invalidChars.length > 0) {
+        return `Invalid characters: ${invalidChars.join(', ')}. Only use letters: R, I, A, S, E, C`;
+      }
+      
+      // Check for duplicates
+      const uniqueChars = [...new Set(trimmedValue.split(''))];
+      if (uniqueChars.length !== 3) {
+        return "Each letter should appear only once. Use 3 different RIASEC letters: R, I, A, S, E, C";
+      }
+      
+      return null; // Valid input
+    }
+    
+    return null; // Not a RIASEC question, no validation needed
+  };
+
   const earnedBadges = [];
   if (answered > 0) earnedBadges.push({ label: "Getting Started", icon: "✨" });
   if (answered >= Math.ceil(totalQs / 2) && totalQs > 0) earnedBadges.push({ label: "Halfway", icon: "🧭" });
@@ -210,6 +253,19 @@ const SdsTry = () => {
 
 
   const handleSubmit = async () => {
+    // Check for RIASEC validation errors
+    const hasRiasecErrors = Object.values(riasecValidationErrors).some(error => error !== null);
+    if (hasRiasecErrors) {
+      toast({
+        title: "Invalid RIASEC Input",
+        description: "Please fix the RIASEC validation errors before submitting.",
+        status: "error",
+        duration: 5000,
+        isClosable: true
+      });
+      return;
+    }
+
     // Show validation errors if not all questions are answered
     if (!allAnswered) {
       setShowValidationErrors(true);
@@ -249,6 +305,13 @@ const SdsTry = () => {
       let selectedValue = null;
       let customAnswer = null;
 
+      // Debug logging for faculty question
+      if (questionId === 364) {
+        console.log("Processing faculty question (ID 364) in submission:");
+        console.log("Question type:", qType);
+        console.log("Raw value:", val);
+      }
+
       if (qType === 5) {
         const text = (val ?? "").toString().trim();
         customAnswer = text.length ? text : null;
@@ -256,6 +319,13 @@ const SdsTry = () => {
         selectedValue = val.join(",");
       } else {
         selectedValue = val != null ? String(val) : null;
+      }
+
+      // Debug logging for faculty question
+      if (questionId === 364) {
+        console.log("Faculty question processed:");
+        console.log("selectedValue:", selectedValue);
+        console.log("customAnswer:", customAnswer);
       }
 
       return { questionId, selectedValue, customAnswer };
@@ -278,6 +348,14 @@ const SdsTry = () => {
     }
 
     const payload = { userId: Number(userId), responses };
+
+    // Debug logging for faculty question in final payload
+    const facultyResponse = responses.find(r => r.questionId === 364);
+    console.log("Faculty response in final payload:", facultyResponse);
+    console.log("All responses in payload:", responses);
+
+    // Save original responses before they get overwritten by backend response
+    const originalResponses = [...responses];
 
     try {
       const response = await fetch(`${baseUrl}/api/Sds/responses`, {
@@ -321,6 +399,7 @@ navigate("/self-directed-search/result", {
   state: {
     hollandCode: code,                 // always a string
     responses,                         // array (for Q265/Q266 if present)
+    allResponses: originalResponses,  // Pass all original responses including faculty
     serverResponse: data,              // raw for debugging
     answeredCount: Object.keys(answers).length,
     submittedAt: new Date().toISOString()
@@ -475,6 +554,27 @@ console.log("SDS response (normalized):", { code, responses, data });
                  const selectedOption = q.answerOptions.find(opt => opt.text === String(sliderValue));
                  setAnswers((prev) => ({ ...prev, [q.id]: selectedOption ? selectedOption.value : null }));
                } else {
+                 // Log faculty question selection
+                 if (q.id === 364) {
+                   console.log("Faculty question (ID 364) answered!");
+                   console.log("Question text:", q.text);
+                   console.log("Selected value:", val);
+                   console.log("Available options:", q.answerOptions);
+                   
+                   // Find the selected option details
+                   const selectedOption = q.answerOptions.find(opt => String(opt.value) === String(val));
+                   console.log("Selected option details:", selectedOption);
+                 }
+                 
+                 // Validate RIASEC input for specific question
+                 const validationError = validateRiasecInput(q.text, val);
+                 
+                 // Update validation errors
+                 setRiasecValidationErrors((prev) => ({
+                   ...prev,
+                   [q.id]: validationError
+                 }));
+                 
                  setAnswers((prev) => ({ ...prev, [q.id]: val }));
                }
              }}
@@ -486,6 +586,13 @@ console.log("SDS response (normalized):", { code, responses, data });
              highlightColor={theme.color}
              colorScheme={theme.scheme}
            />
+          {/* RIASEC Validation Error Display */}
+          {riasecValidationErrors[q.id] && (
+            <Alert status="error" mt={2} size="sm">
+              <AlertIcon />
+              <Text fontSize="sm">{riasecValidationErrors[q.id]}</Text>
+            </Alert>
+          )}
           <Divider mt={4} />
         </Box>
         );

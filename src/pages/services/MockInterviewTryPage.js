@@ -8,6 +8,15 @@ import {
   useToast,
   Image,
   Progress,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import Footer from '../../components/Footer';
@@ -16,6 +25,7 @@ import { useNavigate } from 'react-router-dom';
 const MockInterviewTryPage = () => {
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(50);
+  const [showWarningModal, setShowWarningModal] = useState(false);
   const navigate = useNavigate();
 
   const handleNext = () => {
@@ -25,6 +35,19 @@ const MockInterviewTryPage = () => {
 
   const handleProceed = () => {
     navigate('/mock-interview/select-major');
+  };
+
+  const handleStartInterview = () => {
+    setShowWarningModal(true);
+  };
+
+  const handleConfirmStart = () => {
+    setShowWarningModal(false);
+    navigate('/mock-interview/select-major');
+  };
+
+  const handleCancelStart = () => {
+    setShowWarningModal(false);
   };
 
   return (
@@ -89,13 +112,61 @@ const MockInterviewTryPage = () => {
               <Text color="gray.600" fontSize="md">
                 Ready to begin? Click below to choose your major and start your mock interview.
               </Text>
-              <Button colorScheme="green" size="lg" onClick={handleProceed}>
+              <Button colorScheme="green" size="lg" onClick={handleStartInterview}>
                 Choose Major & Start
               </Button>
             </VStack>
           )}
         </Box>
       </Flex>
+      
+      {/* Warning Modal */}
+      <Modal isOpen={showWarningModal} onClose={handleCancelStart} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader color="red.500">
+            ⚠️ Warning: Starting Mock Interview
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Alert status="warning" mb={4}>
+              <AlertIcon />
+              <Text fontWeight="bold">Important: Interview will start now!</Text>
+            </Alert>
+            
+            <VStack align="stretch" spacing={4}>
+              <Text>
+                Before proceeding, please ensure:
+              </Text>
+              
+              <VStack align="stretch" spacing={2}>
+                <Text>• <strong>Check your internet connection</strong> - ensure it's stable</Text>
+                <Text>• <strong>Check your camera and microphone</strong> - they will be used for recording</Text>
+                <Text>• <strong>Find a quiet environment</strong> - minimize background noise</Text>
+                <Text>• <strong>Do not navigate away</strong> - you will lose your progress</Text>
+                <Text>• <strong>Do not close the browser</strong> - your answers will not be recorded</Text>
+              </VStack>
+              
+              <Alert status="error" mt={4}>
+                <AlertIcon />
+                <Text fontSize="sm">
+                  <strong>Warning:</strong> If you leave this page or lose connection during the interview, 
+                  your answers will be lost and you'll need to start over.
+                </Text>
+              </Alert>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={handleCancelStart}>
+              Cancel
+            </Button>
+            <Button colorScheme="red" onClick={handleConfirmStart}>
+              I Understand - Start Interview
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       <Footer />
     </Box>
   );

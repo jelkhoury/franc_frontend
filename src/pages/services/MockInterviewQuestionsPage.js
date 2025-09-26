@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Box, Button, Heading, Text, VStack, HStack, Flex, SimpleGrid, useToast, Spinner,
+  Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter,
+  Alert, AlertIcon,
 } from '@chakra-ui/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircleIcon } from '@chakra-ui/icons';
@@ -78,6 +80,16 @@ const MockInterviewQuestionsPage = () => {
   const [showThankYou, setShowThankYou] = useState(false);
   const [canDoMock, setCanDoMock] = useState(true);
   const [checkingMockStatus, setCheckingMockStatus] = useState(false);
+  const [showQuestionList, setShowQuestionList] = useState(false);
+  const [showRetryPrompt, setShowRetryPrompt] = useState(false);
+  const [retryCountdown, setRetryCountdown] = useState(5);
+  const [showRelaxationTime, setShowRelaxationTime] = useState(false);
+  const [relaxationCountdown, setRelaxationCountdown] = useState(5);
+  const [promptRetryUsed, setPromptRetryUsed] = useState(false);
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [showExitWarning, setShowExitWarning] = useState(false);
+  const [showReadyButton, setShowReadyButton] = useState(false);
+  const [totalReplayCount, setTotalReplayCount] = useState(0);
 
   // prompt/audio
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(null);
@@ -157,7 +169,7 @@ const MockInterviewQuestionsPage = () => {
       setMode('thinkingLoop');
       if (pendingStartRef.current) {
         pendingStartRef.current = false;
-        beginAnswerCountdown();
+        // Don't start countdown immediately, show retry prompt instead
       }
     }
   };
@@ -252,6 +264,50 @@ const MockInterviewQuestionsPage = () => {
   };
   useEffect(() => { checkMockInterviewStatus(); /* eslint-disable-line */ }, []);
 
+  // Auto-start retry countdown when retry prompt is shown
+  useEffect(() => {
+    if (showRetryPrompt && retryCountdown > 0) {
+      const timer = setTimeout(() => {
+        setRetryCountdown(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (showRetryPrompt && retryCountdown === 0) {
+      setShowRetryPrompt(false);
+      beginAnswerCountdown();
+    }
+  }, [showRetryPrompt, retryCountdown]);
+
+  // Browser back button and page unload warning
+  useEffect(() => {
+    if (!interviewStarted) return; // Only protect when interview is started
+
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "Are you sure you want to leave? You will miss the interview and lose your chance and answers.";
+      return "Are you sure you want to leave? You will miss the interview and lose your chance and answers.";
+    };
+
+    const handlePopState = (e) => {
+      e.preventDefault();
+      setShowExitWarning(true);
+      // Push the current state back to prevent navigation
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    // Add event listeners
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", handlePopState);
+    
+    // Push initial state to enable popstate detection
+    window.history.pushState(null, "", window.location.href);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [interviewStarted]);
+
   // fetch questions with fallback
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -315,15 +371,19 @@ const MockInterviewQuestionsPage = () => {
   };
 
   const onAudioEnded = () => {
-    // After prompt: end_talk2 once, then idle → begin countdown
+    // After prompt: end_talk2 once, then show retry prompt
     pendingStartRef.current = true;
     setMode('end_talk2');
+    setShowRetryPrompt(true);
+    setRetryCountdown(5);
   };
 
   const onAudioError = () => {
     // Treat as ended
     pendingStartRef.current = true;
     setMode('end_talk2');
+    setShowRetryPrompt(true);
+    setRetryCountdown(5);
   };
 
   // ---- countdown & recording ----
@@ -372,7 +432,6 @@ const MockInterviewQuestionsPage = () => {
 
   const handleStopRecording = (auto = false) => {
     if (!mediaRecorder) return;
-    setShowControls(true);
     const chunks = [];
     mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
     mediaRecorder.onstop = () => {
@@ -387,12 +446,115 @@ const MockInterviewQuestionsPage = () => {
       }
       setShowRecorder(false);
       setMode('thinkingLoop');
+      
+      // Start relaxation time instead of showing controls immediately
+      if (currentQuestionIdx < questions.length - 1) {
+        startRelaxationTime();
+      } else {
+        // Last question completed, show submit option
+        setShowControls(true);
+      }
     };
     mediaRecorder.stop();
   };
 
   const handleAnswerTimeout = () => { if (recording) handleStopRecording(true); };
   const handleUserStop = () => { pauseAnswerTimer(); handleStopRecording(false); };
+
+  // ---- retry prompt functionality ----
+  const handleRetryPrompt = () => {
+    if (promptRetryUsed) return; // Only allow one retry
+    setPromptRetryUsed(true);
+    setShowRetryPrompt(false);
+    setTotalReplayCount(prev => prev + 1); // Increment total replay count
+    if (currentQuestionIdx != null) {
+      const q = questions[currentQuestionIdx];
+      playQuestionPrompt(q?.videoUrl, q?.title, currentQuestionIdx);
+    }
+  };
+
+  const startRetryCountdown = () => {
+    setRetryCountdown(5);
+    const interval = setInterval(() => {
+      setRetryCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setShowRetryPrompt(false);
+          beginAnswerCountdown();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // ---- relaxation time between questions ----
+  const startRelaxationTime = () => {
+    setShowRelaxationTime(true);
+    setRelaxationCountdown(5);
+    const interval = setInterval(() => {
+      setRelaxationCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setShowRelaxationTime(false);
+          // Move to next question
+          const nextIdx = (currentQuestionIdx ?? -1) + 1;
+          if (nextIdx < questions.length) {
+            const q = questions[nextIdx];
+            setCurrentQuestionIdx(nextIdx);
+            setSelectedTitle(q.title);
+            setPromptRetryUsed(false); // Reset retry for next question
+            setTimeout(() => { playQuestionPrompt(q.videoUrl, q.title, nextIdx); }, 300);
+          } else {
+            // All questions completed, show submit option
+            setShowControls(true);
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // ---- warning modal handlers ----
+  const handleStartInterviewClick = () => {
+    setShowWarningModal(true);
+  };
+
+  const handleConfirmStartInterview = () => {
+    setShowWarningModal(false);
+    setInterviewStarted(true);
+    setInterviewStartTime(Date.now());
+    setInterviewDuration(0);
+    setCurrentQuestionIdx(0);
+    setSelectedTitle(questions[0]?.title || '');
+    setPromptRetryUsed(false);
+    setShowReadyButton(true);
+    // ensure idle animation is running
+    setMode('thinkingLoop');
+  };
+
+  const handleImReady = () => {
+    setShowReadyButton(false);
+    // Start with first question
+    setTimeout(() => { 
+      playQuestionPrompt(questions[0]?.videoUrl, questions[0]?.title, 0); 
+    }, 500);
+  };
+
+  const handleCancelStartInterview = () => {
+    setShowWarningModal(false);
+  };
+
+  // ---- browser protection handlers ----
+  const handleExitConfirm = () => {
+    setShowExitWarning(false);
+    navigate('/');
+  };
+
+  const handleExitCancel = () => {
+    setShowExitWarning(false);
+  };
 
   // ---- upload ----
   const handleSubmitVideos = async () => {
@@ -421,6 +583,7 @@ const MockInterviewQuestionsPage = () => {
       const durationString = `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}`;
       formData.append('Duration', durationString);
       formData.append('UserId', String(userId));
+      formData.append('NbOfTry', String(totalReplayCount));
       validAnswers.forEach((answer) => {
         const qid = questions[answer.questionIdx]?.questionId;
         if (qid) formData.append('QuestionIds', String(qid));
@@ -440,7 +603,7 @@ const MockInterviewQuestionsPage = () => {
       const result = await res.json();
       toast({
         title: 'Mock Interview completed successfully!',
-        description: `Interview ID: ${result.mockInterviewId}. Duration: ${durationString}. Uploaded ${result.videoUrls.length} videos.`,
+        description: `Interview ID: ${result.mockInterviewId}. Duration: ${durationString}. Uploaded ${result.videoUrls.length} videos. Replays used: ${totalReplayCount}.`,
         status: 'success',
         duration: 5000,
         isClosable: true,
@@ -601,68 +764,115 @@ const MockInterviewQuestionsPage = () => {
   </Box>
 
 
-                <HStack mt={3} spacing={2} wrap="wrap">
-                  <Button
-                    size="sm"
-                    colorScheme="blue"
-                    onClick={() => {
-                      if (currentQuestionIdx == null) return;
-                      const q = questions[currentQuestionIdx];
-                      playQuestionPrompt(q?.videoUrl, q?.title, currentQuestionIdx);
-                    }}
-                    isDisabled={currentQuestionIdx == null}
-                  >
-                    Replay Prompt
-                  </Button>
-
-                  {audioBlocked && (
-                    <Button
-                      size="sm"
-                      colorScheme="pink"
-                      onClick={async () => {
-                        try {
-                          setAudioBlocked(false);
-                          await audioRef.current?.play();
-                        } catch (e) { console.error(e); }
-                      }}
-                    >
-                      Enable Audio
-                    </Button>
-                  )}
-                </HStack>
+                 {audioBlocked && (
+                   <HStack mt={3} spacing={2} wrap="wrap">
+                     <Button
+                       size="sm"
+                       colorScheme="pink"
+                       onClick={async () => {
+                         try {
+                           setAudioBlocked(false);
+                           await audioRef.current?.play();
+                         } catch (e) { console.error(e); }
+                       }}
+                     >
+                       Enable Audio
+                     </Button>
+                   </HStack>
+                 )}
               </Box>
             </Flex>
 
-            {/* Questions */}
-            <Box mt={8} bg="white" borderRadius="lg" borderWidth="1px" boxShadow="md" p={4}>
-              <Heading size="sm" mb={3} color="gray.700">Questions</Heading>
-              <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={3}>
-                {questions.map((q, idx) => (
-                  <Box key={q.questionId ?? idx} p={3} borderRadius="md" bg={idx === currentQuestionIdx ? 'blue.50' : 'gray.50'} borderWidth="1px" borderColor={idx === currentQuestionIdx ? 'blue.200' : 'gray.200'}>
-                    <VStack align="stretch" spacing={2}>
-                      <Text fontWeight="semibold">Q{idx + 1}</Text>
-                      <Text fontSize="sm" color="gray.700">{q.title}</Text>
+            {/* Current Question Info - moved to top */}
+            {currentQuestionIdx !== null && (
+              <Box mb={6} bg="white" borderRadius="lg" borderWidth="1px" boxShadow="md" p={4} textAlign="center">
+                <Heading size="sm" mb={3} color="gray.700">
+                  Question {currentQuestionIdx + 1} of {questions.length}
+                </Heading>
+                <Text fontSize="lg" fontWeight="semibold" color="blue.600">
+                  {selectedTitle}
+                </Text>
+              </Box>
+            )}
+
+            {/* Retry Prompt Modal */}
+            <Modal isOpen={showRetryPrompt} onClose={() => {}} isCentered closeOnOverlayClick={false}>
+              <ModalOverlay />
+              <ModalContent>
+                <ModalHeader color="yellow.700">
+                  Ready to answer?
+                </ModalHeader>
+                <ModalBody>
+                  <VStack spacing={4}>
+                    <Text color="yellow.600">
+                      You can replay the prompt once before recording starts.
+                    </Text>
+                    <HStack spacing={4}>
                       <Button
-                        size="sm"
                         colorScheme="blue"
-                        variant={idx === currentQuestionIdx ? 'solid' : 'outline'}
-                        onClick={() => {
-                          setCurrentQuestionIdx(idx);
-                          setSelectedTitle(q.title);
-                          playQuestionPrompt(q.videoUrl, q.title, idx);
-                        }}
-                        isDisabled={
-                          (recording && idx === currentQuestionIdx) || 
-                          (countdownActive && idx === currentQuestionIdx)
-                        }
+                        onClick={handleRetryPrompt}
+                        isDisabled={promptRetryUsed}
                       >
-                        Show
+                        {promptRetryUsed ? 'Retry Used' : 'Replay Prompt'}
                       </Button>
-                    </VStack>
-                  </Box>
-                ))}
-              </SimpleGrid>
-            </Box>
+                      <Button
+                        colorScheme="green"
+                        onClick={() => {
+                          setShowRetryPrompt(false);
+                          beginAnswerCountdown();
+                        }}
+                      >
+                        Start Recording ({retryCountdown})
+                      </Button>
+                    </HStack>
+                  </VStack>
+                </ModalBody>
+              </ModalContent>
+            </Modal>
+
+            {/* I'm Ready Modal */}
+            <Modal isOpen={showReadyButton} onClose={() => {}} isCentered closeOnOverlayClick={false}>
+              <ModalOverlay />
+              <ModalContent>
+                <ModalHeader color="blue.700">
+                  Ready to Start?
+                </ModalHeader>
+                <ModalBody>
+                  <VStack spacing={4}>
+                    <Text color="blue.600">
+                      Make sure you're in a quiet environment with good lighting.
+                    </Text>
+                    <Button
+                      colorScheme="green"
+                      size="lg"
+                      onClick={handleImReady}
+                    >
+                      I'm Ready - Start First Question
+                    </Button>
+                  </VStack>
+                </ModalBody>
+              </ModalContent>
+            </Modal>
+
+            {/* Relaxation Time Modal */}
+            <Modal isOpen={showRelaxationTime} onClose={() => {}} isCentered closeOnOverlayClick={false}>
+              <ModalOverlay />
+              <ModalContent>
+                <ModalHeader color="green.700">
+                  Great job! 🎉
+                </ModalHeader>
+                <ModalBody>
+                  <VStack spacing={4}>
+                    <Text color="green.600">
+                      Take a moment to relax before the next question.
+                    </Text>
+                    <Text fontSize="2xl" fontWeight="bold" color="green.500">
+                      {relaxationCountdown}
+                    </Text>
+                  </VStack>
+                </ModalBody>
+              </ModalContent>
+            </Modal>
 
             {/* Answer timer & controls */}
             {(showRecorder || showControls) && (
@@ -675,52 +885,17 @@ const MockInterviewQuestionsPage = () => {
                     recording={recording}
                   />
                 </Box>
-                <HStack mt={4} justify="center">
-                  <Button
-                    colorScheme="gray"
-                    onClick={() => {
-                      setShowControls(false);
-                      if (currentQuestionIdx != null) {
-                        const q = questions[currentQuestionIdx];
-                        playQuestionPrompt(q?.videoUrl, q?.title, currentQuestionIdx);
-                      }
-                      setRecordedChunks([]);
-                      setRecording(false);
-                    }}
-                    isDisabled={recording}
-                  >
-                    Retry
-                  </Button>
-
-                  {currentQuestionIdx === questions.length - 1 ? (
-                    <Button
-                      colorScheme="green"
-                      onClick={handleSubmitVideos}
-                      isLoading={submitting}
-                      isDisabled={recording || recordedAnswers.length === 0}
-                    >
-                      Submit
-                    </Button>
-                  ) : (
-                    <Button
-                      colorScheme="blue"
-                      onClick={() => {
-                        setShowControls(false);
-                        handleUserStop();
-                        const nextIdx = (currentQuestionIdx ?? -1) + 1;
-                        if (nextIdx < questions.length) {
-                          const q = questions[nextIdx];
-                          setCurrentQuestionIdx(nextIdx);
-                          setSelectedTitle(q.title);
-                          setTimeout(() => { playQuestionPrompt(q.videoUrl, q.title, nextIdx); }, 300);
-                        }
-                      }}
-                      isDisabled={countdownActive}
-                    >
-                      Next Question
-                    </Button>
-                  )}
-                </HStack>
+                 <Box mt={4} textAlign="center">
+                   <Button
+                     colorScheme="green"
+                     size="lg"
+                     onClick={handleSubmitVideos}
+                     isLoading={submitting}
+                     isDisabled={recording || recordedAnswers.length === 0}
+                   >
+                     Submit Interview
+                   </Button>
+                 </Box>
               </>
             )}
           </>
@@ -747,15 +922,7 @@ const MockInterviewQuestionsPage = () => {
               <Button
                 colorScheme="blue"
                 size="lg"
-                onClick={() => {
-                  setInterviewStarted(true);
-                  setInterviewStartTime(Date.now());
-                  setInterviewDuration(0);
-                  setCurrentQuestionIdx(0);
-                  setSelectedTitle(questions[0]?.title || '');
-                  // ensure idle animation is running
-                  setMode('thinkingLoop');
-                }}
+                onClick={handleStartInterviewClick}
                 isDisabled={questions.length === 0 || !canDoMock || checkingMockStatus}
                 isLoading={checkingMockStatus}
               >
@@ -768,6 +935,97 @@ const MockInterviewQuestionsPage = () => {
           </>
         )}
       </Box>
+
+      {/* Exit Warning Modal */}
+      <Modal isOpen={showExitWarning} onClose={handleExitCancel} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader color="red.500">
+            ⚠️ Warning: Leaving Interview
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Alert status="error" mb={4}>
+              <AlertIcon />
+              <Text fontWeight="bold">You will miss the interview!</Text>
+            </Alert>
+            
+            <VStack align="stretch" spacing={4}>
+              <Text>
+                You are about to leave the mock interview. If you continue:
+              </Text>
+              
+              <VStack align="stretch" spacing={2}>
+                <Text>• <strong>You will lose your chance to complete the interview</strong></Text>
+                <Text>• <strong>All your recorded answers will be lost</strong></Text>
+                <Text>• <strong>You'll need to start over from the beginning</strong></Text>
+              </VStack>
+              
+              <Alert status="warning" mt={4}>
+                <AlertIcon />
+                <Text fontSize="sm">
+                  <strong>Progress:</strong> You have answered {answeredQuestions.length} out of {questions.length} questions.
+                </Text>
+              </Alert>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={handleExitCancel}>
+              Stay and Continue
+            </Button>
+            <Button colorScheme="red" onClick={handleExitConfirm}>
+              Leave Anyway
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Warning Modal */}
+      <Modal isOpen={showWarningModal} onClose={handleCancelStartInterview} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader color="red.500">
+            ⚠️ Warning: Starting Mock Interview
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Alert status="warning" mb={4}>
+              <AlertIcon />
+              <Text fontWeight="bold">Important: Interview will start now!</Text>
+            </Alert>
+            
+            <VStack align="stretch" spacing={4}>
+              <Text>
+                Before proceeding, please ensure:
+              </Text>
+              
+              <VStack align="stretch" spacing={2}>
+                <Text>• <strong>Check your internet connection</strong> - ensure it's stable</Text>
+                <Text>• <strong>Check your camera and microphone</strong> - they will be used for recording</Text>
+                <Text>• <strong>Find a quiet environment</strong> - minimize background noise</Text>
+                <Text>• <strong>Do not navigate away</strong> - you will lose your progress</Text>
+                <Text>• <strong>Do not close the browser</strong> - your answers will not be recorded</Text>
+              </VStack>
+              
+              <Alert status="error" mt={4}>
+                <AlertIcon />
+                <Text fontSize="sm">
+                  <strong>Warning:</strong> If you leave this page or lose connection during the interview, 
+                  your answers will be lost and you'll need to start over.
+                </Text>
+              </Alert>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={handleCancelStartInterview}>
+              Cancel
+            </Button>
+            <Button colorScheme="red" onClick={handleConfirmStartInterview}>
+              I Understand - Start Interview
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       <Footer />
     </Box>

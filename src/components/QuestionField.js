@@ -222,7 +222,7 @@ const QuestionField = ({
               </SliderThumb>
             </Slider>
             
-            {/* Divider marks */}
+            {/* Number marks only */}
             <Box position="relative" mt={2}>
               <Box position="relative" height="20px">
                 {marks.map((mark) => (
@@ -233,13 +233,6 @@ const QuestionField = ({
                     transform="translateX(-50%)"
                     textAlign="center"
                   >
-                    <Box
-                      width="2px"
-                      height="8px"
-                      bg="gray.400"
-                      mx="auto"
-                      mb={1}
-                    />
                     <Text fontSize="xs" color="gray.600" fontWeight="medium">
                       {mark}
                     </Text>

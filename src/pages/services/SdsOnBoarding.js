@@ -302,7 +302,7 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
         <Modal isOpen={showAttentionModal} onClose={handleCancelTest} isCentered size="lg">
           <ModalOverlay />
           <ModalContent>
-            <ModalHeader color="orange.500">
+            <ModalHeader color="black">
               ⚠️ Attention Required
             </ModalHeader>
             <ModalCloseButton />
@@ -345,7 +345,7 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
               <Button variant="ghost" mr={3} onClick={handleCancelTest}>
                 I'm Not Ready
               </Button>
-              <Button colorScheme="orange" onClick={handleStartTest}>
+              <Button colorScheme="brand" onClick={handleStartTest}>
                 I'm Ready - Start Test
               </Button>
             </ModalFooter>

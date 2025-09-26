@@ -9,27 +9,49 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { CheckCircle, ChevronRight, Search } from "lucide-react";
 
 /* --- Expandable card --- */
-const ExpandableRoleCard = ({ role, category, description }) => {
+const ExpandableRoleCard = ({ role, category, description, isHighlighted = false }) => {
   const { isOpen, onToggle } = useDisclosure();
   const hasDescription = description && description.trim() !== "";
   
+  // All items with descriptions are expandable, highlighted items just have different styling
+  const shouldShowDescription = isOpen;
+  const isExpandable = hasDescription;
+  
   return (
     <Box
-      onClick={hasDescription ? onToggle : undefined}
-      cursor={hasDescription ? "pointer" : "default"}
+      onClick={isExpandable ? onToggle : undefined}
+      cursor={isExpandable ? "pointer" : "default"}
       p={4}
-      bg="blue.50"
+      bg={isHighlighted ? "yellow.50" : "blue.50"}
       rounded="md"
       shadow="sm"
       border="1px solid"
-      borderColor="blue.200"
+      borderColor={isHighlighted ? "yellow.300" : "blue.200"}
       transition="box-shadow 0.2s ease, border-color 0.2s ease, transform 0.05s ease"
-      _hover={hasDescription ? { shadow: "md", borderColor: "blue.300" } : {}}
-      _active={hasDescription ? { transform: "scale(0.998)" } : {}}
+      _hover={isExpandable ? { shadow: "md", borderColor: isHighlighted ? "yellow.400" : "blue.300" } : {}}
+      _active={isExpandable ? { transform: "scale(0.998)" } : {}}
       minH="70px"
+      position="relative"
     >
+      {isHighlighted && (
+        <Box
+          position="absolute"
+          top={1}
+          right={1}
+          bg="yellow.400"
+          color="white"
+          px={1.5}
+          py={0.5}
+          rounded="full"
+          fontSize="xs"
+          fontWeight="bold"
+          zIndex={1}
+        >
+          ⭐
+        </Box>
+      )}
       <HStack spacing={3} align="start">
-        {hasDescription ? (
+        {isExpandable ? (
           <Icon
             as={ChevronRight}
             boxSize={5}
@@ -43,10 +65,10 @@ const ExpandableRoleCard = ({ role, category, description }) => {
           <Box boxSize={5} mt="2px" flexShrink={0} />
         )}
         <VStack align="start" spacing={1} flex="1" minW={0}>
-          <Text fontWeight="semibold" color="blue.700" noOfLines={isOpen ? undefined : 2} flex="1">
-            {role} | {category || "Uncategorized"}
-          </Text>
-          {isOpen && description && (
+            <Text fontWeight="semibold" color={isHighlighted ? "yellow.800" : "blue.700"} noOfLines={isOpen ? undefined : 2} flex="1">
+              {role} | {category || "Uncategorized"}
+            </Text>
+          {shouldShowDescription && description && (
             <Text fontSize="sm" color="gray.600" mt={2} lineHeight="1.4">
               {description}
             </Text>
@@ -100,8 +122,8 @@ function parseCategoryDescriptions(response, kind) {
   
   for (const line of lines) {
     if (kind === "occupation") {
-      // Look for pattern: "- Title | category: CAT (Description)" for occupation
-      const match = line.match(/^- (.+?) \| category: (\w+) \((.+?)\)$/);
+      // Look for pattern: "- Title | category: CAT (Description) HIGHLIGHTED" for occupation
+      const match = line.match(/^- (.+?) \| category: (\w+) \((.+?)\)(?: HIGHLIGHTED)?$/);
       if (match) {
         const [, title, category, description] = match;
         descriptions[title.trim()] = {
@@ -132,6 +154,21 @@ function normalizeSuggestionsPayload(payload) {
   if (payload && Array.isArray(payload.available_items) && Array.isArray(payload.suggestions)) {
     const categoryDescriptions = parseCategoryDescriptions(payload.response, payload.kind);
     
+    // Extract highlighted items from the response text
+    const highlightedItems = [];
+    if (payload.response) {
+      const lines = payload.response.split('\n');
+      lines.forEach(line => {
+        if (line.includes('(HIGHLIGHTED)') || line.includes('HIGHLIGHTED')) {
+          // Extract the item name before the category
+          const match = line.match(/^- (.+?) \| category:/);
+          if (match) {
+            highlightedItems.push(match[1].trim());
+          }
+        }
+      });
+    }
+    
     return {
       code: payload.code,
       kind: payload.kind,
@@ -150,12 +187,28 @@ function normalizeSuggestionsPayload(payload) {
         category: s.category || "",
         reason: "", // No longer provided in new format
       })),
+      highlightedItems: highlightedItems,
       legacy: payload.response || "",
     };
   }
 
   // Legacy fallback (string parsing)
   const parsed = parseLegacy(payload?.response);
+  
+  // Extract highlighted items from legacy response
+  const highlightedItems = [];
+  if (payload?.response) {
+    const lines = payload.response.split('\n');
+    lines.forEach(line => {
+      if (line.includes('(HIGHLIGHTED)') || line.includes('HIGHLIGHTED')) {
+        const match = line.match(/^- (.+?) \| category:/);
+        if (match) {
+          highlightedItems.push(match[1].trim());
+        }
+      }
+    });
+  }
+  
   return {
     code: payload?.code,
     kind: payload?.kind,
@@ -171,6 +224,7 @@ function normalizeSuggestionsPayload(payload) {
       };
     }),
     top5: parsed.top5.map((t) => ({ text: t.title, category: "", reason: t.reason })),
+    highlightedItems: highlightedItems,
     legacy: payload?.response || "",
     legacyComparisonLines: parsed.comparisonLines || [],
   };
@@ -331,7 +385,7 @@ const RIASECScoringTable = ({ scores, loading, error }) => {
 };
 
 /* --- Paginated Available Items Component --- */
-const PaginatedAvailableItems = ({ items, kind }) => {
+const PaginatedAvailableItems = ({ items, kind, highlightedItems = [] }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -370,12 +424,12 @@ const PaginatedAvailableItems = ({ items, kind }) => {
       </Heading>
       {kind === "occupation" && (
         <Text fontSize="sm" color="gray.600" mb={4}>
-          Based on your code, you may be most satisfied in occupations that align with your top interest areas.
+          Based on your code, this is the list of occupations that align with your top interest areas,the highlighted ones are the ones related to your Faculty.
         </Text>
       )}
       {kind === "education" && (
         <Text fontSize="sm" color="gray.600" mb={4}>
-          Based on your code, you may be most satisfied in majors or fields that align with your top interest areas.
+          Based on your code, this is the list of majors or fields that align with your top interest areas.
         </Text>
       )}
 
@@ -420,6 +474,7 @@ const PaginatedAvailableItems = ({ items, kind }) => {
             role={it.text} 
             category={it.category} 
             description={it.description}
+            isHighlighted={highlightedItems.includes(it.text)}
             key={`${it.text}-${idx}`} 
           />
         ))}
@@ -509,39 +564,15 @@ const SuggestionsPanel = ({ label, code, kind, suggestions, loading, error }) =>
 
         {!loading && !error && data && (
           <>
-            {/* Comparison header - only show for occupation suggestions */}
-            {kind === "occupation" && data.comparison ? (
-              <Box bg="gray.50" border="1px solid" borderColor="gray.200" rounded="md" p={3}>
-                <Text><b>Code match:</b> {data.comparison.code_match_message}</Text>
-                <Text>
-                  <b>Dream occupations:</b>{" "}
-                  {data.comparison.dreams_provided?.length
-                    ? data.comparison.dreams_provided.join(", ")
-                    : "none provided."}
-                </Text>
-                <Text>
-                  <b>Dreams alignment:</b> {data.comparison.dreams_hit}/{data.comparison.total_dreams} matched
-                  {data.comparison.dreams_matched?.length
-                    ? ` (matched: ${data.comparison.dreams_matched.join(", ")})`
-                    : ""}
-                  .
-                </Text>
-                <Text><b>Self-knowledge:</b> {data.comparison.verdict}</Text>
-              </Box>
-            ) : kind === "occupation" && suggestions?.response && data.legacyComparisonLines?.length > 0 ? (
-              <Box bg="gray.50" border="1px solid" borderColor="gray.200" rounded="md" p={3}>
-                {data.legacyComparisonLines.map((l, i) => (
-                  <Text key={i}>{l}</Text>
-                ))}
-              </Box>
-            ) : null}
-
-
             <Divider />
 
             {/* Available Items */}
             {data.availableItems?.length > 0 && (
-              <PaginatedAvailableItems items={data.availableItems} kind={kind} />
+              <PaginatedAvailableItems 
+                items={data.availableItems} 
+                kind={kind} 
+                highlightedItems={data.highlightedItems || []} 
+              />
             )}
           </>
         )}
@@ -568,7 +599,7 @@ const SdsResult = () => {
   const [hollandPointsLoading, setHollandPointsLoading] = useState(true);
   const [hollandPointsError, setHollandPointsError] = useState("");
 
-  const apiAiUrl = useMemo(() => process.env.REACT_APP_API_AI_URL || "http://10.138.129.183:5000", []);
+  const apiAiUrl = useMemo(() => process.env.REACT_APP_API_AI_URL || "http://192.168.0.103:5000", []);
   const apiBaseUrl = useMemo(() => "http://localhost:5121", []);
 
   // Process Holland points from API
@@ -618,6 +649,37 @@ const SdsResult = () => {
 
   const dreamOccupations = state?.responses?.[0]?.customAnswer || "";
   const userCode = state?.responses?.[1]?.customAnswer || "";
+  
+  // Extract faculty value from responses
+  const faculty = useMemo(() => {
+    // Use allResponses if available, otherwise fall back to responses
+    const responsesToSearch = state?.allResponses || state?.responses || [];
+    
+    if (!responsesToSearch.length) return "";
+    
+    // Debug logging to see the actual response structure
+    console.log("All responses:", responsesToSearch);
+    console.log("Looking for faculty question (ID 364)...");
+    
+    // Look for faculty question by ID (364) - "Select your faculty"
+    const facultyResponse = responsesToSearch.find(response => {
+      console.log(`Checking response with questionId: ${response.questionId}`);
+      return response.questionId === 364; // Faculty question ID
+    });
+    
+    console.log("Faculty response found:", facultyResponse);
+    
+    if (facultyResponse) {
+      // For type 3 (select), the value should be in selectedValue
+      // The selectedValue contains the option value (e.g., "ENGINEERING", "BUSINESS ADMINISTRATION")
+      const facultyValue = facultyResponse.selectedValue || facultyResponse.customAnswer || "";
+      console.log("Extracted faculty value:", facultyValue);
+      return facultyValue;
+    }
+    
+    console.log("No faculty response found");
+    return "";
+  }, [state?.allResponses, state?.responses]);
 
   useEffect(() => {
     if (!state) return;
@@ -634,7 +696,11 @@ const SdsResult = () => {
       kind: "occupation",
       user_holland_code: userCode,
       dreams_occupations: dreamOccupations, // server will split by comma
+      faculty: faculty, // Add faculty parameter
     });
+    
+    console.log("Faculty value being sent:", faculty);
+    console.log("Occupation API URL:", `${apiAiUrl}/suggest-by-code?${paramsOcc.toString()}`);
 
     const paramsEdu = new URLSearchParams({
       code: codeStr,
@@ -672,7 +738,7 @@ const SdsResult = () => {
       setEduLoading(false);
       setHollandPointsLoading(false);
     });
-  }, [state, apiAiUrl, apiBaseUrl, codeStr, userCode, dreamOccupations]);
+  }, [state, apiAiUrl, apiBaseUrl, codeStr, userCode, dreamOccupations, faculty]);
 
   if (!state) {
     return (
@@ -684,6 +750,9 @@ const SdsResult = () => {
   }
 
   const letters = (codeStr || "").split("").slice(0, 3);
+  
+  // Helper function to check if a letter is in the user's Holland code
+  const isInUserCode = (letter) => letters.includes(letter);
 
   return (
     <Box minH="100vh" bgGradient="linear(to-br, #ffffff, #f1f5f9)" pb={16}>
@@ -719,57 +788,57 @@ const SdsResult = () => {
           <VStack align="stretch" spacing={4}>
             <Heading size="md" textAlign="center">Explanation of RIASEC Dimensions</Heading>
             <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
-              <Box p={3} bg="teal.50" rounded="md" border="1px solid" borderColor="teal.200">
+              <Box p={3} bg={isInUserCode("R") ? "teal.50" : "white"} rounded="md" border="1px solid" borderColor={isInUserCode("R") ? "teal.200" : "gray.200"}>
                 <HStack mb={2}>
                   <LetterBadge ch="R" />
-                  <Text fontWeight="bold" color="teal.700">Realistic</Text>
+                  <Text fontWeight="bold" color={isInUserCode("R") ? "teal.700" : "black"}>Realistic</Text>
                 </HStack>
-                <Text fontSize="sm" color="gray.700">
+                <Text fontSize="sm" color={isInUserCode("R") ? "gray.700" : "black"}>
                   Prefers hands-on activities, working with tools, machines, or the outdoors. Practical, mechanical, and action-oriented.
                 </Text>
               </Box>
-              <Box p={3} bg="purple.50" rounded="md" border="1px solid" borderColor="purple.200">
+              <Box p={3} bg={isInUserCode("I") ? "purple.50" : "white"} rounded="md" border="1px solid" borderColor={isInUserCode("I") ? "purple.200" : "gray.200"}>
                 <HStack mb={2}>
                   <LetterBadge ch="I" />
-                  <Text fontWeight="bold" color="purple.700">Investigative</Text>
+                  <Text fontWeight="bold" color={isInUserCode("I") ? "purple.700" : "black"}>Investigative</Text>
                 </HStack>
-                <Text fontSize="sm" color="gray.700">
+                <Text fontSize="sm" color={isInUserCode("I") ? "gray.700" : "black"}>
                   Prefers working with ideas, thinking, and problem-solving. Analytical, curious, and scientific.
                 </Text>
               </Box>
-              <Box p={3} bg="pink.50" rounded="md" border="1px solid" borderColor="pink.200">
+              <Box p={3} bg={isInUserCode("A") ? "pink.50" : "white"} rounded="md" border="1px solid" borderColor={isInUserCode("A") ? "pink.200" : "gray.200"}>
                 <HStack mb={2}>
                   <LetterBadge ch="A" />
-                  <Text fontWeight="bold" color="pink.700">Artistic</Text>
+                  <Text fontWeight="bold" color={isInUserCode("A") ? "pink.700" : "black"}>Artistic</Text>
                 </HStack>
-                <Text fontSize="sm" color="gray.700">
+                <Text fontSize="sm" color={isInUserCode("A") ? "gray.700" : "black"}>
                   Prefers creative expression through art, music, writing, or design. Imaginative, innovative, and original.
                 </Text>
               </Box>
-              <Box p={3} bg="green.50" rounded="md" border="1px solid" borderColor="green.200">
+              <Box p={3} bg={isInUserCode("S") ? "green.50" : "white"} rounded="md" border="1px solid" borderColor={isInUserCode("S") ? "green.200" : "gray.200"}>
                 <HStack mb={2}>
                   <LetterBadge ch="S" />
-                  <Text fontWeight="bold" color="green.700">Social</Text>
+                  <Text fontWeight="bold" color={isInUserCode("S") ? "green.700" : "black"}>Social</Text>
                 </HStack>
-                <Text fontSize="sm" color="gray.700">
+                <Text fontSize="sm" color={isInUserCode("S") ? "gray.700" : "black"}>
                   Prefers working with people, helping, teaching, or serving. Cooperative, empathetic, and supportive.
                 </Text>
               </Box>
-              <Box p={3} bg="orange.50" rounded="md" border="1px solid" borderColor="orange.200">
+              <Box p={3} bg={isInUserCode("E") ? "orange.50" : "white"} rounded="md" border="1px solid" borderColor={isInUserCode("E") ? "orange.200" : "gray.200"}>
                 <HStack mb={2}>
                   <LetterBadge ch="E" />
-                  <Text fontWeight="bold" color="orange.700">Enterprising</Text>
+                  <Text fontWeight="bold" color={isInUserCode("E") ? "orange.700" : "black"}>Enterprising</Text>
                 </HStack>
-                <Text fontSize="sm" color="gray.700">
+                <Text fontSize="sm" color={isInUserCode("E") ? "gray.700" : "black"}>
                   Prefers leadership roles, persuading, and managing projects or people. Energetic, ambitious, and outgoing.
                 </Text>
               </Box>
-              <Box p={3} bg="blue.50" rounded="md" border="1px solid" borderColor="blue.200">
+              <Box p={3} bg={isInUserCode("C") ? "blue.50" : "white"} rounded="md" border="1px solid" borderColor={isInUserCode("C") ? "blue.200" : "gray.200"}>
                 <HStack mb={2}>
                   <LetterBadge ch="C" />
-                  <Text fontWeight="bold" color="blue.700">Conventional</Text>
+                  <Text fontWeight="bold" color={isInUserCode("C") ? "blue.700" : "black"}>Conventional</Text>
                 </HStack>
-                <Text fontSize="sm" color="gray.700">
+                <Text fontSize="sm" color={isInUserCode("C") ? "gray.700" : "black"}>
                   Prefers structured tasks, organization, data management, and attention to detail. Methodical, efficient, and orderly.
                 </Text>
               </Box>
@@ -802,6 +871,46 @@ const SdsResult = () => {
             error={eduError}
           />
         </SimpleGrid>
+
+        {/* Comparison Section */}
+        {occSuggestions && (
+          <Box bg="gray.50" border="1px solid" borderColor="gray.200" rounded="md" p={4} mb={6} mt={6}>
+            <Heading size="md" mb={3}>Comparison with your dream occupations</Heading>
+            {(() => {
+              const occData = normalizeSuggestionsPayload(occSuggestions);
+              if (occData.comparison) {
+                return (
+                  <>
+                    <Text><b>Code match:</b> {occData.comparison.code_match_message}</Text>
+                    <Text>
+                      <b>Dream occupations:</b>{" "}
+                      {occData.comparison.dreams_provided?.length
+                        ? occData.comparison.dreams_provided.join(", ")
+                        : "none provided."}
+                    </Text>
+                    <Text>
+                      <b>Dreams alignment:</b> {occData.comparison.dreams_hit}/{occData.comparison.total_dreams} matched
+                      {occData.comparison.dreams_matched?.length
+                        ? ` (matched: ${occData.comparison.dreams_matched.join(", ")})`
+                        : ""}
+                      .
+                    </Text>
+                    <Text><b>Self-knowledge:</b> {occData.comparison.verdict}</Text>
+                  </>
+                );
+              } else if (occSuggestions?.response && occData.legacyComparisonLines?.length > 0) {
+                return (
+                  <>
+                    {occData.legacyComparisonLines.map((l, i) => (
+                      <Text key={i}>{l}</Text>
+                    ))}
+                  </>
+                );
+              }
+              return null;
+            })()}
+          </Box>
+        )}
 
         <HStack justify="center" spacing={4} mt={8}>
           <Button onClick={() => navigate("/")} variant="outline">

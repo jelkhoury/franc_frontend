@@ -13,7 +13,7 @@ import { Link as RouterLink } from "react-router-dom";
 
 const HeroSection = ({ onGetStartedClick }) => {
   return (
-    <Box py={{ base: 16, md: 32 }} px={6} bg="gray.100">
+    <Box py={{ base: 16, md: 32 }} px={6} bg="#EBF2FF">
       <Container maxW="6xl">
         <Flex
           direction={{ base: "column", md: "row" }}
