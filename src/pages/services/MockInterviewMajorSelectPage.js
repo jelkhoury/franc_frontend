@@ -148,7 +148,7 @@ const MockInterviewMajorSelectPage = () => {
 
         try {
           // Try to fetch faculties
-          const facultiesResponse = await fetch(`${baseUrl}/BlobStorage/get-faculties`);
+          const facultiesResponse = await fetch(`${baseUrl}/api/BlobStorage/get-faculties`);
           if (facultiesResponse.ok) {
             facultiesData = await facultiesResponse.json();
             if (facultiesData && facultiesData.length > 0) {
@@ -157,7 +157,7 @@ const MockInterviewMajorSelectPage = () => {
           }
 
           // Try to fetch majors
-          const majorsResponse = await fetch(`${baseUrl}/BlobStorage/get-majors`);
+          const majorsResponse = await fetch(`${baseUrl}/api/BlobStorage/get-majors`);
           if (majorsResponse.ok) {
             majorsData = await majorsResponse.json();
             if (majorsData && majorsData.length > 0) {

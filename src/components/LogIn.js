@@ -34,7 +34,7 @@ const Login = () => {
 
     try {
       const baseUrl = process.env.REACT_APP_API_BASE_URL ;
-      const response = await fetch(`${baseUrl}/users/sign-in`, {
+      const response = await fetch(`${baseUrl}/api/users/sign-in`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

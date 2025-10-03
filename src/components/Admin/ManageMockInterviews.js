@@ -94,7 +94,7 @@ const ManageMockInterviews = () => {
       }
 
       // Submit all evaluations in one request
-      const response = await fetch(`${baseUrl}/Evaluation/evaluate-multiple`, {
+      const response = await fetch(`${baseUrl}/api/Evaluation/evaluate-multiple`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -150,7 +150,7 @@ const ManageMockInterviews = () => {
       const evaluatorId = parseInt(tokenData['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
 
       const baseUrl = process.env.REACT_APP_API_BASE_URL ;
-      const response = await fetch(`${baseUrl}/Evaluation/evaluate`, {
+      const response = await fetch(`${baseUrl}/api/Evaluation/evaluate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -212,7 +212,7 @@ const ManageMockInterviews = () => {
       const answerIds = selectedInterview.answers.map(answer => answer.answerId);
 
       const baseUrl = process.env.REACT_APP_API_BASE_URL ;
-      const response = await fetch(`${baseUrl}/Evaluation/report`, {
+      const response = await fetch(`${baseUrl}/api/Evaluation/report`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -382,7 +382,7 @@ const ManageMockInterviews = () => {
       formData.append('userId', userId);
       formData.append('pdfFile', pdfFile);
 
-      const response = await fetch(`${baseUrl}/users/send-pdf`, {
+      const response = await fetch(`${baseUrl}/api/users/send-pdf`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -440,7 +440,7 @@ const ManageMockInterviews = () => {
       try {
         setLoading(true);
         const baseUrl = process.env.REACT_APP_API_BASE_URL ;
-        const response = await fetch(`${baseUrl}/BlobStorage/all-grouped`);
+        const response = await fetch(`${baseUrl}/api/BlobStorage/all-grouped`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch interviews');

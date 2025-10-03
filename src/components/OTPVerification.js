@@ -50,7 +50,7 @@ const OTPVerification = () => {
     try {
       const baseUrl = process.env.REACT_APP_API_BASE_URL ;
       const response = await fetch(
-        `${baseUrl}/users/verify-code?email=${encodeURIComponent(
+        `${baseUrl}/api/users/verify-code?email=${encodeURIComponent(
           email
         )}&code=${otp}`,
         {

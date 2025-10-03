@@ -40,7 +40,7 @@ const ResetPassword = () => {
     setLoading(true);
     try {
       const baseUrl = process.env.REACT_APP_API_BASE_URL;
-      const response = await fetch(`${baseUrl}/users/reset-password`, {
+      const response = await fetch(`${baseUrl}/api/users/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -210,7 +210,7 @@ const SdsTry = () => {
       setError(null);
       try {
         console.log("baseUrl", baseUrl);
-        const res = await fetch(`${baseUrl}/Sds/sections`);
+        const res = await fetch(`${baseUrl}/api/Sds/sections`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setSections(Array.isArray(data) ? data : []);
@@ -359,7 +359,7 @@ const SdsTry = () => {
     const originalResponses = [...responses];
 
     try {
-      const response = await fetch(`${baseUrl}/Sds/responses`, {
+      const response = await fetch(`${baseUrl}/api/Sds/responses`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
