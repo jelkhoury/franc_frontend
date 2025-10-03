@@ -62,9 +62,9 @@ const FrancResumeUpload = () => {
 
     const formData = new FormData();
     formData.append('file', file);
-
+    const apiAiUrl = process.env.REACT_APP_API_AI_URL;
     try {
-      const response = await fetch('http://192.168.0.105:5000/evaluate_cv', {
+      const response = await fetch(`${apiAiUrl}/evaluate_cv`, {
         method: 'POST',
         body: formData,
       });

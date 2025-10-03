@@ -48,7 +48,7 @@ const OTPVerification = () => {
     setLoading(true);
 
     try {
-      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+      const baseUrl = process.env.REACT_APP_API_BASE_URL ;
       const response = await fetch(
         `${baseUrl}/users/verify-code?email=${encodeURIComponent(
           email

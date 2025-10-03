@@ -239,7 +239,7 @@ const MockInterviewQuestionsPage = () => {
       const decoded = decodeToken(token);
       if (!decoded) throw new Error('Invalid token');
       const userId = parseInt(decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
-      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+      const baseUrl = process.env.REACT_APP_API_BASE_URL;
       const res = await fetch(`${baseUrl}/Evaluation/can-do-mock/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -313,7 +313,7 @@ const MockInterviewQuestionsPage = () => {
     const fetchQuestions = async () => {
       try {
         setLoading(true);
-        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+        const baseUrl = process.env.REACT_APP_API_BASE_URL ;
         const encodedMajorName = encodeURIComponent(major);
         const res = await fetch(`${baseUrl}/BlobStorage/random-questions?majorName=${encodedMajorName}&count=5`);
         if (!res.ok) throw new Error('Failed to fetch questions');
@@ -589,7 +589,7 @@ const MockInterviewQuestionsPage = () => {
         if (qid) formData.append('QuestionIds', String(qid));
       });
 
-      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+      const baseUrl = process.env.REACT_APP_API_BASE_URL ;
       const res = await fetch(`${baseUrl}/BlobStorage/upload-mock-interview`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },

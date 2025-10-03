@@ -67,7 +67,7 @@ const ManageMockInterviews = () => {
       const tokenData = JSON.parse(atob(token.split('.')[1]));
       const evaluatorId = parseInt(tokenData['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
 
-      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+      const baseUrl = process.env.REACT_APP_API_BASE_URL;
       
       // Prepare evaluations for bulk submission
       const evaluations = selectedInterview.answers.map((answer, index) => {
@@ -149,7 +149,7 @@ const ManageMockInterviews = () => {
       const tokenData = JSON.parse(atob(token.split('.')[1]));
       const evaluatorId = parseInt(tokenData['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
 
-      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+      const baseUrl = process.env.REACT_APP_API_BASE_URL ;
       const response = await fetch(`${baseUrl}/Evaluation/evaluate`, {
         method: 'POST',
         headers: {
@@ -211,7 +211,7 @@ const ManageMockInterviews = () => {
       const userId = selectedInterview.userId;
       const answerIds = selectedInterview.answers.map(answer => answer.answerId);
 
-      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+      const baseUrl = process.env.REACT_APP_API_BASE_URL ;
       const response = await fetch(`${baseUrl}/Evaluation/report`, {
         method: 'POST',
         headers: {
@@ -377,7 +377,7 @@ const ManageMockInterviews = () => {
         return;
       }
 
-      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+      const baseUrl = process.env.REACT_APP_API_BASE_URL ;
       const formData = new FormData();
       formData.append('userId', userId);
       formData.append('pdfFile', pdfFile);
@@ -439,7 +439,7 @@ const ManageMockInterviews = () => {
     const fetchInterviews = async () => {
       try {
         setLoading(true);
-        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+        const baseUrl = process.env.REACT_APP_API_BASE_URL ;
         const response = await fetch(`${baseUrl}/BlobStorage/all-grouped`);
         
         if (!response.ok) {

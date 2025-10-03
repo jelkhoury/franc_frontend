@@ -599,8 +599,9 @@ const SdsResult = () => {
   const [hollandPointsLoading, setHollandPointsLoading] = useState(true);
   const [hollandPointsError, setHollandPointsError] = useState("");
 
-  const apiAiUrl = useMemo(() => process.env.REACT_APP_API_AI_URL || "http://192.168.0.103:5000", []);
-  const apiBaseUrl = useMemo(() => "http://localhost:5121", []);
+  const apiAiUrl = useMemo(() => process.env.REACT_APP_API_AI_URL , []);
+
+    const apiBaseUrl = useMemo(() => process.env.REACT_APP_API_BASE_URL , []);
 
   // Process Holland points from API
   const riasecScores = useMemo(() => {

@@ -46,7 +46,7 @@ import { getStoredUserId } from "../../utils/tokenUtils";
 const SdsTry = () => {
   const { isLoggedIn } = useContext(AuthContext);
   const navigate = useNavigate();
-  const baseUrl = useMemo(() => process.env.REACT_APP_API_BASE_URL || "http://localhost:5121", []);
+  const baseUrl = useMemo(() => process.env.REACT_APP_API_BASE_URL , []);
 
   const sectionThemes = {
   "Occupational Day Dreams": { color: "#6B46C1", scheme: "purple", bg: "paint", bgFile: "/assets/images/nnnoise.svg" },
@@ -209,7 +209,8 @@ const SdsTry = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${baseUrl}/api/Sds/sections`);
+        console.log("baseUrl", baseUrl);
+        const res = await fetch(`${baseUrl}/Sds/sections`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setSections(Array.isArray(data) ? data : []);
@@ -358,7 +359,7 @@ const SdsTry = () => {
     const originalResponses = [...responses];
 
     try {
-      const response = await fetch(`${baseUrl}/api/Sds/responses`, {
+      const response = await fetch(`${baseUrl}/Sds/responses`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

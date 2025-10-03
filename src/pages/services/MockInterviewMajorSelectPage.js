@@ -140,7 +140,7 @@ const MockInterviewMajorSelectPage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5121/api';
+        const baseUrl = process.env.REACT_APP_API_BASE_URL;
         
         let facultiesData = [];
         let majorsData = [];

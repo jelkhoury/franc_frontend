@@ -80,9 +80,9 @@ const CoverTryPage = () => {
     formData.append('file', coverLetterFile);
     formData.append('job_ad', jobAdFile);
     setLoading(true);
-
+    const apiAiUrl = process.env.REACT_APP_API_AI_URL;
     try {
-      const response = await fetch('http://192.168.0.105:5000/evaluate_cover_letter', {
+      const response = await fetch(`${apiAiUrl}/evaluate_cover_letter`, {
         method: 'POST',
         body: formData,
       });
