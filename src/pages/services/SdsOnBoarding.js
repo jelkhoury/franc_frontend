@@ -146,9 +146,14 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
 
   return (
     <Box minH="100vh" bgGradient="linear(to-r, white, #ebf8ff)">
-      <Box maxW="1000px" mx="auto" px={{ base: 4, md: 8 }} py={{ base: 6, md: 10 }}>
+      <Box
+        maxW="1000px"
+        mx="auto"
+        px={{ base: 4, md: 8 }}
+        py={{ base: 6, md: 10 }}
+      >
         <Heading textAlign="center" mb={{ base: 6, md: 8 }}>
-          About the SDS Assessment
+          About the Test
         </Heading>
 
         <Accordion
@@ -156,14 +161,28 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
           index={activeIndex}
           onChange={(idx) => {
             // Chakra passes number or array; normalize
-            const next = Array.isArray(idx) ? (idx[0] ?? -1) : (typeof idx === "number" ? idx : -1);
+            const next = Array.isArray(idx)
+              ? idx[0] ?? -1
+              : typeof idx === "number"
+              ? idx
+              : -1;
             setActiveIndex(next);
           }}
         >
           {/* Item 1: Videos hero */}
-          <AccordionItem border="1px" borderColor={cardBorder} rounded="md" bg={cardBg} mb={4}>
+          <AccordionItem
+            border="1px"
+            borderColor={cardBorder}
+            rounded="md"
+            bg={cardBg}
+            mb={4}
+          >
             <h2>
-              <AccordionButton py={5} px={6} _expanded={{ bg: useColorModeValue("blue.50", "blue.900") }}>
+              <AccordionButton
+                py={5}
+                px={6}
+                _expanded={{ bg: useColorModeValue("blue.50", "blue.900") }}
+              >
                 <HStack spacing={3} flex="1" textAlign="left">
                   <Box
                     boxSize="28px"
@@ -175,10 +194,22 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
                     justifyContent="center"
                   >
                     {/* Play icon approximation using triangle */}
-                    <Box w="0" h="0" borderTop="7px solid transparent" borderBottom="7px solid transparent" borderLeft="12px solid"
-                         borderLeftColor={useColorModeValue("blue.500", "blue.300")} ml="2px" />
+                    <Box
+                      w="0"
+                      h="0"
+                      borderTop="7px solid transparent"
+                      borderBottom="7px solid transparent"
+                      borderLeft="12px solid"
+                      borderLeftColor={useColorModeValue(
+                        "blue.500",
+                        "blue.300"
+                      )}
+                      ml="2px"
+                    />
                   </Box>
-                  <Text fontWeight="semibold">View the 6 videos explaining the R.I.A.S.E.C meaning</Text>
+                  <Text fontWeight="semibold">
+                    View the test related videos
+                  </Text>
                 </HStack>
                 <AccordionIcon />
               </AccordionButton>
@@ -186,12 +217,23 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
             <AccordionPanel pb={6} px={{ base: 0, md: 6 }}>
               {/* Hero player */}
               {selectedVideoId || selectedEmbedSrc ? (
-                <Box mb={4} rounded="md" overflow="hidden" border="1px" borderColor={cardBorder}>
+                <Box
+                  mb={4}
+                  rounded="md"
+                  overflow="hidden"
+                  border="1px"
+                  borderColor={cardBorder}
+                >
                   <Box position="relative" pt="56.25%">
                     <Box
                       as="iframe"
                       title="SDS Video"
-                      src={selectedEmbedSrc || (selectedVideoId ? `https://www.youtube.com/embed/${selectedVideoId}` : undefined)}
+                      src={
+                        selectedEmbedSrc ||
+                        (selectedVideoId
+                          ? `https://www.youtube.com/embed/${selectedVideoId}`
+                          : undefined)
+                      }
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                       position="absolute"
@@ -204,7 +246,9 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
                 </Box>
               ) : (
                 <Text color="gray.500" px={6} py={4}>
-                  {apiKey ? "Loading videos…" : "Set REACT_APP_YOUTUBE_API_KEY to load videos."}
+                  {apiKey
+                    ? "Loading videos…"
+                    : "Set REACT_APP_YOUTUBE_API_KEY to load videos."}
                 </Text>
               )}
 
@@ -216,20 +260,57 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
                       <Box
                         key={v.id}
                         role="button"
-                        onClick={() => { setSelectedVideoId(v.id); if (v.embedSrc) setSelectedEmbedSrc(v.embedSrc); else if (v.id) setSelectedEmbedSrc(`https://www.youtube.com/embed/${v.id}`); }}
+                        onClick={() => {
+                          setSelectedVideoId(v.id);
+                          if (v.embedSrc) setSelectedEmbedSrc(v.embedSrc);
+                          else if (v.id)
+                            setSelectedEmbedSrc(
+                              `https://www.youtube.com/embed/${v.id}`
+                            );
+                        }}
                         borderWidth={selectedVideoId === v.id ? "2px" : "1px"}
-                        borderColor={selectedVideoId === v.id ? "blue.400" : cardBorder}
+                        borderColor={
+                          selectedVideoId === v.id ? "blue.400" : cardBorder
+                        }
                         rounded="md"
                         overflow="hidden"
                         minW="240px"
                       >
-                        <Image src={v.thumb || (v.id ? `https://img.youtube.com/vi/${v.id}/mqdefault.jpg` : undefined)} alt={v.title} w="240px" h="135px" objectFit="cover" />
+                        <Image
+                          src={
+                            v.thumb ||
+                            (v.id
+                              ? `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`
+                              : undefined)
+                          }
+                          alt={v.title}
+                          w="240px"
+                          h="135px"
+                          objectFit="cover"
+                        />
                         <Box p={3}>
-                          <Text noOfLines={2} fontSize="sm" fontWeight="semibold">{v.title}</Text>
-                          <HStack spacing={2} mt={1} color="gray.500" fontSize="xs">
+                          <Text
+                            noOfLines={2}
+                            fontSize="sm"
+                            fontWeight="semibold"
+                          >
+                            {v.title}
+                          </Text>
+                          <HStack
+                            spacing={2}
+                            mt={1}
+                            color="gray.500"
+                            fontSize="xs"
+                          >
                             <Text noOfLines={1}>{v.channelTitle}</Text>
                             <Box as="span">•</Box>
-                            <Link href={v.id ? `https://youtu.be/${v.id}` : v.embedSrc} isExternal color="blue.500">
+                            <Link
+                              href={
+                                v.id ? `https://youtu.be/${v.id}` : v.embedSrc
+                              }
+                              isExternal
+                              color="blue.500"
+                            >
                               Watch on YouTube
                             </Link>
                           </HStack>
@@ -243,13 +324,25 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
           </AccordionItem>
 
           {/* Item 2: Brief overview */}
-          <AccordionItem border="1px" borderColor={cardBorder} rounded="md" bg={cardBg} mb={4}>
+          <AccordionItem
+            border="1px"
+            borderColor={cardBorder}
+            rounded="md"
+            bg={cardBg}
+            mb={4}
+          >
             <h2>
               <AccordionButton py={5} px={6}>
                 <HStack spacing={3} flex="1" textAlign="left">
-                  <Icon as={InfoIcon} boxSize={5} color={useColorModeValue("blue.500", "blue.300")} />
+                  <Icon
+                    as={InfoIcon}
+                    boxSize={5}
+                    color={useColorModeValue("blue.500", "blue.300")}
+                  />
                   <Text fontWeight="semibold">
-                    Brief overview of the test’s 5 sections: each section covers different types of interest (activities, competencies, occupations, etc.)
+                    Brief overview of the test’s 5 sections: each section covers
+                    different types of interest (activities, competencies,
+                    occupations, etc.)
                   </Text>
                 </HStack>
                 <AccordionIcon />
@@ -267,19 +360,31 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
           </AccordionItem>
 
           {/* Item 3: Duration */}
-          <AccordionItem border="1px" borderColor={cardBorder} rounded="md" bg={cardBg}>
+          <AccordionItem
+            border="1px"
+            borderColor={cardBorder}
+            rounded="md"
+            bg={cardBg}
+          >
             <h2>
               <AccordionButton py={5} px={6}>
                 <HStack spacing={3} flex="1" textAlign="left">
-                  <Icon as={TimeIcon} boxSize={5} color={useColorModeValue("blue.500", "blue.300")} />
-                  <Text fontWeight="semibold">Test duration: approximately 20–25 minutes</Text>
+                  <Icon
+                    as={TimeIcon}
+                    boxSize={5}
+                    color={useColorModeValue("blue.500", "blue.300")}
+                  />
+                  <Text fontWeight="semibold">
+                    Test duration: approximately 20–25 minutes
+                  </Text>
                 </HStack>
                 <AccordionIcon />
               </AccordionButton>
             </h2>
             <AccordionPanel pb={6} px={6}>
               <Text color="gray.600">
-                Set aside around 25 minutes in a quiet place without interruptions. You can pause between sections if needed.
+                Set aside around 25 minutes in a quiet place without
+                interruptions. You can pause between sections if needed.
               </Text>
             </AccordionPanel>
           </AccordionItem>
@@ -299,44 +404,62 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
         </Flex>
 
         {/* Attention Modal */}
-        <Modal isOpen={showAttentionModal} onClose={handleCancelTest} isCentered size="lg">
+        <Modal
+          isOpen={showAttentionModal}
+          onClose={handleCancelTest}
+          isCentered
+          size="lg"
+        >
           <ModalOverlay />
           <ModalContent>
-            <ModalHeader color="black">
-              ⚠️ Attention Required
-            </ModalHeader>
+            <ModalHeader color="black">⚠️ Attention Required</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
               <Alert status="warning" mb={4}>
                 <AlertIcon />
-                <Text fontWeight="bold">Important: Test will start immediately!</Text>
+                <Text fontWeight="bold">
+                  Important: Test will start immediately!
+                </Text>
               </Alert>
-              
+
               <VStack align="stretch" spacing={4}>
                 <Text fontSize="lg" fontWeight="semibold">
-                  Before you begin the SDS Assessment:
+                  Before you begin the test:
                 </Text>
-                
+
                 <List spacing={2}>
                   <ListItem>
-                    <Text>• <strong>Check your internet connection</strong> - ensure it's stable</Text>
+                    <Text>
+                      • <strong>Check your internet connection</strong> - ensure
+                      it's stable
+                    </Text>
                   </ListItem>
                   <ListItem>
-                    <Text>• <strong>Find a quiet place</strong> - minimize distractions</Text>
+                    <Text>
+                      • <strong>Find a quiet place</strong> - minimize
+                      distractions
+                    </Text>
                   </ListItem>
                   <ListItem>
-                    <Text>• <strong>Set aside 20-25 minutes</strong> - complete the test in one session</Text>
+                    <Text>
+                      • <strong>Set aside 20-25 minutes</strong> - complete the
+                      test in one session
+                    </Text>
                   </ListItem>
                   <ListItem>
-                    <Text>• <strong>Do not navigate away</strong> - if you go back, the test will be finished</Text>
+                    <Text>
+                      • <strong>Do not navigate away</strong> - if you go back,
+                      the test will be finished
+                    </Text>
                   </ListItem>
                 </List>
-                
+
                 <Alert status="error" mt={4}>
                   <AlertIcon />
                   <Text fontSize="sm">
-                    <strong>Warning:</strong> Once you start, navigating back or closing the browser will end your session. 
-                    Make sure you're ready to complete the entire assessment.
+                    <strong>Warning:</strong> Once you start, navigating back or
+                    closing the browser will end your session. Make sure you're
+                    ready to complete the entire assessment.
                   </Text>
                 </Alert>
               </VStack>

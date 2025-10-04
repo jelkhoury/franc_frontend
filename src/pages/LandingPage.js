@@ -126,7 +126,7 @@ const serviceCards = [
       _hover={{ transform: "scale(1.05)", transition: "0.2s ease-in-out" }}>
       
       <Flex w={20} h={20} bg="gray.100" rounded="full" align="center" justify="center" mx="auto" mb={4} overflow="hidden">
-        <Image src="/assets/images/interview_icon.gif" alt="Mock Interview" boxSize="70px" objectFit="contain" />
+        <Image src="/assets/images/mockinterview.gif" alt="Mock Interview" boxSize="70px" objectFit="contain" />
         {/* Or: <Icon as={FcDiploma2} boxSize={10} /> */}
       </Flex>
 
@@ -156,7 +156,7 @@ const serviceCards = [
 
       {/* Services Section */}
       <Box ref={servicesRef} py={20} bg="white">
-        <Heading size="xl" textAlign="center" mb={10}>
+        <Heading size="xl" textAlign="center" mb={10} color="brand.500">
           Our Services
         </Heading>
 
@@ -185,10 +185,7 @@ const serviceCards = [
             />
           ))}
 
-          <Button
-            onClick={() => setPage((p) => (p + 1) % pageCount)}
-            size="sm"
-          >
+          <Button onClick={() => setPage((p) => (p + 1) % pageCount)} size="sm">
             ▶
           </Button>
         </Flex>

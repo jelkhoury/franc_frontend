@@ -40,7 +40,7 @@ const SdsPage = () => {
     >
       {/* Main Content */}
       <Flex
-        direction={{ base: 'column', md: 'row' }}
+        direction={{ base: "column", md: "row" }}
         align="center"
         justify="space-between"
         p={{ base: 6, md: 16 }}
@@ -48,7 +48,7 @@ const SdsPage = () => {
       >
         {/* Right - Image */}
         <Image
-          src="/assets/images/chat_service.svg"
+          src="/assets/images/sds.svg"
           alt="Self-Directed Search (SDS)"
           maxW="400px"
           objectFit="contain"
@@ -71,7 +71,9 @@ const SdsPage = () => {
           </Heading>
 
           <Text fontSize="lg" mb={6}>
-            Discover careers and majors that fit your interests using the Holland RIASEC model. The SDS asks you to rate activities and abilities, then generates a three-letter code with personalized role and program suggestions.
+            Discover careers and majors that fit your interests. This test asks
+            you asks you to rate activities and abilities, then generates a
+            code with personalized role and program suggestions.
           </Text>
 
           {/* Icons Row */}
@@ -90,12 +92,8 @@ const SdsPage = () => {
             </VStack>
           </HStack>
 
-          <Button
-            onClick={handleTryNowClick}
-            colorScheme="brand"
-            size="md"
-          >
-            Start SDS Assessment
+          <Button onClick={handleTryNowClick} colorScheme="brand" size="md">
+            Start Test
           </Button>
         </Box>
       </Flex>
@@ -119,7 +117,12 @@ const SdsPage = () => {
           </VStack>
 
           {/* Arrow */}
-          <Icon as={ArrowForwardIcon} color="gray.400" boxSize={6} display={{ base: 'none', md: 'block' }} />
+          <Icon
+            as={ArrowForwardIcon}
+            color="gray.400"
+            boxSize={6}
+            display={{ base: "none", md: "block" }}
+          />
 
           {/* Step 2 */}
           <VStack spacing={4}>
@@ -133,21 +136,31 @@ const SdsPage = () => {
           </VStack>
 
           {/* Arrow */}
-          <Icon as={ArrowForwardIcon} color="gray.400" boxSize={6} display={{ base: 'none', md: 'block' }} />
+          <Icon
+            as={ArrowForwardIcon}
+            color="gray.400"
+            boxSize={6}
+            display={{ base: "none", md: "block" }}
+          />
 
           {/* Step 3 */}
           <VStack spacing={4}>
             <Circle size="60px" bg="blue.100" color="blue.700">
               <Icon as={TimeIcon} boxSize={6} />
             </Circle>
-            <Text fontWeight="bold">Get Your RIASEC Code</Text>
+            <Text fontWeight="bold">Get Your Code</Text>
             <Text fontSize="sm" color="gray.600" maxW="150px">
               See your top three interest types (e.g., R–I–A).
             </Text>
           </VStack>
 
           {/* Arrow */}
-          <Icon as={ArrowForwardIcon} color="gray.400" boxSize={6} display={{ base: 'none', md: 'block' }} />
+          <Icon
+            as={ArrowForwardIcon}
+            color="gray.400"
+            boxSize={6}
+            display={{ base: "none", md: "block" }}
+          />
 
           {/* Step 4 */}
           <VStack spacing={4}>
@@ -174,7 +187,8 @@ const SdsPage = () => {
           Ready to Find Your Best‑Fit Careers?
         </Heading>
         <Text fontSize="lg" mb={6}>
-          Take the SDS and get a personalized RIASEC profile with tailored suggestions.
+          Take the SDS and get a personalized RIASEC profile with tailored
+          suggestions.
         </Text>
         <Button
           onClick={handleTryNowClick}
@@ -184,7 +198,7 @@ const SdsPage = () => {
           color="brand.500"
           _hover={{ bg: "gray.100" }}
         >
-          Start SDS Assessment
+          Start Test
         </Button>
       </Box>
 
@@ -194,11 +208,15 @@ const SdsPage = () => {
           <ModalHeader>Login Required</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Text>Please log in to take the SDS assessment.</Text>
+            <Text>Please log in to take the test.</Text>
           </ModalBody>
           <ModalFooter>
-            <Button colorScheme="blue" onClick={handleLoginClick}>Go to Login</Button>
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button colorScheme="blue" onClick={handleLoginClick}>
+              Go to Login
+            </Button>
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
