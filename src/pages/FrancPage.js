@@ -10,7 +10,12 @@ import {
   VStack,
   Image,
   useColorModeValue,
+  Collapse,
+  IconButton,
+  HStack,
 } from "@chakra-ui/react";
+import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
+import { useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import {
   FcDiploma1,
@@ -30,72 +35,81 @@ const MotionBox = motion(Box);
 const services = [
   {
     heading: "Resume Feedback",
-    description: "A resume is like Wi-Fi — without it, you’re not connecting anywhere.",
-    gif:"/assets/images/cv_icon.gif",
+    description:
+      "A resume is like Wi-Fi — without it, you’re not connecting anywhere.",
+    gif: "/assets/images/cv_icon.gif",
     isActive: true,
     link: "/resume-evaluation",
-    buttonText:"Fix It"
+    buttonText: "Fix It",
   },
   {
     heading: "Any help?",
     description: "SOS! Someone save me from my own confusion?",
-    gif:"/assets/images/chatting_icon.gif",
+    gif: "/assets/images/chatting_icon.gif",
     isActive: true,
     link: "/chatting",
-    buttonText:"Save me"
-
+    buttonText: "Save me",
   },
   {
     heading: "Cover Letter feedback",
     description: "A cover letter is the handshake before the meeting",
-    gif:"/assets/images/cover_letter_icon.gif",
+    gif: "/assets/images/cover_letter_icon.gif",
     isActive: true,
     link: "/cover-letter-evaluation",
-    buttonText:"Make it happen"
+    buttonText: "Make it happen",
   },
   {
     heading: "Mock Interview",
-    description:"See yourself, hear yourself and repeat.",
-    gif:"/assets/images/interview_icon.gif",
+    description: "See yourself, hear yourself and repeat.",
+    gif: "/assets/images/mockinterview.gif",
     isActive: true,
     link: "/mock-interview",
-    buttonText:"Dare Me"
+    buttonText: "Dare Me",
   },
   {
     heading: "Personality Test",
     description: "A personality test is your compass for your career",
-    gif:"/assets/images/compass_icon.gif",
+    gif: "/assets/images/compass_icon.gif",
     isActive: true,
     link: "/self-directed-search",
-    buttonText:"Discover me"
+    buttonText: "Discover me",
   },
   {
-     heading: 'Job comparison',
-     description: 'Try the shoes before you choose the path.',
-    gif:"/assets/images/comparison.gif",
+    heading: "Job comparison",
+    description: "Try the shoes before you choose the path.",
+    gif: "/assets/images/comparison.gif",
     isActive: false,
   },
   {
-     heading: 'Job Matchmaking',
-     description: 'The right key opens the right door.',
-    gif:"/assets/images/job_matching.gif",
+    heading: "Job Matchmaking",
+    description: "The right key opens the right door.",
+    gif: "/assets/images/job_matching.gif",
     isActive: false,
   },
   {
-      heading: 'Values and Interests',
-      description: 'Choose a job you love and you will never have to work a day in your life.',
-    gif:"/assets/images/values.gif",
+    heading: "Values and Interests",
+    description:
+      "Choose a job you love and you will never have to work a day in your life.",
+    gif: "/assets/images/values.gif",
     isActive: false,
   },
-   {
-      heading: 'Gamification',
-      description: 'Level up your skills, level up your future.',
-    gif:"/assets/images/gamification.gif",
+  {
+    heading: "Gamification",
+    description: "Level up your skills, level up your future.",
+    gif: "/assets/images/gamification.gif",
     isActive: false,
   },
 ];
 
-const ServiceCard = ({ heading, description, icon, gif, isActive, link, buttonText }) => {
+const ServiceCard = ({
+  heading,
+  description,
+  icon,
+  gif,
+  isActive,
+  link,
+  buttonText,
+}) => {
   const cardBg = useColorModeValue("white", "gray.800");
   const activeBg = useColorModeValue("brand.50", "gray.700");
   const iconBg = isActive ? "brand.100" : "gray.200";
@@ -112,7 +126,9 @@ const ServiceCard = ({ heading, description, icon, gif, isActive, link, buttonTe
       border={isActive ? "2px solid" : "1px solid"}
       borderColor={isActive ? "brand.300" : "gray.200"}
       transition="all 0.3s ease"
-      _hover={isActive ? { transform: "translateY(-4px)", boxShadow: "xl" } : {}}
+      _hover={
+        isActive ? { transform: "translateY(-4px)", boxShadow: "xl" } : {}
+      }
       display="flex"
       flexDirection="column"
     >
@@ -176,7 +192,217 @@ const ServiceCard = ({ heading, description, icon, gif, isActive, link, buttonTe
   );
 };
 
+const ExpandableSections = () => {
+  const [expandedSection, setExpandedSection] = useState(0); // First section expanded by default
 
+  const sections = [
+    {
+      title: "The Birth of FRANC",
+      content: (
+        <Text fontSize="lg" color="gray.600">
+          <Text as="span" color="brand.500" fontWeight="semibold">
+            Franc
+          </Text>{" "}
+          was born from a dream—and a lot of hard work. Brainstormed by the
+          passionate team at the Center for Career Development (CCD){" "}
+          <Text as="span" fontWeight="semibold">
+            in June 2024
+          </Text>
+          , pre-launched{" "}
+          <Text as="span" fontWeight="semibold">
+            in March 2025
+          </Text>
+          , and officially released{" "}
+          <Text as="span" fontWeight="semibold">
+            in September 2025
+          </Text>
+          , FRANC is the{" "}
+          <Text as="span" fontWeight="semibold">
+            Lebanon's first digital career advisor
+          </Text>
+          , designed to guide students on their journey toward professional
+          success.
+        </Text>
+      ),
+    },
+    {
+      title: "The Name Behind FRANC",
+      content: (
+        <Text fontSize="lg" color="gray.600">
+          The name FRANC comes from{" "}
+          <Text as="span" fontWeight="semibold">
+            Frank Parsons
+          </Text>
+          , the{" "}
+          <Text as="span" fontWeight="semibold">
+            Father of Career Counseling
+          </Text>{" "}
+          and Founder of{" "}
+          <Text as="span" fontWeight="semibold">
+            Vocational Guidance
+          </Text>
+          —a pioneer whose legacy inspired us to create a tool that truly makes
+          a difference in students' lives.
+        </Text>
+      ),
+    },
+    {
+      title: "Our Values & Purpose",
+      content: (
+        <Text fontSize="lg" color="gray.600">
+          FRANC provides personalized career guidance in multiple forms using
+          advanced methods, embodying the values of{" "}
+          <Text as="span" fontWeight="semibold">
+            Focus, Reshape, Advise, Navigate, and Connect
+          </Text>
+          . We created FRANC because we recognized the challenges students face:
+          limited access to the Career Center outside working hours, uncertainty
+          about career goals, and low levels of career readiness.
+        </Text>
+      ),
+    },
+    {
+      title: "Our Mission",
+      content: (
+        <Text fontSize="lg" color="gray.600">
+          <Text as="span" fontWeight="semibold">
+            Our mission is simple yet powerful:
+          </Text>{" "}
+          to offer personalized guidance{" "}
+          <Text as="span" fontWeight="semibold">
+            anytime, anywhere
+          </Text>
+          . FRANC acts as a helper, providing AI-powered career assessments and
+          services that reduce anxiety, enhance confidence, and make the job
+          search experience stress-free. Students can explore career paths,
+          sharpen their skills, and gain the self-assurance they need to
+          succeed—all at their own pace.
+        </Text>
+      ),
+    },
+    {
+      title: "Built by Students, for Students",
+      content: (
+        <Text fontSize="lg" color="gray.600">
+          FRANC's creation was a team effort fueled by feedback, creativity, and
+          expertise. Its design was crafted by{" "}
+          <Text as="span" fontWeight="semibold">
+            UA graphic design students
+          </Text>
+          , and the final version was{" "}
+          <Text as="span" fontWeight="semibold">
+            chosen by a student vote
+          </Text>
+          —because this project is for students, by students. The platform was
+          built using the cumulative experience of the CCD team and developed in
+          collaboration with the{" "}
+          <Text as="span" fontWeight="semibold">
+            Department of Computer Science at the Faculty of Engineering and
+            Technology (FET)
+          </Text>{" "}
+          and its students.
+        </Text>
+      ),
+    },
+  ];
+
+  const toggleSection = (index) => {
+    setExpandedSection(expandedSection === index ? -1 : index);
+  };
+
+  return (
+    <Flex
+      direction={{ base: "column", lg: "row" }}
+      spacing={4}
+      textAlign="left"
+      align="stretch"
+      maxW="6xl"
+      mx="auto"
+      gap={4}
+    >
+      {sections.map((section, index) => (
+        <Box
+          key={index}
+          flex={expandedSection === index ? "3" : "1"}
+          minW="0"
+          border="1px"
+          borderColor={useColorModeValue("gray.200", "gray.700")}
+          borderRadius="lg"
+          overflow="hidden"
+          bgGradient={useColorModeValue(
+            "linear(to-br, #ffffff, #f7fafc,rgb(249, 249, 250))", // light
+            "linear(to-br, #1a202c, #2d3748, #4a5568)" // dark
+          )}
+          boxShadow={expandedSection === index ? "xl" : "lg"}
+          display="flex"
+          flexDirection="column"
+          transition="all 0.3s ease"
+          _hover={{
+            boxShadow: "2xl",
+            transform: "translateY(-2px)",
+          }}
+        >
+          {expandedSection === index ? (
+            // Expanded state: horizontal title at top
+            <VStack spacing={0}>
+              <HStack
+                p={4}
+                cursor="pointer"
+                onClick={() => toggleSection(index)}
+                _hover={{ bg: useColorModeValue("gray.50", "gray.700") }}
+                transition="background-color 0.2s"
+                w="100%"
+                justify="space-between"
+              >
+                <Heading
+                  fontSize="lg"
+                  fontWeight="semibold"
+                  textAlign="left"
+                  color="brand.500"
+                >
+                  {section.title}
+                </Heading>
+                <IconButton
+                  aria-label="Collapse"
+                  icon={<ChevronUpIcon />}
+                  size="sm"
+                  variant="ghost"
+                />
+              </HStack>
+              <Box p={4} pt={0} flex="1">
+                {section.content}
+              </Box>
+            </VStack>
+          ) : (
+            // Collapsed state: vertical title
+            <VStack
+              p={4}
+              cursor="pointer"
+              onClick={() => toggleSection(index)}
+              _hover={{ bg: useColorModeValue("gray.50", "gray.700") }}
+              transition="background-color 0.2s"
+              minH="400px"
+              justify="center"
+              spacing={4}
+            >
+              <Heading
+                fontSize="lg"
+                fontWeight="semibold"
+                textAlign="center"
+                transform="rotate(90deg)"
+                whiteSpace="nowrap"
+                color="yellow.500"
+              >
+                {section.title}
+              </Heading>
+
+            </VStack>
+          )}
+        </Box>
+      ))}
+    </Flex>
+  );
+};
 
 const FrancPage = () => {
   return (
@@ -185,66 +411,25 @@ const FrancPage = () => {
       px={6}
       bgGradient="linear(to-r, white, #ebf8ff)"
     >
-        <Heading
-          size="2xl"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          gap={4}
-          py={8}
-        >
-          Meet
-          <Image
-            src="/assets/images/francyellow_transparentbg-01.svg"
-            alt="Logo"
-            height="60px"
-            width="auto"
-            objectFit="contain"
-            ignoreFallback
-          />
-        </Heading>
-    <VStack spacing={6} textAlign="left"  align="flex-start" maxW="6xl" mx="auto">
-    <VStack align="flex-start" spacing={4}>
-      <Text fontSize="lg" color="gray.600">
-        <Text as="span" color="brand.500" fontWeight="semibold">Franc</Text>{" "}
-        was born from a dream—and a lot of hard work. Brainstormed by the passionate team at the Center for Career Development (CCD){" "}
-        <Text as="span" fontWeight="semibold">in June 2024</Text>, pre-launched{" "}
-        <Text as="span" fontWeight="semibold">in March 2025</Text>, and officially released{" "}
-        <Text as="span" fontWeight="semibold">in September 2025</Text>, FRANC is the{" "}
-        <Text as="span" fontWeight="semibold">Lebanon’s first digital career advisor</Text>, designed to guide students on their journey toward professional success.
-      </Text>
-
-      <Text fontSize="lg" color="gray.600">
-        The name FRANC comes from <Text as="span" fontWeight="semibold">Frank Parsons</Text>, the{" "}
-        <Text as="span" fontWeight="semibold">Father of Career Counseling</Text> and Founder of{" "}
-        <Text as="span" fontWeight="semibold">Vocational Guidance</Text>—a pioneer whose legacy inspired us to create a tool that truly makes a difference in students’ lives.
-      </Text>
-
-      <Text fontSize="lg" color="gray.600">
-        FRANC provides personalized career guidance in multiple forms using advanced methods, embodying the values of{" "}
-        <Text as="span" fontWeight="semibold">Focus, Reshape, Advise, Navigate, and Connect</Text>. We created FRANC because we recognized the challenges students face: limited access to the Career Center outside working hours, uncertainty about career goals, and low levels of career readiness.
-      </Text>
-
-      <Text fontSize="lg" color="gray.600">
-        <Text as="span" fontWeight="semibold">Our mission is simple yet powerful:</Text> to offer personalized guidance{" "}
-        <Text as="span" fontWeight="semibold">anytime, anywhere</Text>. FRANC acts as a helper, providing AI-powered career assessments and services that reduce anxiety, enhance confidence, and make the job search experience stress-free. Students can explore career paths, sharpen their skills, and gain the self-assurance they need to succeed—all at their own pace.
-      </Text>
-
-      <Text fontSize="lg" color="gray.600">
-        FRANC’s creation was a team effort fueled by feedback, creativity, and expertise. Its design was crafted by{" "}
-        <Text as="span" fontWeight="semibold">UA graphic design students</Text>, and the final version was{" "}
-        <Text as="span" fontWeight="semibold">chosen by a student vote</Text>—because this project is for students, by students. The platform was built using the cumulative experience of the CCD team and developed in collaboration with the{" "}
-        <Text as="span" fontWeight="semibold">Department of Computer Science at the Faculty of Engineering and Technology (FET)</Text> and its students.
-      </Text>
-
-      <Text fontSize="lg" color="gray.600">
-        With FRANC, we are proud to say: we did a lot—and we’re just getting started. It’s more than a tool; it’s a{" "}
-        <Text as="span" fontWeight="semibold">companion</Text>, a <Text as="span" fontWeight="semibold">guide</Text>, and a{" "}
-        <Text as="span" fontWeight="semibold">source of confidence</Text> for every student stepping into the world of work.
-      </Text>
-    </VStack>
-
-      </VStack>
+      <Heading
+        size="2xl"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        gap={4}
+        py={8}
+      >
+        <Image
+          src="/assets/images/francyellow_transparentbg-01.svg"
+          alt="Logo"
+          height="70px"
+          width="auto"
+          objectFit="contain"
+          ignoreFallback
+        />
+        in case You Missed it
+      </Heading>
+      <ExpandableSections />
 
       {/* Services Grid */}
       <Box mt={16} bg={useColorModeValue("gray.50", "gray.900")} py={10}>

@@ -136,20 +136,29 @@ const ResumePage = () => {
               <Text fontSize="sm">Fast</Text>
             </VStack>
           </HStack>
-          <Button colorScheme="brand" size="md" onClick={handleTryNow}>
-            Fix It
+          <Button
+            colorScheme="brand"
+            size="md"
+            onClick={handleTryNow}
+            rightIcon={<StarIcon />} // ✅ icon after text
+          >
+            Abra Cadabra
           </Button>
         </Box>
       </Flex>
 
       {/* ✅ Improved How It Works */}
-     <Box py={16} px={{ base: 6, md: 16 }} bg="white">
+      <Box py={16} px={{ base: 6, md: 16 }} bg="white">
         <Heading size="lg" mb={10} textAlign="center">
           How It Works
         </Heading>
 
         {/* Desktop: plain items with arrows */}
-        <HStack spacing={6} justify="center" display={{ base: "none", md: "flex" }}>
+        <HStack
+          spacing={6}
+          justify="center"
+          display={{ base: "none", md: "flex" }}
+        >
           <PlainStep
             icon={AttachmentIcon}
             title="Start by uploading your current resume"
@@ -171,13 +180,18 @@ const ResumePage = () => {
         </HStack>
 
         {/* Mobile: stacked list, no arrows */}
-        <VStack spacing={6} maxW="lg" mx="auto" display={{ base: "flex", md: "none" }}>
-             <PlainStep
+        <VStack
+          spacing={6}
+          maxW="lg"
+          mx="auto"
+          display={{ base: "flex", md: "none" }}
+        >
+          <PlainStep
             icon={AttachmentIcon}
             title="Start by uploading your current resume"
             desc="Upload your current resume to start the evaluation."
           />
-         <PlainStep
+          <PlainStep
             icon={Search2Icon}
             title="Resume Screening"
             desc="Franc screens your resume based on professional standards."

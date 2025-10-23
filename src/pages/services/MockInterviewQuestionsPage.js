@@ -643,149 +643,221 @@ const MockInterviewQuestionsPage = () => {
   }
 
   return (
-    <Box minH="100vh" bgGradient="linear(to-r, white, #ebf8ff)" display="flex" flexDirection="column" justifyContent="space-between">
+    <Box
+      minH="100vh"
+      bgGradient="linear(to-r, white, #ebf8ff)"
+      display="flex"
+      flexDirection="column"
+      justifyContent="space-between"
+    >
       {interviewStarted && !showThankYou && (
-        <Box textAlign="center" py={4} bg="blue.50" borderBottom="1px" borderColor="blue.200">
+        <Box
+          textAlign="center"
+          py={4}
+          bg="blue.50"
+          borderBottom="1px"
+          borderColor="blue.200"
+        >
           <Text fontSize="lg" fontWeight="bold" color="blue.600">
-            Interview Duration: {Math.floor(interviewDuration / 60)}:{(interviewDuration % 60).toString().padStart(2, '0')}
+            Interview Duration: {Math.floor(interviewDuration / 60)}:
+            {(interviewDuration % 60).toString().padStart(2, "0")}
           </Text>
         </Box>
       )}
 
       <Box px={4} py={8}>
-        <Heading size="lg" mb={4} textAlign="center">Interview Questions - {major}</Heading>
+        <Heading size="lg" mb={4} textAlign="center">
+          Interview Questions - {major}
+        </Heading>
 
         {showThankYou ? (
           <Box textAlign="center" py={10} px={6}>
-            <CheckCircleIcon boxSize={'50px'} color={'green.500'} />
-            <Heading as="h2" size="xl" mt={6} mb={2}>Interview Complete</Heading>
-            <Text color={'gray.500'} mb={6}>Thank you! Your responses have been submitted successfully.</Text>
-            <Button colorScheme="blue" onClick={() => navigate('/')}>Return to Home</Button>
+            <CheckCircleIcon boxSize={"50px"} color={"green.500"} />
+            <Heading as="h2" size="xl" mt={6} mb={2}>
+              Interview Complete
+            </Heading>
+            <Text color={"gray.500"} mb={6}>
+              Thank you! Your responses have been submitted successfully.
+            </Text>
+            <Button colorScheme="blue" onClick={() => navigate("/")}>
+              Return to Home
+            </Button>
           </Box>
         ) : interviewStarted ? (
           <>
             {/* Top row: webcam | lottie */}
-            <Flex gap={6} direction={{ base: 'column', md: 'row' }} align="stretch">
-              <Box flex="1" bg="white" borderRadius="lg" borderWidth="1px" boxShadow="md" p={4}>
-                <Heading size="sm" mb={3} color="gray.700">Your Camera</Heading>
-                <Box overflow="hidden" borderRadius="md" borderWidth="1px" borderColor="gray.200">
+            <Flex
+              gap={6}
+              direction={{ base: "column", md: "row" }}
+              align="stretch"
+            >
+              <Box
+                flex="1"
+                bg="white"
+                borderRadius="lg"
+                borderWidth="1px"
+                boxShadow="md"
+                p={4}
+              >
+                <Heading size="sm" mb={3} color="gray.700">
+                  Your Camera
+                </Heading>
+                <Box
+                  overflow="hidden"
+                  borderRadius="md"
+                  borderWidth="1px"
+                  borderColor="gray.200"
+                >
                   <Webcam
                     //audio
                     ref={webcamRef}
                     screenshotFormat="image/jpeg"
                     videoConstraints={{ width: 480, height: 360 }}
-                    style={{ borderRadius: '10px', display: 'block', width: '100%' }}
+                    style={{
+                      borderRadius: "10px",
+                      display: "block",
+                      width: "100%",
+                    }}
                     mirrored
                   />
                 </Box>
-                {recording && <Text mt={2} fontWeight="bold" color="red.500" textAlign="center">Recording...</Text>}
+                {recording && (
+                  <Text
+                    mt={2}
+                    fontWeight="bold"
+                    color="red.500"
+                    textAlign="center"
+                  >
+                    Recording...
+                  </Text>
+                )}
               </Box>
 
-<Box flex="1" bg="white" borderRadius="lg" borderWidth="1px" boxShadow="md" p={4}>
-  <Heading size="sm" mb={3} color="gray.700">Interviewer</Heading>
+              <Box
+                flex="1"
+                bg="white"
+                borderRadius="lg"
+                borderWidth="1px"
+                boxShadow="md"
+                p={4}
+              >
+                <Heading size="sm" mb={3} color="gray.700">
+                  Interviewer
+                </Heading>
 
-  <Box
-    // single card
-    overflow="hidden"
-    borderRadius="md"
-    borderWidth="1px"
-    borderColor="gray.200"
-    bg="blue.50"                 // 👈 very light blue background
-    display="flex"
-    alignItems="center"
-    justifyContent="center"      // 👈 centers Lottie both ways
-    height="500px"
-    position="relative"
-  >
-    {/* Title */}
-    <Box
-      position="absolute"
-      top="8px"
-      left="50%"
-      transform="translateX(-50%)"
-      bg="whiteAlpha.900"
-      px={3}
-      py={1}
-      borderRadius="md"
-      boxShadow="sm"
-      zIndex={3}
-    >
-      <Text fontSize="sm" fontWeight="semibold">
-        {selectedTitle || '—'}
-      </Text>
-    </Box>
+                <Box
+                  // single card
+                  overflow="hidden"
+                  borderRadius="md"
+                  borderWidth="1px"
+                  borderColor="gray.200"
+                  bg="blue.50" // 👈 very light blue background
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center" // 👈 centers Lottie both ways
+                  height="500px"
+                  position="relative"
+                >
+                  {/* Title */}
+                  <Box
+                    position="absolute"
+                    top="8px"
+                    left="50%"
+                    transform="translateX(-50%)"
+                    bg="whiteAlpha.900"
+                    px={3}
+                    py={1}
+                    borderRadius="md"
+                    boxShadow="sm"
+                    zIndex={3}
+                  >
+                    <Text fontSize="sm" fontWeight="semibold">
+                      {selectedTitle || "—"}
+                    </Text>
+                  </Box>
 
-    {/* Lottie directly in the container */}
-    <Lottie
-      lottieRef={lottieRef}
-      animationData={gptTalking}
-      loop={false}
-      autoplay={false}
-      onComplete={onLottieComplete}
-      style={{
-        width: '70%',        // responsive fit
-        maxWidth: 340,       // prevent huge scaling
-        minWidth: 220,
-        height: 'auto',
-        pointerEvents: 'none'
-      }}
-    />
+                  {/* Lottie directly in the container */}
+                  <Lottie
+                    lottieRef={lottieRef}
+                    animationData={gptTalking}
+                    loop={false}
+                    autoplay={false}
+                    onComplete={onLottieComplete}
+                    style={{
+                      width: "70%", // responsive fit
+                      maxWidth: 340, // prevent huge scaling
+                      minWidth: 220,
+                      height: "auto",
+                      pointerEvents: "none",
+                    }}
+                  />
 
-    {/* Status pill */}
-    {(() => {
-      const s = MODE_COPY[mode] || MODE_COPY.thinkingLoop;
-      return (
-        <Box
-          position="absolute"
-          bottom="10px"
-          left="50%"
-          transform="translateX(-50%)"
-          bg={s.bg}
-          color={s.color}
-          px={4}
-          py={2}
-          borderRadius="md"
-          boxShadow="sm"
-          zIndex={3}
-        >
-          <Text fontSize="sm" fontWeight="medium">{s.text}</Text>
-        </Box>
-      );
-    })()}
+                  {/* Status pill */}
+                  {(() => {
+                    const s = MODE_COPY[mode] || MODE_COPY.thinkingLoop;
+                    return (
+                      <Box
+                        position="absolute"
+                        bottom="10px"
+                        left="50%"
+                        transform="translateX(-50%)"
+                        bg={s.bg}
+                        color={s.color}
+                        px={4}
+                        py={2}
+                        borderRadius="md"
+                        boxShadow="sm"
+                        zIndex={3}
+                      >
+                        <Text fontSize="sm" fontWeight="medium">
+                          {s.text}
+                        </Text>
+                      </Box>
+                    );
+                  })()}
 
-    {/* Hidden audio element */}
-    <audio
-      ref={audioRef}
-      preload="auto"
-      onPlaying={onAudioPlaying}
-      onEnded={onAudioEnded}
-      onError={onAudioError}
-    />
-  </Box>
+                  {/* Hidden audio element */}
+                  <audio
+                    ref={audioRef}
+                    preload="auto"
+                    onPlaying={onAudioPlaying}
+                    onEnded={onAudioEnded}
+                    onError={onAudioError}
+                  />
+                </Box>
 
-
-                 {audioBlocked && (
-                   <HStack mt={3} spacing={2} wrap="wrap">
-                     <Button
-                       size="sm"
-                       colorScheme="pink"
-                       onClick={async () => {
-                         try {
-                           setAudioBlocked(false);
-                           await audioRef.current?.play();
-                         } catch (e) { console.error(e); }
-                       }}
-                     >
-                       Enable Audio
-                     </Button>
-                   </HStack>
-                 )}
+                {audioBlocked && (
+                  <HStack mt={3} spacing={2} wrap="wrap">
+                    <Button
+                      size="sm"
+                      colorScheme="pink"
+                      onClick={async () => {
+                        try {
+                          setAudioBlocked(false);
+                          await audioRef.current?.play();
+                        } catch (e) {
+                          console.error(e);
+                        }
+                      }}
+                    >
+                      Enable Audio
+                    </Button>
+                  </HStack>
+                )}
               </Box>
             </Flex>
 
             {/* Current Question Info - moved to top */}
             {currentQuestionIdx !== null && (
-              <Box mb={6} bg="white" borderRadius="lg" borderWidth="1px" boxShadow="md" p={4} textAlign="center">
+              <Box
+                mb={6}
+                bg="white"
+                borderRadius="lg"
+                borderWidth="1px"
+                boxShadow="md"
+                p={4}
+                textAlign="center"
+              >
                 <Heading size="sm" mb={3} color="gray.700">
                   Question {currentQuestionIdx + 1} of {questions.length}
                 </Heading>
@@ -796,12 +868,15 @@ const MockInterviewQuestionsPage = () => {
             )}
 
             {/* Retry Prompt Modal */}
-            <Modal isOpen={showRetryPrompt} onClose={() => {}} isCentered closeOnOverlayClick={false}>
+            <Modal
+              isOpen={showRetryPrompt}
+              onClose={() => {}}
+              isCentered
+              closeOnOverlayClick={false}
+            >
               <ModalOverlay />
               <ModalContent>
-                <ModalHeader color="yellow.700">
-                  Ready to answer?
-                </ModalHeader>
+                <ModalHeader color="yellow.700">Ready to answer?</ModalHeader>
                 <ModalBody>
                   <VStack spacing={4}>
                     <Text color="yellow.600">
@@ -813,7 +888,7 @@ const MockInterviewQuestionsPage = () => {
                         onClick={handleRetryPrompt}
                         isDisabled={promptRetryUsed}
                       >
-                        {promptRetryUsed ? 'Retry Used' : 'Replay Prompt'}
+                        {promptRetryUsed ? "Retry Used" : "Replay Prompt"}
                       </Button>
                       <Button
                         colorScheme="green"
@@ -831,16 +906,20 @@ const MockInterviewQuestionsPage = () => {
             </Modal>
 
             {/* I'm Ready Modal */}
-            <Modal isOpen={showReadyButton} onClose={() => {}} isCentered closeOnOverlayClick={false}>
+            <Modal
+              isOpen={showReadyButton}
+              onClose={() => {}}
+              isCentered
+              closeOnOverlayClick={false}
+            >
               <ModalOverlay />
               <ModalContent>
-                <ModalHeader color="blue.700">
-                  Ready to Start?
-                </ModalHeader>
+                <ModalHeader color="blue.700">Ready to Start?</ModalHeader>
                 <ModalBody>
                   <VStack spacing={4}>
                     <Text color="blue.600">
-                      Make sure you're in a quiet environment with good lighting.
+                      Make sure you're in a quiet environment with good
+                      lighting.
                     </Text>
                     <Button
                       colorScheme="green"
@@ -855,12 +934,15 @@ const MockInterviewQuestionsPage = () => {
             </Modal>
 
             {/* Relaxation Time Modal */}
-            <Modal isOpen={showRelaxationTime} onClose={() => {}} isCentered closeOnOverlayClick={false}>
+            <Modal
+              isOpen={showRelaxationTime}
+              onClose={() => {}}
+              isCentered
+              closeOnOverlayClick={false}
+            >
               <ModalOverlay />
               <ModalContent>
-                <ModalHeader color="green.700">
-                  Great job! 🎉
-                </ModalHeader>
+                <ModalHeader color="green.700">Great job! 🎉</ModalHeader>
                 <ModalBody>
                   <VStack spacing={4}>
                     <Text color="green.600">
@@ -885,36 +967,69 @@ const MockInterviewQuestionsPage = () => {
                     recording={recording}
                   />
                 </Box>
-                 <Box mt={4} textAlign="center">
-                   <Button
-                     colorScheme="green"
-                     size="lg"
-                     onClick={handleSubmitVideos}
-                     isLoading={submitting}
-                     isDisabled={recording || recordedAnswers.length === 0}
-                   >
-                     Submit Interview
-                   </Button>
-                 </Box>
+                <Box mt={4} textAlign="center">
+                  <Button
+                    colorScheme="green"
+                    size="lg"
+                    onClick={handleSubmitVideos}
+                    isLoading={submitting}
+                    isDisabled={recording || recordedAnswers.length === 0}
+                  >
+                    Submit Interview
+                  </Button>
+                </Box>
               </>
             )}
           </>
         ) : (
           <>
-            <Box mb={6} maxW="2xl" mx="auto" p={6} bg="white" borderRadius="lg" borderWidth="1px" boxShadow="md">
-              <Heading size="md" mb={2} textAlign="center" color="gray.700">How the Interview Works</Heading>
-              <VStack spacing={3} align="start" fontSize="sm" color="gray.600" as="ul" pl={4}>
-                <Text as="li">Click "Start Interview" to begin.</Text>
-                <Text as="li">Click "Show" to hear the prompt in the right container (avatar “talks”).</Text>
-                <Text as="li">When the audio ends, the avatar plays a close (end_talk2) and a 5-second countdown starts.</Text>
-                <Text as="li">Your webcam records your answer (avatar “listens”).</Text>
-                <Text as="li">Retry or go to the next question, then submit.</Text>
+            <Box
+              mb={6}
+              maxW="2xl"
+              mx="auto"
+              p={6}
+              bg="white"
+              borderRadius="lg"
+              borderWidth="1px"
+              boxShadow="md"
+            >
+              <Heading size="md" mb={2} textAlign="center" color="gray.700">
+                How the Interview Works
+              </Heading>
+              <VStack
+                spacing={3}
+                align="start"
+                fontSize="sm"
+                color="gray.600"
+                as="ul"
+                pl={4}
+              >
+                <Text as="li">
+                  Click "Show" to hear the question (avatar “talks”).
+                </Text>
+                <Text as="li">
+                  When the audio ends, a 5-second countdown starts.
+                </Text>
+                <Text as="li">
+                  Retry or Go to the next question, then submit your answer
+                </Text>
               </VStack>
             </Box>
 
             {!canDoMock && !checkingMockStatus && (
-              <Box mt={4} p={4} bg="orange.50" border="1px" borderColor="orange.200" borderRadius="md" textAlign="center">
-                <Text color="orange.700" fontWeight="medium">You cannot start another interview right now. Please try again later.</Text>
+              <Box
+                mt={4}
+                p={4}
+                bg="orange.50"
+                border="1px"
+                borderColor="orange.200"
+                borderRadius="md"
+                textAlign="center"
+              >
+                <Text color="orange.700" fontWeight="medium">
+                  You cannot start another interview right now. Please try again
+                  later.
+                </Text>
               </Box>
             )}
 
@@ -923,14 +1038,17 @@ const MockInterviewQuestionsPage = () => {
                 colorScheme="blue"
                 size="lg"
                 onClick={handleStartInterviewClick}
-                isDisabled={questions.length === 0 || !canDoMock || checkingMockStatus}
+                isDisabled={
+                  questions.length === 0 || !canDoMock || checkingMockStatus
+                }
                 isLoading={checkingMockStatus}
               >
-                {checkingMockStatus ? 'Checking...' : !canDoMock ? 'Cannot Start Interview' : 'Start Interview'}
+                {checkingMockStatus
+                  ? "Checking..."
+                  : !canDoMock
+                  ? "Cannot Start Interview"
+                  : "Start Interview"}
               </Button>
-              <Text fontSize="sm" color="gray.600" textAlign="center">
-                Start your mock interview with an animated assistant.
-              </Text>
             </VStack>
           </>
         )}
@@ -949,22 +1067,34 @@ const MockInterviewQuestionsPage = () => {
               <AlertIcon />
               <Text fontWeight="bold">You will miss the interview!</Text>
             </Alert>
-            
+
             <VStack align="stretch" spacing={4}>
               <Text>
                 You are about to leave the mock interview. If you continue:
               </Text>
-              
+
               <VStack align="stretch" spacing={2}>
-                <Text>• <strong>You will lose your chance to complete the interview</strong></Text>
-                <Text>• <strong>All your recorded answers will be lost</strong></Text>
-                <Text>• <strong>You'll need to start over from the beginning</strong></Text>
+                <Text>
+                  •{" "}
+                  <strong>
+                    You will lose your chance to complete the interview
+                  </strong>
+                </Text>
+                <Text>
+                  • <strong>All your recorded answers will be lost</strong>
+                </Text>
+                <Text>
+                  •{" "}
+                  <strong>You'll need to start over from the beginning</strong>
+                </Text>
               </VStack>
-              
+
               <Alert status="warning" mt={4}>
                 <AlertIcon />
                 <Text fontSize="sm">
-                  <strong>Progress:</strong> You have answered {answeredQuestions.length} out of {questions.length} questions.
+                  <strong>Progress:</strong> You have answered{" "}
+                  {answeredQuestions.length} out of {questions.length}{" "}
+                  questions.
                 </Text>
               </Alert>
             </VStack>
@@ -981,7 +1111,11 @@ const MockInterviewQuestionsPage = () => {
       </Modal>
 
       {/* Warning Modal */}
-      <Modal isOpen={showWarningModal} onClose={handleCancelStartInterview} isCentered>
+      <Modal
+        isOpen={showWarningModal}
+        onClose={handleCancelStartInterview}
+        isCentered
+      >
         <ModalOverlay />
         <ModalContent>
           <ModalHeader color="red.500">
@@ -991,27 +1125,39 @@ const MockInterviewQuestionsPage = () => {
           <ModalBody>
             <Alert status="warning" mb={4}>
               <AlertIcon />
-              <Text fontWeight="bold">Important: Interview will start now!</Text>
-            </Alert>
-            
-            <VStack align="stretch" spacing={4}>
-              <Text>
-                Before proceeding, please ensure:
+              <Text fontWeight="bold">
+                Important: Interview will start now!
               </Text>
-              
+            </Alert>
+
+            <VStack align="stretch" spacing={4}>
+              <Text>Before proceeding, please ensure:</Text>
+
               <VStack align="stretch" spacing={2}>
-                <Text>• <strong>Check your internet connection</strong> - ensure it's stable</Text>
-                <Text>• <strong>Check your camera and microphone</strong> - they will be used for recording</Text>
-                <Text>• <strong>Find a quiet environment</strong> - minimize background noise</Text>
-                <Text>• <strong>Do not navigate away</strong> - you will lose your progress</Text>
-                <Text>• <strong>Do not close the browser</strong> - your answers will not be recorded</Text>
+                <Text>
+                  • <strong>Check your internet connection</strong> - ensure
+                  it's stable
+                </Text>
+                <Text>
+                  • <strong>Check your camera and microphone</strong> - they
+                  will be used for recording
+                </Text>
+                <Text>
+                  • <strong>Do not navigate away</strong> - you will lose your
+                  progress
+                </Text>
+                <Text>
+                  • <strong>Do not close the browser</strong> - your answers
+                  will not be recorded
+                </Text>
               </VStack>
-              
+
               <Alert status="error" mt={4}>
                 <AlertIcon />
                 <Text fontSize="sm">
-                  <strong>Warning:</strong> If you leave this page or lose connection during the interview, 
-                  your answers will be lost and you'll need to start over.
+                  <strong>Warning:</strong> If you leave this page or lose
+                  connection during the interview, your answers will be lost and
+                  you'll need to start over.
                 </Text>
               </Alert>
             </VStack>

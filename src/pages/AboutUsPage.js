@@ -16,40 +16,42 @@ const MotionBox = motion(Box);
 const teamMembers = [
   {
     name: "Fouad Abdallah",
-    role: "CCD Director – at Antonine University ",
+    role: "CCD Director",
     image: "/assets/images/Fouad.jpg",
-    contact: <>fouad.abdallah@ua.edu.lb<br />Ext: 1130</>,
+    contact: "fouad.abdallah@ua.edu.lb",
+    linkedin: "https://www.linkedin.com/in/fouad-r-abdallah/",
   },
   {
     name: "Elie Najem",
-    role: "CCD Coordinator – at Antonine University",
+    role: "CCD Coordinator",
     image: "/assets/images/Elie.jpg",
-    contact: <>e.najem@ua.edu.lb<br />Ext: 1131</>,
-
+    contact: "e.najem@ua.edu.lb",
+    linkedin: "https://www.linkedin.com/in/elienajm/",
   },
-    {
+  {
     name: "Karen Souki",
-    role: "CCD Officer – at Antonine University",
+    role: "CCD Officer",
     image: "/assets/images/Elie.jpg",
-    contact: <>karen.souki@ua.edu.lb<br />Ext: 1133</>,
-
+    contact: "karen.souki@ua.edu.lb",
+    linkedin: "https://www.linkedin.com/in/karen-alsouki/",
   },
   {
     name: "Charbel Gemayel",
-    role: "Head of CS Department – at Antonine University",
+    role: "Head of Computer Sciences Department",
     image: "/assets/images/Charbel.jpg",
-    contact: <>c.gemayel@ua.edu.lb<br />Ext: 1100</>,
+    contact: "c.gemayel@ua.edu.lb",
+    linkedin: "https://www.linkedin.com/in/charbel-el-gemayel-1105ab203/",
   },
   {
     name: "Wadih Issa",
-    role: "Developer",
+    role: "Software Developer",
     image: "/assets/images/Wadih Issa.jpg",
     contact: "wadih_issa@outlook.com",
     linkedin: "https://www.linkedin.com/in/wadih-issa-6b2a801a8/",
   },
   {
     name: "Rani Hijazi",
-    role: "Developer",
+    role: "Software Developer",
     image: "/assets/images/Rani Hijazi.jpg",
     contact: "rani_hijazy@outlook.com",
     linkedin: "https://www.linkedin.com/in/rani-hijazi-903181270/",
@@ -72,13 +74,19 @@ const AboutUsPage = () => {
           gap={10}
         >
           {/* Right - Image */}
-          <Image
-            src="/assets/images/about_us.gif"
-            alt="Team Illustration"
-            maxW="450px"
-            objectFit="contain"
+          <Box
+            as="video"
+            src="/assets/videos/franclogo.mp4"
+            autoPlay
+            muted
+            playsInline
+            width={{ base: "210px", md: "375px" }}
+            height={{ base: "150px", md: "260px" }}
+            mx="auto"
+            objectFit="cover"
             borderRadius="lg"
-            alignSelf="flex-end"
+            boxShadow="xl"
+            loop
           />
 
           {/* Left - Card with Content */}
@@ -97,8 +105,10 @@ const AboutUsPage = () => {
             </Heading>
 
             <Text fontSize="lg" color="gray.600" lineHeight="1.8">
-              FRANC is the first digital career advisor in Lebanon, created by the Center for Career Development (CCD) in collaboration with the Department of Computer Science at the Faculty of Engineering and Technology (FET) and its alumni
-
+              FRANC is the first digital career advisor in Lebanon, created by
+              the Center for Career Development (CCD) in collaboration with the
+              Department of Computer Science at the Faculty of Engineering and
+              Technology (FET) and its alumni
             </Text>
           </Box>
         </Flex>
@@ -110,11 +120,11 @@ const AboutUsPage = () => {
           Members
         </Heading>
 
-         <SimpleGrid
-            columns={{ base: 1, sm: 2, md: 6 }}  
-            spacing={6}
-            justifyItems="center"
-          >
+        <SimpleGrid
+          columns={{ base: 1, sm: 2, md: 6 }}
+          spacing={6}
+          justifyItems="center"
+        >
           {teamMembers.map((member, idx) => (
             <MotionBox
               key={idx}
@@ -133,7 +143,7 @@ const AboutUsPage = () => {
               />
             </MotionBox>
           ))}
-       </SimpleGrid>
+        </SimpleGrid>
       </Box>
 
       <Footer />

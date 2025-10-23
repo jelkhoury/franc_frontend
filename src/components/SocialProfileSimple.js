@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   Heading,
@@ -11,7 +11,7 @@ import {
   Badge,
   useColorModeValue,
   Link,
-} from '@chakra-ui/react'
+} from "@chakra-ui/react";
 
 export default function SocialProfileSimple({
   name, // required
@@ -26,34 +26,39 @@ export default function SocialProfileSimple({
   return (
     <Center py={4}>
       <Box
-        maxW={'280px'}       // ⬅ smaller width
-        w={'full'}
-        bg={useColorModeValue('white', 'gray.900')}
-        boxShadow={'lg'}     // ⬅ lighter shadow
-        rounded={'md'}       // ⬅ smaller radius
-        p={4}                // ⬅ less padding
-        textAlign={'left'}
+        maxW={"280px"}
+        minW={"220px"}
+        minH={"180px"}
+        w={"full"}
+        bg={useColorModeValue("white", "gray.900")}
+        boxShadow={"lg"} // ⬅ lighter shadow
+        rounded={"md"} // ⬅ smaller radius
+        p={4} // ⬅ less padding
+        textAlign={"left"}
+        display="flex"
+        flexDirection="column"
+        justifyContent="space-between"
       >
         {/* Avatar (optional) */}
         {avatar && (
           <Avatar
-            size={'lg'}      // ⬅ smaller avatar
+            size={"lg"} // ⬅ smaller avatar
             src={avatar}
             name={name}
             mb={3}
           />
         )}
 
-        <Heading fontSize={'lg'} fontFamily={'body'}>
+        <Heading fontSize={"lg"} fontFamily={"body"}>
           {name}
         </Heading>
 
-        <Text fontSize="sm" fontWeight={600} color={'gray.600'} mb={1}>
+        <Text fontSize="sm" fontWeight={600} color={"gray.600"} mb={1}>
           {role}
         </Text>
 
         {username && (
-          <Text fontSize="xs" fontWeight={500} color={'gray.500'} mb={2}>
+          <Text fontSize="xs" fontWeight={500} color={"gray.500"} mb={2}>
             {username}
           </Text>
         )}
@@ -63,7 +68,7 @@ export default function SocialProfileSimple({
             fontSize="sm"
             minH="40px"
             maxH={40}
-            color={useColorModeValue('gray.700', 'gray.400')}
+            color={useColorModeValue("gray.700", "gray.400")}
             px={2}
           >
             {description}
@@ -72,9 +77,9 @@ export default function SocialProfileSimple({
 
         {badges.length > 0 && (
           <Stack
-            align={'center'}
-            justify={'center'}
-            direction={'row'}
+            align={"center"}
+            justify={"center"}
+            direction={"row"}
             mt={3}
             flexWrap="wrap"
             spacing={1}
@@ -86,7 +91,7 @@ export default function SocialProfileSimple({
                 py={0.5}
                 m={0.5}
                 fontSize="0.7em"
-                bg={useColorModeValue('gray.50', 'gray.800')}
+                bg={useColorModeValue("gray.50", "gray.800")}
               >
                 #{badge}
               </Badge>
@@ -95,7 +100,7 @@ export default function SocialProfileSimple({
         )}
 
         {/* Contact */}
-        <Text mt={3} fontSize="sm" color={'blue.500'} fontWeight="bold">
+        <Text mt={3} fontSize="sm" color={"blue.500"} fontWeight="bold">
           <Link href={contact} isExternal>
             {contact}
           </Link>
@@ -104,11 +109,12 @@ export default function SocialProfileSimple({
         {linkedin && (
           <Stack mt={3}>
             <Button
-              fontSize={'xs'}
-              rounded={'full'}
+              fontSize="xs"
+              rounded="full"
               size="sm"
-              variant="outline"
-              onClick={() => window.open(linkedin, '_blank')}
+              colorScheme="brand" // ✅ use brand, not brand.100
+              variant="ghost" // ✅ solid = filled button
+              onClick={() => window.open(linkedin, "_blank")}
             >
               LinkedIn
             </Button>
@@ -116,5 +122,5 @@ export default function SocialProfileSimple({
         )}
       </Box>
     </Center>
-  )
+  );
 }

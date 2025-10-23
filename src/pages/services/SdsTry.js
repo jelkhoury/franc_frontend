@@ -654,7 +654,7 @@ console.log("SDS response (normalized):", { code, responses, data });
               
               <VStack align="stretch" spacing={4}>
                 <Text>
-                  You are about to leave the SDS assessment. If you continue:
+                  You are about to leave the test. If you continue:
                 </Text>
                 
                 <VStack align="stretch" spacing={2}>

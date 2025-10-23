@@ -57,7 +57,6 @@ const dummyMajors = [
   },
 ];
 
-
 const FeaturedCard = () => (
   <Box
     bg="white"
@@ -70,23 +69,47 @@ const FeaturedCard = () => (
     alignItems="center"
     flexWrap="wrap"
   >
-    <Box maxW="500px">
+    <Box maxW="900px">
       <Text fontWeight="bold" fontSize="xl" mb={2} color="brand.500">
-        Tips: Must Check for Mock Interviews
+        Tips for Mock Interviews
       </Text>
-      <Text color="gray.600" fontSize="md">
-        - Prepare for common questions
-        <br />
-        - Check your internet connection
-        <br />
-        - Check your audio and video setup
-        <br />
-        - Focus on clear communication
-        <br />- Dress professionally, even if it's a video interview
-      </Text>
+      <VStack align="flex-start" spacing={3}>
+        <Text color="gray.600" fontSize="md">
+          <Text as="span" fontWeight="bold">
+            1. Set the scene:
+          </Text>{" "}
+          test the lighting and make sure the background isn't distracting,
+          messy or cluttered.
+        </Text>
+        <Text color="gray.600" fontSize="md">
+          <Text as="span" fontWeight="bold">
+            2. Frame your face:
+          </Text>{" "}
+          Adjust your webcam to show you from mid-torso to just the top of your
+          head.
+        </Text>
+        <Text color="gray.600" fontSize="md">
+          <Text as="span" fontWeight="bold">
+            3. Make eye contact:
+          </Text>{" "}
+          Look directly into the camera when you are talking
+        </Text>
+        <Text color="gray.600" fontSize="md">
+          <Text as="span" fontWeight="bold">
+            4. Dress professionally
+          </Text>
+        </Text>
+        <Text color="gray.600" fontSize="md">
+          <Text as="span" fontWeight="bold">
+            5. Node your head
+          </Text>{" "}
+          to show patience and understanding and smile genuinely to express
+          positivity and warmth
+        </Text>
+      </VStack>
     </Box>
     <Image
-      src="/assets/images/mock_interview.svg"
+      src="/assets/images/chat_service.svg"
       alt="Brain"
       borderRadius="md"
       boxSize="300px"
@@ -106,11 +129,11 @@ const MajorCard = ({ major, selected, onClick }) => (
     onClick={onClick}
     _hover={{ boxShadow: "lg" }}
   >
-    <Image 
-      src={major.urlImage || major.img} 
-      alt={major.name || major.title} 
-      mb={4} 
-      boxSize="100px" 
+    <Image
+      src={major.urlImage || major.img}
+      alt={major.name || major.title}
+      mb={4}
+      boxSize="100px"
       mx="auto"
       fallbackSrc="/assets/images/cs_major.svg"
     />
@@ -141,14 +164,16 @@ const MockInterviewMajorSelectPage = () => {
       try {
         setLoading(true);
         const baseUrl = process.env.REACT_APP_API_BASE_URL;
-        
+
         let facultiesData = [];
         let majorsData = [];
         let apiSuccess = false;
 
         try {
           // Try to fetch faculties
-          const facultiesResponse = await fetch(`${baseUrl}/api/BlobStorage/get-faculties`);
+          const facultiesResponse = await fetch(
+            `${baseUrl}/api/BlobStorage/get-faculties`
+          );
           if (facultiesResponse.ok) {
             facultiesData = await facultiesResponse.json();
             if (facultiesData && facultiesData.length > 0) {
@@ -157,7 +182,9 @@ const MockInterviewMajorSelectPage = () => {
           }
 
           // Try to fetch majors
-          const majorsResponse = await fetch(`${baseUrl}/api/BlobStorage/get-majors`);
+          const majorsResponse = await fetch(
+            `${baseUrl}/api/BlobStorage/get-majors`
+          );
           if (majorsResponse.ok) {
             majorsData = await majorsResponse.json();
             if (majorsData && majorsData.length > 0) {
@@ -165,7 +192,10 @@ const MockInterviewMajorSelectPage = () => {
             }
           }
         } catch (apiError) {
-          console.warn('API endpoints not available, using dummy data:', apiError.message);
+          console.warn(
+            "API endpoints not available, using dummy data:",
+            apiError.message
+          );
         }
 
         // Use API data if available, otherwise fallback to dummy data
@@ -173,25 +203,26 @@ const MockInterviewMajorSelectPage = () => {
           setFaculties(facultiesData);
           setMajors(majorsData);
           setFilteredMajors(majorsData);
-          console.log('Using API data for faculties and majors');
+          console.log("Using API data for faculties and majors");
         } else {
           // Fallback to dummy data
           setFaculties(dummyFaculties);
           setMajors(dummyMajors);
           setFilteredMajors(dummyMajors);
-          console.log('Using dummy data for faculties and majors');
-          
+          console.log("Using dummy data for faculties and majors");
+
           // Show a subtle notification that dummy data is being used
           toast({
             title: "Using sample data",
-            description: "API endpoints are not available. Showing sample majors for demonstration.",
+            description:
+              "API endpoints are not available. Showing sample majors for demonstration.",
             status: "info",
             duration: 3000,
             isClosable: true,
           });
         }
       } catch (err) {
-        console.error('Error in data loading:', err);
+        console.error("Error in data loading:", err);
         // Final fallback to dummy data
         setFaculties(dummyFaculties);
         setMajors(dummyMajors);
@@ -212,14 +243,15 @@ const MockInterviewMajorSelectPage = () => {
     // Filter by faculty
     if (selectedFaculty) {
       const facultyId = parseInt(selectedFaculty);
-      filtered = filtered.filter(major => major.facultyId === facultyId);
+      filtered = filtered.filter((major) => major.facultyId === facultyId);
     }
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(major => 
-        major.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        major.description.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (major) =>
+          major.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          major.description.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -240,7 +272,9 @@ const MockInterviewMajorSelectPage = () => {
       });
       return;
     }
-    navigate("/mock-interview/questions", { state: { major: selectedMajor.name || selectedMajor.title } });
+    navigate("/mock-interview/questions", {
+      state: { major: selectedMajor.name || selectedMajor.title },
+    });
   };
 
   const handleFacultyChange = (e) => {
@@ -262,7 +296,9 @@ const MockInterviewMajorSelectPage = () => {
         alignItems="center"
       >
         <Spinner size="xl" color="blue.500" />
-        <Text mt={4} color="gray.600">Loading majors...</Text>
+        <Text mt={4} color="gray.600">
+          Loading majors...
+        </Text>
       </Box>
     );
   }
@@ -277,8 +313,14 @@ const MockInterviewMajorSelectPage = () => {
         justifyContent="center"
         alignItems="center"
       >
-        <Text color="red.500" fontSize="lg">Error: {error}</Text>
-        <Button mt={4} colorScheme="blue" onClick={() => window.location.reload()}>
+        <Text color="red.500" fontSize="lg">
+          Error: {error}
+        </Text>
+        <Button
+          mt={4}
+          colorScheme="blue"
+          onClick={() => window.location.reload()}
+        >
           Retry
         </Button>
       </Box>
@@ -330,20 +372,20 @@ const MockInterviewMajorSelectPage = () => {
             ))}
           </Select>
           <InputGroup maxW="400px">
-            <Input 
-              placeholder="Search majors..." 
-              bg="white" 
+            <Input
+              placeholder="Search majors..."
+              bg="white"
               value={searchTerm}
               onChange={handleSearchChange}
             />
           </InputGroup>
         </Flex>
-        
+
         {filteredMajors.length === 0 ? (
           <Box textAlign="center" py={8}>
             <Text color="gray.500" fontSize="lg">
-              {searchTerm || selectedFaculty 
-                ? "No majors found matching your criteria." 
+              {searchTerm || selectedFaculty
+                ? "No majors found matching your criteria."
                 : "No majors available at the moment."}
             </Text>
           </Box>
@@ -359,7 +401,7 @@ const MockInterviewMajorSelectPage = () => {
             ))}
           </SimpleGrid>
         )}
-        
+
         <Button
           colorScheme="green"
           size="lg"
