@@ -30,11 +30,34 @@ const Signup = () => {
   const [passwordHash, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUpSuccessful, setIsSignUpSuccessful] = useState(false);
+  const [emailError, setEmailError] = useState('');
   const navigate = useNavigate();
   const toast = useToast();
   const { login } = useContext(AuthContext);
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@ua\.edu\.lb$/;
+    return emailRegex.test(email);
+  };
+
+  const handleEmailChange = (e) => {
+    const emailValue = e.target.value;
+    setEmail(emailValue);
+    
+    if (emailValue && !validateEmail(emailValue)) {
+      setEmailError('Email must end with @ua.edu.lb');
+    } else {
+      setEmailError('');
+    }
+  };
+
   const handleSubmit = async () => {
+    // Validate email before submitting
+    if (!validateEmail(email)) {
+      setEmailError('Email must end with @ua.edu.lb');
+      return;
+    }
+
     setLoading(true);
     try {
       const baseUrl = process.env.REACT_APP_API_BASE_URL ;
@@ -58,48 +81,22 @@ const Signup = () => {
         throw new Error(data.error || 'Something went wrong');
       }
 
-      // Store token in localStorage
-      localStorage.setItem('token', data.token);
+      // Don't log in immediately - user needs to verify email first
+      // Navigate to OTP verification page
+      navigate('/otp-verification', { 
+        state: { 
+          email: email,
+          message: 'Please check your email and enter the verification code to complete your registration.'
+        } 
+      });
       
-      // Decode token to get user role
-      const decodedToken = decodeToken(data.token);
-      
-      if (decodedToken) {
-        const userRole = getUserRole(data.token);
-        const userName = getUserName(data.token);
-        const userId = getUserId(data.token);
-        
-        // Store user info in localStorage
-        localStorage.setItem('userRole', userRole);
-        localStorage.setItem('userName', userName);
-        localStorage.setItem('userId', userId);
-        
-        // Update auth context
-        login();
-        
-        // Navigate based on role
-        if (userRole === 'Admin') {
-          navigate('/admin');
-          toast({
-            title: "Signup successful!",
-            description: `Welcome, ${userName}!`,
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-          });
-        } else {
-          navigate('/');
-          toast({
-            title: "Signup successful!",
-            description: `Welcome, ${userName}!`,
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-          });
-        }
-      } else {
-        throw new Error('Invalid token received');
-      }
+      toast({
+        title: "Signup successful!",
+        description: "Please check your email for verification code.",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
     } catch (error) {
       console.error('Error during sign-up:', error);
       toast({
@@ -149,9 +146,19 @@ const Signup = () => {
                 </FormControl>
               </Box>
             </HStack>
-            <FormControl id="email" isRequired>
+            <FormControl id="email" isRequired isInvalid={!!emailError}>
               <FormLabel>Email address</FormLabel>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input 
+                type="email" 
+                value={email} 
+                onChange={handleEmailChange}
+                placeholder="example@ua.edu.lb"
+              />
+              {emailError && (
+                <Text color="red.500" fontSize="sm" mt={1}>
+                  {emailError}
+                </Text>
+              )}
             </FormControl>
             <FormControl id="password" isRequired>
               <FormLabel>Password</FormLabel>
@@ -183,7 +190,7 @@ const Signup = () => {
                 }}
                 onClick={handleSubmit}
                 isLoading={loading}
-                isDisabled={loading}
+                isDisabled={loading || !!emailError}
               >
                 Sign up
               </Button>

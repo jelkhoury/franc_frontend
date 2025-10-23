@@ -16,6 +16,7 @@ import {
 } from "@chakra-ui/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../components/AuthContext";
+import { decodeToken, getUserRole, getUserName, getUserId } from "../utils/tokenUtils";
 
 const OTPVerification = () => {
   const location = useLocation();
@@ -64,16 +65,54 @@ const OTPVerification = () => {
         throw new Error(data.message || "Invalid OTP");
       }
 
-      toast({
-        title: "Verification Successful!",
-        description: "Your email has been verified successfully.",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-
-      login();
-      navigate("/");
+      // Store token in localStorage after successful verification
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        
+        // Decode token to get user role
+        const decodedToken = decodeToken(data.token);
+        
+        if (decodedToken) {
+          const userRole = getUserRole(data.token);
+          const userName = getUserName(data.token);
+          const userId = getUserId(data.token);
+          
+          // Store user info in localStorage
+          localStorage.setItem('userRole', userRole);
+          localStorage.setItem('userName', userName);
+          localStorage.setItem('userId', userId);
+          
+          // Update auth context
+          login();
+          
+          toast({
+            title: "Verification Successful!",
+            description: `Welcome, ${userName}! Your email has been verified successfully.`,
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+          
+          // Navigate based on role
+          if (userRole === 'Admin') {
+            navigate('/admin');
+          } else {
+            navigate('/');
+          }
+        } else {
+          throw new Error('Invalid token received');
+        }
+      } else {
+        // If no token in response, just show success message
+        toast({
+          title: "Verification Successful!",
+          description: "Your email has been verified successfully.",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+        navigate('/login');
+      }
     } catch (err) {
       toast({
         title: "Verification Failed",

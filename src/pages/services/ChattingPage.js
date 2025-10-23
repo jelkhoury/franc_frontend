@@ -43,9 +43,9 @@ const ChattingPage = () => {
 
   const handleTryNowClick = () => {
     if (isLoggedIn) {
-      onOpen();  // Open the modal if not logged in
-    } else {
       navigate("/chat-franc");  // Redirect to the chat page if logged in
+    } else {
+      onOpen();  // Open the modal if not logged in
     }
   };
 

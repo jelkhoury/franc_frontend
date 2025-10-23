@@ -10,7 +10,7 @@ import {
   Flex,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { ArrowForwardIcon } from '@chakra-ui/icons';
 import Footer from '../../components/Footer';
 
@@ -32,6 +32,7 @@ const ChatBubble = ({ message, isUser }) => (
 );
 
 const Chatting = () => {
+  const baseUrl = useMemo(() => process.env.REACT_APP_API_AI_URL, []);
   const [messages, setMessages] = useState([
     { text: 'Hello! How can I help you today?', sender: 'bot' },
   ]);
