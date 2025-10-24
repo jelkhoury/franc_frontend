@@ -72,6 +72,8 @@ const MockInterviewQuestionsPage = () => {
 
   // data
   const [questions, setQuestions] = useState([]);
+  const [interviewQuestions, setInterviewQuestions] = useState([]);
+  const [specialQuestions, setSpecialQuestions] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -90,6 +92,12 @@ const MockInterviewQuestionsPage = () => {
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [showReadyButton, setShowReadyButton] = useState(false);
   const [totalReplayCount, setTotalReplayCount] = useState(0);
+  
+  // Special question flow states
+  const [showOpeningMessage, setShowOpeningMessage] = useState(false);
+  const [showCandidateQuestion, setShowCandidateQuestion] = useState(false);
+  const [showClosingMessage, setShowClosingMessage] = useState(false);
+  const [currentSpecialQuestion, setCurrentSpecialQuestion] = useState(null);
 
   // prompt/audio
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(null);
@@ -322,11 +330,30 @@ const MockInterviewQuestionsPage = () => {
           setQuestions([{ questionId: 'fallback-1', title: 'Tell me about yourself.', videoUrl: fallbackVoiceover }]);
         } else {
           setQuestions(data);
+          
+          // Filter special questions from interview questions
+          const specialTitles = ['Opening Message', 'Candidate Question', 'Closing Message'];
+          const specialQuestionsObj = {};
+          const interviewQuestionsList = [];
+          
+          data.forEach(question => {
+            if (specialTitles.includes(question.title)) {
+              specialQuestionsObj[question.title] = question;
+            } else {
+              interviewQuestionsList.push(question);
+            }
+          });
+          
+          setSpecialQuestions(specialQuestionsObj);
+          setInterviewQuestions(interviewQuestionsList);
         }
       } catch (err) {
         console.error(err);
         setError(err.message);
-        setQuestions([{ questionId: 'fallback-1', title: 'Tell me about yourself.', videoUrl: fallbackVoiceover }]);
+        const fallbackQuestion = { questionId: 'fallback-1', title: 'Tell me about yourself.', videoUrl: fallbackVoiceover };
+        setQuestions([fallbackQuestion]);
+        setInterviewQuestions([fallbackQuestion]);
+        setSpecialQuestions({});
         toast({ title: 'Error loading questions', description: err.message, status: 'error', duration: 5000, isClosable: true });
       } finally {
         setLoading(false);
@@ -336,12 +363,67 @@ const MockInterviewQuestionsPage = () => {
     // eslint-disable-next-line
   }, [major]);
 
+  // ---- special question handling ----
+  const playSpecialQuestion = async (questionType) => {
+    const specialQuestion = specialQuestions[questionType];
+    if (!specialQuestion) return;
+    
+    setCurrentSpecialQuestion(specialQuestion);
+    setSelectedTitle(specialQuestion.title);
+    setAudioBlocked(false);
+    
+    // Play the start_talk intro ONCE
+    setMode('start_talk');
+    
+    try {
+      if (audioRef.current) {
+        audioRef.current.src = specialQuestion.videoUrl || '';
+        audioRef.current.currentTime = 0;
+        await audioRef.current.play();
+      }
+    } catch (e) {
+      console.error('Audio play blocked:', e);
+      setAudioBlocked(true);
+      toast({
+        title: 'Enable audio',
+        description: 'Click "Enable Audio" to start the audio.',
+        status: 'warning',
+        duration: 3000,
+      });
+    }
+  };
+
+  const onSpecialQuestionAudioEnded = () => {
+    setMode('end_talk2');
+    
+    // Handle different special question types
+    if (currentSpecialQuestion?.title === 'Opening Message') {
+      setShowOpeningMessage(false);
+      setShowReadyButton(true);
+    } else if (currentSpecialQuestion?.title === 'Candidate Question') {
+      setShowCandidateQuestion(false);
+      // Start recording for candidate question
+      setTimeout(() => {
+        setShowRecorder(true);
+        if (webcamRef.current?.video?.srcObject) {
+          handleStartRecording();
+          restartAnswerTimer(new Date(Date.now() + ANSWER_DURATION_SECONDS * 1000), true);
+          toast({ title: 'Recording started', status: 'info', duration: 2000 });
+        }
+      }, 1000);
+    } else if (currentSpecialQuestion?.title === 'Closing Message') {
+      setShowClosingMessage(false);
+      setShowControls(true);
+    }
+  };
+
   // ---- prompt audio & animation ----
     const playQuestionPrompt = async (audioUrl, title, idx) => {
     setCurrentQuestionIdx(idx);
     setSelectedTitle(title);
     setAudioBlocked(false);
     setCountdownActive(true);
+    setCurrentSpecialQuestion(null); // Reset special question state
 
     // 1) Play the start_talk intro ONCE
     setMode('start_talk');
@@ -371,6 +453,12 @@ const MockInterviewQuestionsPage = () => {
   };
 
   const onAudioEnded = () => {
+    // Check if this is a special question
+    if (currentSpecialQuestion) {
+      onSpecialQuestionAudioEnded();
+      return;
+    }
+    
     // After prompt: end_talk2 once, then show retry prompt
     pendingStartRef.current = true;
     setMode('end_talk2');
@@ -379,6 +467,12 @@ const MockInterviewQuestionsPage = () => {
   };
 
   const onAudioError = () => {
+    // Check if this is a special question
+    if (currentSpecialQuestion) {
+      onSpecialQuestionAudioEnded();
+      return;
+    }
+    
     // Treat as ended
     pendingStartRef.current = true;
     setMode('end_talk2');
@@ -447,12 +541,40 @@ const MockInterviewQuestionsPage = () => {
       setShowRecorder(false);
       setMode('thinkingLoop');
       
-      // Start relaxation time instead of showing controls immediately
-      if (currentQuestionIdx < questions.length - 1) {
-        startRelaxationTime();
+      // Check if this was the candidate question
+      if (currentSpecialQuestion?.title === 'Candidate Question') {
+        // After candidate question, play closing message
+        if (specialQuestions['Closing Message']) {
+          setShowClosingMessage(true);
+          setTimeout(() => {
+            playSpecialQuestion('Closing Message');
+          }, 500);
+        } else {
+          setShowControls(true);
+        }
       } else {
-        // Last question completed, show submit option
-        setShowControls(true);
+        // Regular interview question flow
+        if (currentQuestionIdx < interviewQuestions.length - 1) {
+          startRelaxationTime();
+        } else {
+          // Last question completed, check for candidate question
+          if (specialQuestions['Candidate Question']) {
+            setShowCandidateQuestion(true);
+            setTimeout(() => {
+              playSpecialQuestion('Candidate Question');
+            }, 500);
+          } else {
+            // No candidate question, go directly to closing message or submit
+            if (specialQuestions['Closing Message']) {
+              setShowClosingMessage(true);
+              setTimeout(() => {
+                playSpecialQuestion('Closing Message');
+              }, 500);
+            } else {
+              setShowControls(true);
+            }
+          }
+        }
       }
     };
     mediaRecorder.stop();
@@ -468,7 +590,7 @@ const MockInterviewQuestionsPage = () => {
     setShowRetryPrompt(false);
     setTotalReplayCount(prev => prev + 1); // Increment total replay count
     if (currentQuestionIdx != null) {
-      const q = questions[currentQuestionIdx];
+      const q = interviewQuestions[currentQuestionIdx];
       playQuestionPrompt(q?.videoUrl, q?.title, currentQuestionIdx);
     }
   };
@@ -499,15 +621,31 @@ const MockInterviewQuestionsPage = () => {
           setShowRelaxationTime(false);
           // Move to next question
           const nextIdx = (currentQuestionIdx ?? -1) + 1;
-          if (nextIdx < questions.length) {
-            const q = questions[nextIdx];
+          if (nextIdx < interviewQuestions.length) {
+            const q = interviewQuestions[nextIdx];
             setCurrentQuestionIdx(nextIdx);
             setSelectedTitle(q.title);
             setPromptRetryUsed(false); // Reset retry for next question
+            setCurrentSpecialQuestion(null); // Reset special question state
             setTimeout(() => { playQuestionPrompt(q.videoUrl, q.title, nextIdx); }, 300);
           } else {
-            // All questions completed, show submit option
-            setShowControls(true);
+            // All interview questions completed, check for candidate question
+            if (specialQuestions['Candidate Question']) {
+              setShowCandidateQuestion(true);
+              setTimeout(() => {
+                playSpecialQuestion('Candidate Question');
+              }, 500);
+            } else {
+              // No candidate question, go directly to closing message or submit
+              if (specialQuestions['Closing Message']) {
+                setShowClosingMessage(true);
+                setTimeout(() => {
+                  playSpecialQuestion('Closing Message');
+                }, 500);
+              } else {
+                setShowControls(true);
+              }
+            }
           }
           return 0;
         }
@@ -526,19 +664,31 @@ const MockInterviewQuestionsPage = () => {
     setInterviewStarted(true);
     setInterviewStartTime(Date.now());
     setInterviewDuration(0);
-    setCurrentQuestionIdx(0);
-    setSelectedTitle(questions[0]?.title || '');
     setPromptRetryUsed(false);
-    setShowReadyButton(true);
+    
+    // Check if we have an opening message
+    if (specialQuestions['Opening Message']) {
+      setShowOpeningMessage(true);
+      setTimeout(() => {
+        playSpecialQuestion('Opening Message');
+      }, 500);
+    } else {
+      // No opening message, go directly to ready button
+      setShowReadyButton(true);
+    }
+    
     // ensure idle animation is running
     setMode('thinkingLoop');
   };
 
   const handleImReady = () => {
     setShowReadyButton(false);
+    setCurrentSpecialQuestion(null); // Reset special question state
     // Start with first question
     setTimeout(() => { 
-      playQuestionPrompt(questions[0]?.videoUrl, questions[0]?.title, 0); 
+      if (interviewQuestions.length > 0) {
+        playQuestionPrompt(interviewQuestions[0]?.videoUrl, interviewQuestions[0]?.title, 0); 
+      }
     }, 500);
   };
 
@@ -585,7 +735,7 @@ const MockInterviewQuestionsPage = () => {
       formData.append('UserId', String(userId));
       formData.append('NbOfTry', String(totalReplayCount));
       validAnswers.forEach((answer) => {
-        const qid = questions[answer.questionIdx]?.questionId;
+        const qid = interviewQuestions[answer.questionIdx]?.questionId;
         if (qid) formData.append('QuestionIds', String(qid));
       });
 
@@ -633,7 +783,7 @@ const MockInterviewQuestionsPage = () => {
       </Box>
     );
   }
-  if (error && questions.length === 0) {
+  if (error && interviewQuestions.length === 0) {
     return (
       <Box minH="100vh" bgGradient="linear(to-r, white, #ebf8ff)" display="flex" flexDirection="column" justifyContent="center" alignItems="center">
         <Text color="red.500" fontSize="lg">Error: {error}</Text>
@@ -848,7 +998,7 @@ const MockInterviewQuestionsPage = () => {
             </Flex>
 
             {/* Current Question Info - moved to top */}
-            {currentQuestionIdx !== null && (
+            {(currentQuestionIdx !== null || currentSpecialQuestion) && (
               <Box
                 mb={6}
                 bg="white"
@@ -858,12 +1008,25 @@ const MockInterviewQuestionsPage = () => {
                 p={4}
                 textAlign="center"
               >
-                <Heading size="sm" mb={3} color="gray.700">
-                  Question {currentQuestionIdx + 1} of {questions.length}
-                </Heading>
-                <Text fontSize="lg" fontWeight="semibold" color="blue.600">
-                  {selectedTitle}
-                </Text>
+                {currentSpecialQuestion ? (
+                  <>
+                    <Heading size="sm" mb={3} color="gray.700">
+                      {currentSpecialQuestion.title}
+                    </Heading>
+                    <Text fontSize="lg" fontWeight="semibold" color="blue.600">
+                      {selectedTitle}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Heading size="sm" mb={3} color="gray.700">
+                      Question {currentQuestionIdx + 1} of {interviewQuestions.length}
+                    </Heading>
+                    <Text fontSize="lg" fontWeight="semibold" color="blue.600">
+                      {selectedTitle}
+                    </Text>
+                  </>
+                )}
               </Box>
             )}
 
@@ -1039,7 +1202,7 @@ const MockInterviewQuestionsPage = () => {
                 size="lg"
                 onClick={handleStartInterviewClick}
                 isDisabled={
-                  questions.length === 0 || !canDoMock || checkingMockStatus
+                  interviewQuestions.length === 0 || !canDoMock || checkingMockStatus
                 }
                 isLoading={checkingMockStatus}
               >
@@ -1093,7 +1256,7 @@ const MockInterviewQuestionsPage = () => {
                 <AlertIcon />
                 <Text fontSize="sm">
                   <strong>Progress:</strong> You have answered{" "}
-                  {answeredQuestions.length} out of {questions.length}{" "}
+                  {answeredQuestions.length} out of {interviewQuestions.length}{" "}
                   questions.
                 </Text>
               </Alert>
