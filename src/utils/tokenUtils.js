@@ -76,4 +76,25 @@ export const clearAuthData = () => {
   localStorage.removeItem('userRole');
   localStorage.removeItem('userName');
   localStorage.removeItem('userId');
+};
+
+// Function to get token expiration date (readable format)
+export const getTokenExpirationDate = (token) => {
+  const decodedToken = decodeToken(token);
+  if (decodedToken && decodedToken.exp) {
+    return new Date(decodedToken.exp * 1000);
+  }
+  return null;
+};
+
+// Function to get time until token expires (in hours)
+export const getTimeUntilExpiration = (token) => {
+  const decodedToken = decodeToken(token);
+  if (decodedToken && decodedToken.exp) {
+    const currentTime = Math.floor(Date.now() / 1000);
+    const secondsRemaining = decodedToken.exp - currentTime;
+    const hoursRemaining = secondsRemaining / 3600;
+    return hoursRemaining > 0 ? hoursRemaining : 0;
+  }
+  return 0;
 }; 
