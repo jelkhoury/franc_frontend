@@ -112,7 +112,7 @@ const serviceCards = [
       <Text color="gray.600" mb={4}>
         A personality test is your compass for your career
       </Text>
-      <Button as={RouterLink} to="/cover-letter-evaluation" colorScheme="brand" size="sm">
+      <Button as={RouterLink} to="/self-directed-search" colorScheme="brand" size="sm">
         Discover me
       </Button>
     </MotionBox>
@@ -134,7 +134,7 @@ const serviceCards = [
       <Text color="gray.600" mb={4}>
         See yourself, hear yourself and repeat.
       </Text>
-      <Button as={RouterLink} to="/cover-letter-evaluation" colorScheme="brand" size="sm">
+      <Button as={RouterLink} to="/mock-interview" colorScheme="brand" size="sm">
         Dare Me
       </Button>
     </MotionBox>
