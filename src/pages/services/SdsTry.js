@@ -289,7 +289,36 @@ const SdsTry = () => {
   };
 
   const performSubmission = async () => {
-    const userId = parseInt(decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
+    // Get user ID from token
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast({
+        title: "Authentication Error",
+        description: "Please log in again",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      setSubmitting(false);
+      return;
+    }
+
+    // Decode token to get user ID
+    const tokenData = JSON.parse(atob(token.split('.')[1]));
+    const userId = parseInt(tokenData['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
+    
+    if (!userId || isNaN(userId)) {
+      toast({
+        title: "Authentication Error",
+        description: "Unable to retrieve user ID. Please log in again",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      setSubmitting(false);
+      return;
+    }
+
     setSubmitting(true);
 
     const typeMap = {};
