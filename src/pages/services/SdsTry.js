@@ -289,7 +289,7 @@ const SdsTry = () => {
   };
 
   const performSubmission = async () => {
-    const userId = 1;
+    const userId = getStoredUserId;
     setSubmitting(true);
 
     const typeMap = {};
