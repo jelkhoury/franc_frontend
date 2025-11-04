@@ -708,9 +708,8 @@ const SdsResult = () => {
       kind: "education",
       user_holland_code: userCode,
     });
-
     // Fetch Holland points from backend
-    const hollandPoints = fetch(`${apiBaseUrl}/api/Sds/responses/1/holland-points`)
+    const hollandPoints = fetch(`${apiBaseUrl}/api/Sds/responses/${state.userId}/holland-points`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r)))
       .then((response) => {
         if (response.message && response.data) {

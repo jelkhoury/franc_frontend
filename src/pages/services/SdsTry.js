@@ -427,6 +427,7 @@ if (!Array.isArray(responses)) responses = [];
 // ---- Navigate with normalized shape ----
 navigate("/self-directed-search/result", {
   state: {
+    userId: Number(userId),
     hollandCode: code,                 // always a string
     responses,                         // array (for Q265/Q266 if present)
     allResponses: originalResponses,  // Pass all original responses including faculty
