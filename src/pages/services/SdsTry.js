@@ -289,7 +289,7 @@ const SdsTry = () => {
   };
 
   const performSubmission = async () => {
-    const userId = getStoredUserId;
+    const userId = parseInt(decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
     setSubmitting(true);
 
     const typeMap = {};
