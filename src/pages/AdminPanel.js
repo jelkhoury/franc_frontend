@@ -54,7 +54,7 @@ const AdminPanel = () => {
         justifyContent="space-between"
       >
         <div>
-          <Heading size="md" mb={4}>
+          <Heading color="brand.500" size="md" mb={4}>
             Admin Menu
           </Heading>
           <Divider mb={4} />

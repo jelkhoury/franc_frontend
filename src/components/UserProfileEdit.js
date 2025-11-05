@@ -30,7 +30,7 @@ export default function UserProfileEdit({ onClose ,onLogout  }) {
 
   return (
     <Stack spacing={4}>
-      <Heading fontSize={{ base: '2xl', sm: '3xl' }} textAlign="center">
+      <Heading color="brand.500" fontSize={{ base: '2xl', sm: '3xl' }} textAlign="center">
         Edit Your Profile
       </Heading>
 

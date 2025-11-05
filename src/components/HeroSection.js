@@ -24,7 +24,7 @@ const HeroSection = ({ onGetStartedClick }) => {
           {/* Text Section */}
           <Box flex="1" textAlign={{ base: "center", md: "left" }}>
             <VStack spacing={6} align={{ base: "center", md: "flex-start" }}>
-              <Heading
+              <Heading color="brand.500"
                 fontWeight={600}
                 fontSize={{ base: "2xl", sm: "4xl", md: "5xl" }}
                 lineHeight="110%"

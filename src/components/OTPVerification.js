@@ -145,7 +145,7 @@ const OTPVerification = () => {
         my={12}
       >
         <Center>
-          <Heading size={"lg"}>Verify your email</Heading>
+          <Heading color="brand.500" size={"lg"}>Verify your email</Heading>
         </Center>
         <Center fontSize={"md"}>
           We have sent a code to your email

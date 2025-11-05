@@ -7,7 +7,7 @@ const TestAvatar = () => {
   return (
     <Box minH="100vh" bg="gray.50" p={8}>
       <VStack spacing={8}>
-        <Heading size="xl" textAlign="center">
+        <Heading color="brand.500" size="xl" textAlign="center">
           3D Avatar Test
         </Heading>
         <Text textAlign="center" color="gray.600" maxW="600px">
@@ -17,7 +17,7 @@ const TestAvatar = () => {
         
         <Box p={6} bg="white" borderRadius="lg" boxShadow="md" w="100%" maxW="600px">
           <VStack spacing={4}>
-            <Heading size="md" color="blue.600">
+            <Heading color="brand.500" size="md" color="blue.600">
               System Status
             </Heading>
             <VStack spacing={2} align="start" w="100%">

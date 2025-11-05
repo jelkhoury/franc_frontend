@@ -113,7 +113,7 @@ const ResumePage = () => {
           border="1px solid"
           borderColor="gray.100"
         >
-          <Heading size="xl" mb={4}>
+          <Heading color="brand.500" size="xl" mb={4}>
             Resume Feedback
           </Heading>
           <Text fontSize="lg" mb={6}>
@@ -149,7 +149,7 @@ const ResumePage = () => {
 
       {/* ✅ Improved How It Works */}
       <Box py={16} px={{ base: 6, md: 16 }} bg="white">
-        <Heading size="lg" mb={10} textAlign="center">
+        <Heading color="brand.500" size="lg" mb={10} textAlign="center">
           How It Works
         </Heading>
 

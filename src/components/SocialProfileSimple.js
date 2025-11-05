@@ -49,7 +49,7 @@ export default function SocialProfileSimple({
           />
         )}
 
-        <Heading fontSize={"lg"} fontFamily={"body"}>
+        <Heading color="brand.500" fontSize={"lg"} fontFamily={"body"}>
           {name}
         </Heading>
 

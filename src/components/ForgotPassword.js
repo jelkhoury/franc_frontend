@@ -97,7 +97,7 @@ const ForgotPassword = () => {
         p={6}
         my={12}
       >
-        <Heading lineHeight={1.1} fontSize={{ base: '2xl', md: '3xl' }}>
+        <Heading color="brand.500" lineHeight={1.1} fontSize={{ base: '2xl', md: '3xl' }}>
           {from === 'profile-edit' ? 'Change your password' : 'Forgot your password?'}
         </Heading>
         <Text fontSize={{ base: 'sm', sm: 'md' }} color={'gray.600'}>

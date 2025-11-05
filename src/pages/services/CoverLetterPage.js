@@ -104,7 +104,7 @@ const CoverLetterPage = () => {
           border="1px solid"
           borderColor="gray.100"
         >
-          <Heading size="xl" mb={4}>
+          <Heading color="brand.500" size="xl" mb={4}>
             Cover Letter Feedback
           </Heading>
 
@@ -140,7 +140,7 @@ const CoverLetterPage = () => {
 
     {/* How It Works Section */}
     <Box py={16} px={{ base: 6, md: 16 }} bg="white">
-      <Heading size="lg" mb={10} textAlign="center">
+      <Heading color="brand.500" size="lg" mb={10} textAlign="center">
         How It Works
       </Heading>
 
@@ -218,7 +218,7 @@ const CoverLetterPage = () => {
         px={{ base: 6, md: 16 }}
         textAlign="center"
       >
-        <Heading size="lg" mb={4}>
+        <Heading color="brand.500" size="lg" mb={4}>
           Ready to Improve Your Cover Letter?
         </Heading>
         <Text fontSize="lg" mb={6}>

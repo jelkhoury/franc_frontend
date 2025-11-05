@@ -37,21 +37,21 @@ const teamMembers = [
   },
   {
     name: "Charbel Gemayel",
-    role: "Head of Computer Sciences Department",
+    role: "Head of Computer Science Department",
     image: "/assets/images/Charbel.jpg",
-    contact: "c.gemayel@ua.edu.lb",
+    contact: "charbel.gemayel@ua.edu.lb",
     linkedin: "https://www.linkedin.com/in/charbel-el-gemayel-1105ab203/",
   },
   {
     name: "Wadih Issa",
-    role: "Software Developer",
+    role: "Lead Software Developer",
     image: "/assets/images/Wadih Issa.jpg",
     contact: "wadih_issa@outlook.com",
     linkedin: "https://www.linkedin.com/in/wadih-issa-6b2a801a8/",
   },
   {
     name: "Rani Hijazi",
-    role: "Software Developer",
+    role: "Lead Software Developer",
     image: "/assets/images/Rani Hijazi.jpg",
     contact: "rani_hijazy@outlook.com",
     linkedin: "https://www.linkedin.com/in/rani-hijazi-903181270/",
@@ -100,7 +100,7 @@ const AboutUsPage = () => {
             border="1px solid"
             borderColor="gray.100"
           >
-            <Heading size="xl" mb={4}>
+            <Heading color="brand.500" size="xl" mb={4}>
               About Franc
             </Heading>
 
@@ -116,7 +116,7 @@ const AboutUsPage = () => {
 
       {/* Team Section with Motion */}
       <Box px={6} py={16} bg="white">
-        <Heading size="lg" textAlign="center" mb={10} color="gray.700">
+        <Heading color="brand.500" size="lg" textAlign="center" mb={10} >
           Members
         </Heading>
 

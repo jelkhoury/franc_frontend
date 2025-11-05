@@ -151,7 +151,7 @@ export default function DemoMockInterviewStandalone() {
   return (
     <Box minH="100vh" bgGradient="linear(to-r, white, #ebf8ff)" display="flex" flexDirection="column" justifyContent="space-between">
       <Box px={{ base: 4, md: 8 }} py={8}>
-        <Heading size="lg" mb={2} textAlign="center">Mock Interview Demo</Heading>
+        <Heading color="brand.500" size="lg" mb={2} textAlign="center">Mock Interview Demo</Heading>
         <Text color="gray.600" mb={8} textAlign="center">
           Solid baseline: Lottie plays **talking** while the audio is playing, **thinking** when it’s not. “Listening (one)” is a one-shot.
         </Text>
@@ -159,7 +159,7 @@ export default function DemoMockInterviewStandalone() {
         <Flex gap={6} direction={{ base: 'column', md: 'row' }} align="stretch">
           {/* Left: Webcam */}
           <Box flex="1" bg="white" borderRadius="lg" borderWidth="1px" boxShadow="md" p={4}>
-            <Heading size="sm" mb={3} color="gray.700">Your Camera</Heading>
+            <Heading color="brand.500" size="sm" mb={3} color="gray.700">Your Camera</Heading>
             <Box overflow="hidden" borderRadius="md" borderWidth="1px" borderColor="gray.200">
               <Webcam
                 ref={webcamRef}
@@ -174,7 +174,7 @@ export default function DemoMockInterviewStandalone() {
 
           {/* Right: Lottie + audio */}
           <Box flex="1" bg="white" borderRadius="lg" borderWidth="1px" boxShadow="md" p={4}>
-            <Heading size="sm" mb={3} color="gray.700">Interviewer (Lottie + Audio)</Heading>
+            <Heading color="brand.500" size="sm" mb={3} color="gray.700">Interviewer (Lottie + Audio)</Heading>
             <Box
               overflow="hidden"
               borderRadius="md"
@@ -255,7 +255,7 @@ export default function DemoMockInterviewStandalone() {
 
         {/* Questions */}
         <Box mt={8} bg="white" borderRadius="lg" borderWidth="1px" boxShadow="md" p={4}>
-          <Heading size="sm" mb={3} color="gray.700">Questions</Heading>
+          <Heading color="brand.500" size="sm" mb={3} color="gray.700">Questions</Heading>
           <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={3}>
             {DUMMY_QUESTIONS.map((q, idx) => (
               <Box key={q.id} p={3} borderRadius="md" bg={idx === selectedIdx ? 'blue.50' : 'gray.50'} borderWidth="1px" borderColor={idx === selectedIdx ? 'blue.200' : 'gray.200'}>

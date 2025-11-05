@@ -337,14 +337,14 @@ const MockInterviewMajorSelectPage = () => {
     >
       <Box px={4} py={16}>
         <Stack spacing={8} mb={12} textAlign="center">
-          <Heading size="2xl">Mock Interview</Heading>
+          <Heading color="brand.500" size="2xl">Mock Interview</Heading>
           <Text fontSize="lg" color="gray.600">
             Tailor your interview practice to your academic major. Select your
             major to get started!
           </Text>
         </Stack>
         <FeaturedCard />
-        <Heading size="lg" mb={4} textAlign="center">
+        <Heading color="brand.500" size="lg" mb={4} textAlign="center">
           Select Your Major
         </Heading>
         <Text color="gray.600" mb={6} textAlign="center">

@@ -89,7 +89,7 @@ const ChattingPage = () => {
           border="1px solid"
           borderColor="gray.100"
         >
-          <Heading size="xl" mb={4}>
+          <Heading color="brand.500" size="xl" mb={4}>
             Any Help?
           </Heading>
 
@@ -126,7 +126,7 @@ const ChattingPage = () => {
       {/* How It Works Section */}
   
      <Box py={16} px={{ base: 6, md: 16 }} bg="white">
-  <Heading size="lg" mb={10} textAlign="center">
+  <Heading color="brand.500" size="lg" mb={10} textAlign="center">
     How It Works
   </Heading>
 
@@ -180,7 +180,7 @@ const ChattingPage = () => {
         px={{ base: 6, md: 16 }}
         textAlign="center"
       >
-        <Heading size="lg" mb={4}>
+        <Heading color="brand.500" size="lg" mb={4}>
           Need Instant Help About University Life?
         </Heading>
         <Text fontSize="lg" mb={6}>

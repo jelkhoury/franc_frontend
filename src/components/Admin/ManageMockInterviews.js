@@ -684,7 +684,7 @@ const ManageMockInterviews = () => {
 
   return (
     <VStack align="stretch" spacing={6}>
-      <Heading size="md">Submitted Interviews</Heading>
+      <Heading color="brand.500" size="md">Submitted Interviews</Heading>
       <Box display="flex" gap={4} mb={4}>
         <Input
           placeholder="Search by email or interview title"
