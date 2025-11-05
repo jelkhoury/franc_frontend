@@ -16,7 +16,7 @@ const AvatarDemoPage = () => {
     <Box minH="100vh" bgGradient="linear(to-r, white, #ebf8ff)" display="flex" flexDirection="column">
       <Box p={8} textAlign="center">
         <VStack spacing={6}>
-          <Heading size="xl" color="purple.600">
+          <Heading color="brand.500" size="xl" color="purple.600">
             🎭 3D Avatar Interview Demo
           </Heading>
           <Text fontSize="lg" color="gray.600" maxW="800px">

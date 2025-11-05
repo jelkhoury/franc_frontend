@@ -131,7 +131,7 @@ const ServiceCard = ({ heading, description, icon, gif }) => {
             WebkitBackfaceVisibility: "hidden",
           }}
         >
-          <Heading size="md">{heading}</Heading>
+          <Heading color="brand.500" size="md">{heading}</Heading>
           <Text fontSize="md" color={backText}>
             {description}
           </Text>
@@ -152,7 +152,7 @@ const ComingSoonServices = () => (
         bg="transparent" // ✅ no background
       >
         <Image
-          src="/assets/images/Ratatouille.png" // your image path
+          src="/assets/images/ratatouille.png" // your image path
           alt="Cooking Avatar"
           boxSize="200px"
           borderRadius="md"
@@ -161,7 +161,7 @@ const ComingSoonServices = () => (
         />
       </Box>
 
-      <Heading fontSize={{ base: "2xl", sm: "4xl" }} fontWeight="bold" mt={4}>
+      <Heading color="brand.500" fontSize={{ base: "2xl", sm: "4xl" }} fontWeight="bold" mt={4}>
         Something is Cooking
       </Heading>
 

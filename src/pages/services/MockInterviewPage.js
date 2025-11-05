@@ -50,7 +50,7 @@ const MockInterviewPage = () => {
           border="1px solid"
           borderColor="gray.100"
         >
-          <Heading size="xl" mb={4}>
+          <Heading color="brand.500" size="xl" mb={4}>
             Mock Interview Service
           </Heading>
 
@@ -95,7 +95,7 @@ const MockInterviewPage = () => {
         px={{ base: 6, md: 16 }}
         textAlign="center"
       >
-        <Heading size="lg" mb={4}>
+        <Heading color="brand.500" size="lg" mb={4}>
           Ready to Practice Your Interview?
         </Heading>
         <Text fontSize="lg" mb={6}>

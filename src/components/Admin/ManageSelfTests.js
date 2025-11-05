@@ -38,7 +38,7 @@ const testResults = [
 const ManageSelfTests = () => {
   return (
     <Box>
-      <Heading size="md" mb={4}>Self-Directed Test Results</Heading>
+      <Heading color="brand.500" size="md" mb={4}>Self-Directed Test Results</Heading>
       <TableContainer>
         <Table variant="striped" colorScheme="gray">
           <Thead>

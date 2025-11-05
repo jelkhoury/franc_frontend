@@ -82,7 +82,7 @@ const ContactUsPage = () => {
           <Image
             src="/assets/images/francyellow_transparentbg-01.svg"
             alt="Franc Avatar"
-            maxW="120px"        
+            maxW="160px"        
             w="100%"           
             h="auto"
             objectFit="contain" 
@@ -94,7 +94,7 @@ const ContactUsPage = () => {
           />
 
 
-          <Heading size="lg" mb={2} color="gray.700">
+          <Heading color="brand.500" size="lg" mb={2} >
             Contact Us
           </Heading>
           <Text fontSize="md" color="gray.600" mb={6}>
@@ -110,11 +110,11 @@ const ContactUsPage = () => {
             borderRadius="2xl"
             mb={6}
           >
-            <Heading size="md" mb={3} color="gray.700">
+            <Heading color="brand.500" size="md" mb={3} >
               📍 Contact Details
             </Heading>
             <VStack spacing={2} color="gray.600" fontSize="md">
-              <Text>Main Campus of Hadat-Baabda, Building A, Ground Floor</Text>
+              <Text>Campus of Hadat-Baabda, Building A, Ground Floor</Text>
               <Text>PO Box 40016 Hadat-Baabda - Lebanon</Text>
               <Text>📞 +961 5 92 70 00 | Ext: 1130 – 1131-1133</Text>
               <Text>📞 +961 5 92 70 01</Text>

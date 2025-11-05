@@ -153,7 +153,7 @@ const ServiceCard = ({
         </Flex>
 
         <Box textAlign="center" flex="1">
-          <Heading size="md" mb={1}>
+          <Heading color="brand.500" size="md" mb={1}>
             {heading}
           </Heading>
           <Text fontSize="sm" color="gray.600">
@@ -194,6 +194,8 @@ const ServiceCard = ({
 
 const ExpandableSections = () => {
   const [expandedSection, setExpandedSection] = useState(0); // First section expanded by default
+  // letters correspond to images placed in public/assets/images as f.png, r.png, a.png, n.png, c.png
+  const letters = ["f", "r", "a", "n", "c"];
 
   const sections = [
     {
@@ -354,11 +356,10 @@ const ExpandableSections = () => {
                 w="100%"
                 justify="space-between"
               >
-                <Heading
+                <Heading color="brand.500"
                   fontSize="lg"
                   fontWeight="semibold"
                   textAlign="left"
-                  color="brand.500"
                 >
                   {section.title}
                 </Heading>
@@ -385,19 +386,39 @@ const ExpandableSections = () => {
               justify="center"
               spacing={4}
             >
-              <Heading
+              <Heading color="brand.500"
                 fontSize="lg"
                 fontWeight="semibold"
                 textAlign="center"
                 transform="rotate(90deg)"
                 whiteSpace="nowrap"
-                color="yellow.500"
               >
                 {section.title}
               </Heading>
 
             </VStack>
           )}
+
+          {/* Footer with a single letter image (f, r, a, n, c) per section */}
+          <Box
+            as="footer"
+            p={3}
+            mt="auto"
+            alignSelf="stretch"
+            borderTop="1px"
+            borderColor={useColorModeValue("gray.100", "gray.700")}
+            bg={useColorModeValue("transparent", "transparent")}
+            textAlign="center"
+          >
+            <Image
+              src={`/assets/images/${letters[index]}.png`}
+              alt={`Letter ${letters[index].toUpperCase()}`}
+              boxSize={{ base: "36px", md: "48px" }}
+              objectFit="contain"
+              mx="auto"
+              ignoreFallback
+            />
+          </Box>
         </Box>
       ))}
     </Flex>
@@ -411,7 +432,7 @@ const FrancPage = () => {
       px={6}
       bgGradient="linear(to-r, white, #ebf8ff)"
     >
-      <Heading
+      <Heading color="brand.500"
         size="2xl"
         display="flex"
         alignItems="center"
@@ -434,7 +455,7 @@ const FrancPage = () => {
       {/* Services Grid */}
       <Box mt={16} bg={useColorModeValue("gray.50", "gray.900")} py={10}>
         <Stack spacing={4} as={Container} maxW="3xl" textAlign="center" mb={12}>
-          <Heading
+          <Heading color="brand.500"
             fontSize={{ base: "2xl", sm: "4xl" }}
             fontWeight="bold"
             display="flex"

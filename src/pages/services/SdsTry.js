@@ -465,8 +465,8 @@ console.log("SDS response (normalized):", { code, responses, data });
   return (
     <Box minH="100vh" bgGradient="linear(to-r, white, #ebf8ff)">
       <Box maxW="1000px" mx="auto" px={{ base: 4, md: 8 }} py={{ base: 6, md: 10 }}>
-        <Heading textAlign="center" mb={{ base: 6, md: 8 }}>
-          SDS Sections & Questions
+        <Heading color="brand.500" textAlign="center" mb={{ base: 6, md: 8 }}>
+          Personality Test Sections & Questions
         </Heading>
         <Alert status="info" variant="subtle" mb={4} rounded="md">
           <AlertIcon />

@@ -49,7 +49,7 @@ const SdsPage = () => {
         {/* Right - Image */}
         <Image
           src="/assets/images/sds.svg"
-          alt="Self-Directed Search (SDS)"
+          alt="Personality Test"
           maxW="400px"
           objectFit="contain"
           alignSelf="flex-end"
@@ -66,8 +66,8 @@ const SdsPage = () => {
           border="1px solid"
           borderColor="gray.100"
         >
-          <Heading size="xl" mb={4}>
-            Self-Directed Search (SDS)
+          <Heading color="brand.500" size="xl" mb={4}>
+            Personality Test
           </Heading>
 
           <Text fontSize="lg" mb={6}>
@@ -100,7 +100,7 @@ const SdsPage = () => {
 
       {/* How It Works Section */}
       <Box py={16} px={{ base: 6, md: 16 }} textAlign="center" bg="white">
-        <Heading size="lg" mb={10}>
+        <Heading color="brand.500" size="lg" mb={10}>
           How It Works
         </Heading>
 
@@ -112,7 +112,7 @@ const SdsPage = () => {
             </Circle>
             <Text fontWeight="bold">Start the Assessment</Text>
             <Text fontSize="sm" color="gray.600" maxW="150px">
-              Begin the SDS and answer simple interest questions.
+              Begin the Personality Test and answer simple interest questions.
             </Text>
           </VStack>
 
@@ -183,11 +183,11 @@ const SdsPage = () => {
         px={{ base: 6, md: 16 }}
         textAlign="center"
       >
-        <Heading size="lg" mb={4}>
+        <Heading color="brand.500" size="lg" mb={4}>
           Ready to Find Your Best‑Fit Careers?
         </Heading>
         <Text fontSize="lg" mb={6}>
-          Take the SDS and get a personalized RIASEC profile with tailored
+          Take the Personality Test and get a personalized RIASEC profile with tailored
           suggestions.
         </Text>
         <Button

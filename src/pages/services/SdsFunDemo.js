@@ -394,7 +394,7 @@ export default function SdsFunDemo() {
           <Text>🚀 Tip: Answer by instinct — there are no wrong choices.</Text>
         </Alert>
 
-        <Heading textAlign="center" mb={2}>SDS Quest</Heading>
+        <Heading color="brand.500" textAlign="center" mb={2}>Personality Test</Heading>
         <Text textAlign="center" color="gray.600" mb={6}>Level up as you explore each world.</Text>
 
         {/* XP progress + badges */}

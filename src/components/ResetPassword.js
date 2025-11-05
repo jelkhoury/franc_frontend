@@ -101,7 +101,7 @@ const ResetPassword = () => {
         p={6}
         my={12}
       >
-        <Heading lineHeight={1.1} fontSize={{ base: '2xl', md: '3xl' }}>
+        <Heading color="brand.500" lineHeight={1.1} fontSize={{ base: '2xl', md: '3xl' }}>
           Reset your password
         </Heading>
 

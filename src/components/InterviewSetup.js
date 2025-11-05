@@ -68,7 +68,7 @@ const InterviewSetup = ({ isOpen, onClose, onInterviewSelect }) => {
       <ModalOverlay />
       <ModalContent borderRadius="lg" p={4}>
         <ModalHeader>
-          <Heading size="lg" color="blue.600">
+          <Heading color="brand.500" size="lg" color="blue.600">
             Choose Your Interview Setup
           </Heading>
         </ModalHeader>
@@ -81,7 +81,7 @@ const InterviewSetup = ({ isOpen, onClose, onInterviewSelect }) => {
             </Text>
             
             <Box w="100%">
-              <Heading size="md" mb={4} color="gray.700">
+              <Heading color="brand.500" size="md" mb={4} color="gray.700">
                 Select Interviewer Personality
               </Heading>
               <VStack spacing={3}>
@@ -103,7 +103,7 @@ const InterviewSetup = ({ isOpen, onClose, onInterviewSelect }) => {
                     transition="all 0.2s"
                   >
                     <VStack spacing={2} align="start">
-                      <Heading size="sm" color="blue.600">
+                      <Heading color="brand.500" size="sm" color="blue.600">
                         {interviewer.label}
                       </Heading>
                       <Text fontSize="sm" color="gray.600">
@@ -116,7 +116,7 @@ const InterviewSetup = ({ isOpen, onClose, onInterviewSelect }) => {
             </Box>
 
             <Box w="100%">
-              <Heading size="md" mb={4} color="gray.700">
+              <Heading color="brand.500" size="md" mb={4} color="gray.700">
                 Select Interview Type
               </Heading>
               <Select

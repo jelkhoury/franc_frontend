@@ -42,7 +42,7 @@ const serviceCards = [
         {/* Or: <Icon as={FcDiploma1} boxSize={10} /> */}
       </Flex>
 
-      <Heading size="md" mb={2}>Resume Feedback</Heading>
+      <Heading color="brand.500"size="md" mb={2}>Resume Feedback</Heading>
       <Text color="gray.600" mb={4}>
         A resume is like Wi-Fi — without it, you’re not connecting anywhere.
       </Text>
@@ -64,7 +64,7 @@ const serviceCards = [
         {/* Or: <Icon as={FcComments} boxSize={10} /> */}
       </Flex>
 
-      <Heading size="md" mb={2}>Any help?</Heading>
+      <Heading color="brand.500" size="md" mb={2}>Any help?</Heading>
       <Text color="gray.600" mb={4}>
         SOS! Someone save me from my own confusion?
       </Text>
@@ -86,7 +86,7 @@ const serviceCards = [
         {/* Or: <Icon as={FcDiploma2} boxSize={10} /> */}
       </Flex>
 
-      <Heading size="md" mb={2}>Cover Letter feedback</Heading>
+      <Heading color="brand.500" size="md" mb={2}>Cover Letter feedback</Heading>
       <Text color="gray.600" mb={4}>
         A cover letter is the handshake before the meeting
       </Text>
@@ -108,7 +108,7 @@ const serviceCards = [
         {/* Or: <Icon as={FcDiploma2} boxSize={10} /> */}
       </Flex>
 
-      <Heading size="md" mb={2}>Personality Test</Heading>
+      <Heading color="brand.500" size="md" mb={2}>Personality Test</Heading>
       <Text color="gray.600" mb={4}>
         A personality test is your compass for your career
       </Text>
@@ -130,7 +130,7 @@ const serviceCards = [
         {/* Or: <Icon as={FcDiploma2} boxSize={10} /> */}
       </Flex>
 
-      <Heading size="md" mb={2}>Mock Interview</Heading>
+      <Heading color="brand.500" size="md" mb={2}>Mock Interview</Heading>
       <Text color="gray.600" mb={4}>
         See yourself, hear yourself and repeat.
       </Text>
@@ -156,7 +156,7 @@ const serviceCards = [
 
       {/* Services Section */}
       <Box ref={servicesRef} py={20} bg="white">
-        <Heading size="xl" textAlign="center" mb={10} color="brand.500">
+        <Heading color="brand.500" size="xl" textAlign="center" mb={10} >
           Our Services
         </Heading>
 

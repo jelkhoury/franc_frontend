@@ -94,7 +94,7 @@ export default function Footer() {
          <Text textAlign="center">
           © {new Date().getFullYear()} Franc Platform. All rights reserved.
           <br />
-          Built by{' '}
+          Developed by{' '}
           <ChakraLink
             href="https://www.linkedin.com/in/wadih-issa-6b2a801a8/"
             isExternal

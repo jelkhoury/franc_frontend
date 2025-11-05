@@ -8,7 +8,7 @@ const AvatarAdvancedDemoPage = () => {
   return (
     <Box minH="100vh" bgGradient="linear(to-r, white, #ebf8ff)">
       <VStack spacing={4} p={4}>
-        <Heading size="lg" textAlign="center">
+        <Heading color="brand.500" size="lg" textAlign="center">
           Advanced 3D Avatar Demo
         </Heading>
         <Text textAlign="center" color="gray.600" maxW="600px">

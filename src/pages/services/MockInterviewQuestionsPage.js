@@ -816,14 +816,14 @@ const MockInterviewQuestionsPage = () => {
       )}
 
       <Box px={4} py={8}>
-        <Heading size="lg" mb={4} textAlign="center">
+        <Heading color="brand.500" size="lg" mb={4} textAlign="center">
           Interview Questions - {major}
         </Heading>
 
         {showThankYou ? (
           <Box textAlign="center" py={10} px={6}>
             <CheckCircleIcon boxSize={"50px"} color={"green.500"} />
-            <Heading as="h2" size="xl" mt={6} mb={2}>
+            <Heading color="brand.500" as="h2" size="xl" mt={6} mb={2}>
               Interview Complete
             </Heading>
             <Text color={"gray.500"} mb={6}>
@@ -849,7 +849,7 @@ const MockInterviewQuestionsPage = () => {
                 boxShadow="md"
                 p={4}
               >
-                <Heading size="sm" mb={3} color="gray.700">
+                <Heading color="brand.500" size="sm" mb={3} color="gray.700">
                   Your Camera
                 </Heading>
                 <Box
@@ -891,7 +891,7 @@ const MockInterviewQuestionsPage = () => {
                 boxShadow="md"
                 p={4}
               >
-                <Heading size="sm" mb={3} color="gray.700">
+                <Heading color="brand.500" size="sm" mb={3} color="gray.700">
                   Interviewer
                 </Heading>
 
@@ -1010,7 +1010,7 @@ const MockInterviewQuestionsPage = () => {
               >
                 {currentSpecialQuestion ? (
                   <>
-                    <Heading size="sm" mb={3} color="gray.700">
+                    <Heading color="brand.500" size="sm" mb={3} color="gray.700">
                       {currentSpecialQuestion.title}
                     </Heading>
                     <Text fontSize="lg" fontWeight="semibold" color="blue.600">
@@ -1019,7 +1019,7 @@ const MockInterviewQuestionsPage = () => {
                   </>
                 ) : (
                   <>
-                    <Heading size="sm" mb={3} color="gray.700">
+                    <Heading color="brand.500" size="sm" mb={3} color="gray.700">
                       Question {currentQuestionIdx + 1} of {interviewQuestions.length}
                     </Heading>
                     <Text fontSize="lg" fontWeight="semibold" color="blue.600">
@@ -1156,7 +1156,7 @@ const MockInterviewQuestionsPage = () => {
               borderWidth="1px"
               boxShadow="md"
             >
-              <Heading size="md" mb={2} textAlign="center" color="gray.700">
+              <Heading color="brand.500" size="md" mb={2} textAlign="center" color="gray.700">
                 How the Interview Works
               </Heading>
               <VStack
@@ -1354,7 +1354,7 @@ const AnswerTimer = ({ duration, onExpire, recording }) => {
   }, [recording, isRunning, start, pause]);
 
   return (
-    <Heading size="md" color="brand.500" mt={4} textAlign="center">
+    <Heading color="brand.500" size="md" color="brand.500" mt={4} textAlign="center">
       Answer Timer: {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
     </Heading>
   );

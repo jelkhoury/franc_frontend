@@ -134,7 +134,7 @@ const FrancResumeUpload = () => {
             _hover={{ transform: 'scale(1.05)' }}
           />
 
-          <Heading size="lg" mb={4}>
+          <Heading color="brand.500" size="lg" mb={4}>
             Upload Your Resume
           </Heading>
 
@@ -150,7 +150,7 @@ const FrancResumeUpload = () => {
                 borderRadius="2xl"
                 w="full"
               >
-                <Heading size="md" mb={4} color="gray.700">
+                <Heading color="brand.500" size="md" mb={4} color="gray.700">
                   📌 Resume Tips from Franc
                 </Heading>
                 <VStack spacing={2} color="gray.600" fontSize="md">

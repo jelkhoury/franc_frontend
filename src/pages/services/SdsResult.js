@@ -317,7 +317,7 @@ const RIASECScoringTable = ({ scores, loading, error }) => {
   return (
     <Box bg="white" rounded="xl" p={{ base: 5, md: 6 }} boxShadow="sm" border="1px solid" borderColor="gray.200" mb={6}>
       <VStack align="stretch" spacing={4}>
-        <Heading size="md" textAlign="center">RIASEC Scoring Summary</Heading>
+        <Heading color="brand.500" size="md" textAlign="center">RIASEC Scoring Summary</Heading>
         <Text fontSize="sm" color="gray.600" textAlign="center">
           Your scores across different assessment sections
         </Text>
@@ -419,7 +419,7 @@ const PaginatedAvailableItems = ({ items, kind, highlightedItems = [] }) => {
 
   return (
     <Box>
-      <Heading size="sm" mb={3}>
+      <Heading color="brand.500" size="sm" mb={3}>
         Available Items ({filteredItems.length})
       </Heading>
       {kind === "occupation" && (
@@ -544,7 +544,7 @@ const SuggestionsPanel = ({ label, code, kind, suggestions, loading, error }) =>
     <Box bg="white" rounded="xl" p={{ base: 5, md: 6 }} boxShadow="sm" border="1px solid" borderColor="gray.200">
       <VStack align="stretch" spacing={4}>
         <HStack justify="space-between" align="center">
-          <Heading size="md">{label}</Heading>
+          <Heading color="brand.500" size="md">{label}</Heading>
           <HStack>
             <Badge>{data?.code || code}</Badge>
             <Badge colorScheme="purple" variant="subtle">
@@ -760,8 +760,8 @@ const SdsResult = () => {
       <Box bgGradient="linear(to-r, blue.500, teal.500)" color="white" py={{ base: 8, md: 10 }} mb={8} boxShadow="sm">
         <Container maxW="5xl">
           <VStack spacing={4} align="stretch">
-            <Heading size="lg" lineHeight="1.2">
-              Thank you for completing the SDS 🎉
+            <Heading color="brand.500" size="lg" lineHeight="1.2">
+              Thank you for completing the Personality Test 🎉
             </Heading>
             <HStack spacing={4} align="center" flexWrap="wrap">
               <Text fontSize="lg">Your preliminary Holland code:</Text>
@@ -786,7 +786,7 @@ const SdsResult = () => {
         {/* RIASEC Dimensions Explanation */}
         <Box bg="white" rounded="xl" p={{ base: 5, md: 6 }} boxShadow="sm" border="1px solid" borderColor="gray.200" mb={6}>
           <VStack align="stretch" spacing={4}>
-            <Heading size="md" textAlign="center">Explanation of RIASEC Dimensions</Heading>
+            <Heading color="brand.500" size="md" textAlign="center">Explanation of RIASEC Dimensions</Heading>
             <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
               <Box p={3} bg={isInUserCode("R") ? "teal.50" : "white"} rounded="md" border="1px solid" borderColor={isInUserCode("R") ? "teal.200" : "gray.200"}>
                 <HStack mb={2}>
@@ -875,7 +875,7 @@ const SdsResult = () => {
         {/* Comparison Section */}
         {occSuggestions && (
           <Box bg="gray.50" border="1px solid" borderColor="gray.200" rounded="md" p={4} mb={6} mt={6}>
-            <Heading size="md" mb={3}>Comparison with your dream occupations</Heading>
+            <Heading color="brand.500" size="md" mb={3}>Comparison with your dream occupations</Heading>
             {(() => {
               const occData = normalizeSuggestionsPayload(occSuggestions);
               if (occData.comparison) {

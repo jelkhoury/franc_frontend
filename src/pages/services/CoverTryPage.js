@@ -162,7 +162,7 @@ const CoverTryPage = () => {
             _hover={{ transform: 'scale(1.05)' }}
           />
 
-          <Heading size="lg" mb={4}>
+          <Heading color="brand.500" size="lg" mb={4}>
             Upload Cover Letter & Job Ad
           </Heading>
 
@@ -171,7 +171,7 @@ const CoverTryPage = () => {
           {step === 1 && (
             <VStack spacing={5} align="stretch">
               <Box px={6} py={4} textAlign="center" bg="gray.50" borderRadius="2xl">
-                <Heading size="md" mb={4} color="gray.700">
+                <Heading color="brand.500" size="md" mb={4} color="gray.700">
                   📄 Cover Letter Tips
                 </Heading>
                 <VStack spacing={2} color="gray.600" fontSize="md">
@@ -213,7 +213,7 @@ const CoverTryPage = () => {
           {step === 2 && (
             <VStack spacing={5} align="stretch">
               <Box px={6} py={4} textAlign="center" bg="gray.50" borderRadius="2xl">
-                <Heading size="md" mb={4} color="gray.700">
+                <Heading color="brand.500" size="md" mb={4} color="gray.700">
                   📰 Job Ad Tips
                 </Heading>
                 <VStack spacing={2} color="gray.600" fontSize="md">
@@ -266,7 +266,7 @@ const CoverTryPage = () => {
               {/* Display Evaluation Result */}
               {evaluationResult && (
                 <Box bg="gray.50" p={5} borderRadius="lg" border="1px solid" borderColor="gray.200" w="full" textAlign="left" fontSize="sm" color="gray.600">
-                  <Heading size="md" mb={4}>Evaluation Result:</Heading>
+                  <Heading color="brand.500" size="md" mb={4}>Evaluation Result:</Heading>
                   <Text whiteSpace="pre-wrap">{evaluationResult}</Text>
                   </Box>
               )}

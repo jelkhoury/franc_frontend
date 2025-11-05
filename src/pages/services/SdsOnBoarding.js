@@ -152,7 +152,7 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
         px={{ base: 4, md: 8 }}
         py={{ base: 6, md: 10 }}
       >
-        <Heading textAlign="center" mb={{ base: 6, md: 8 }}>
+        <Heading color="brand.500" textAlign="center" mb={{ base: 6, md: 8 }}>
           About the Test
         </Heading>
 

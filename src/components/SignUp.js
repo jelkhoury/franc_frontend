@@ -120,7 +120,7 @@ const Signup = () => {
     >
       <Stack spacing={8} mx={'auto'} maxW={'lg'} py={12} px={6}>
         <Stack align={'center'}>
-          <Heading fontSize={'4xl'}>Create your account</Heading>
+          <Heading color="brand.500" fontSize={'4xl'}>Create your account</Heading>
           <Text fontSize={'lg'} color={'gray.600'}>
             to start using <Text as="span" color={'brand.500'}>Franc</Text> ✌️
           </Text>
