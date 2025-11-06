@@ -14,9 +14,10 @@ import {
   Select,
   Spinner,
 } from "@chakra-ui/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import Footer from "../../components/Footer";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../../components/AuthContext";
 
 // Dummy faculties
 const dummyFaculties = [
@@ -147,6 +148,7 @@ const MajorCard = ({ major, selected, onClick }) => (
 );
 
 const MockInterviewMajorSelectPage = () => {
+  const { isLoggedIn } = useContext(AuthContext);
   const [selectedMajor, setSelectedMajor] = useState(null);
   const [faculties, setFaculties] = useState([]);
   const [majors, setMajors] = useState([]);
@@ -158,8 +160,17 @@ const MockInterviewMajorSelectPage = () => {
   const toast = useToast();
   const navigate = useNavigate();
 
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate("/login");
+      return;
+    }
+  }, [isLoggedIn, navigate]);
+
   // Fetch faculties and majors from API with fallback to dummy data
   useEffect(() => {
+    if (!isLoggedIn) return; // Don't fetch if not logged in
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -234,7 +245,7 @@ const MockInterviewMajorSelectPage = () => {
     };
 
     fetchData();
-  }, [toast]);
+  }, [toast, isLoggedIn]);
 
   // Filter majors based on faculty and search term
   useEffect(() => {
@@ -284,6 +295,11 @@ const MockInterviewMajorSelectPage = () => {
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
   };
+
+  // Don't render anything if not logged in (will redirect)
+  if (!isLoggedIn) {
+    return null;
+  }
 
   if (loading) {
     return (

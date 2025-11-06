@@ -1,4 +1,4 @@
-import { Box, Heading, Text, Image, Button, Flex, Icon, VStack, HStack, Circle } from '@chakra-ui/react';
+import { Box, Heading, Text, Image, Button, Flex, Icon, VStack, HStack, Circle, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import {
   CheckCircleIcon,
@@ -6,12 +6,24 @@ import {
   TimeIcon,
 } from '@chakra-ui/icons';
 import Footer from '../../components/Footer';
+import { useContext } from 'react';
+import { AuthContext } from '../../components/AuthContext';
 
 const MockInterviewPage = () => {
+  const { isLoggedIn } = useContext(AuthContext);
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
 
   const handleTryNowClick = () => {
-    navigate("/mock-interview/select-major");
+    if (isLoggedIn) {
+      navigate("/mock-interview/select-major");
+    } else {
+      onOpen();
+    }
+  };
+
+  const handleLoginClick = () => {
+    navigate("/login");
   };
 
   return (
@@ -115,6 +127,24 @@ const MockInterviewPage = () => {
         </HStack>
       </Box>
 
+      <Modal isOpen={isOpen} onClose={onClose} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Login Required</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text>Please log in to start the mock interview.</Text>
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="blue" onClick={handleLoginClick}>
+              Go to Login
+            </Button>
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       <Footer />
     </Box>
