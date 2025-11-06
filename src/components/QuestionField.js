@@ -123,9 +123,17 @@ const QuestionField = ({
                         },
                       }}
                     />
-                    <Text fontSize="sm" userSelect="none" color={selected ? highlightColor : undefined}>
-                      {opt.text}
-                    </Text>
+                    <Stack direction="row" spacing={2} align="center">
+                      <Text fontSize="sm" userSelect="none" color={selected ? highlightColor : undefined}>
+                        {typeof opt.text === 'string' ? opt.text : opt.text.props.children[0].props.children}
+                      </Text>
+                      {typeof opt.text === 'string' && (
+                        <Text fontSize="lg">
+                          {opt.text.toLowerCase() === "like" && "👍"}
+                          {opt.text.toLowerCase() === "dislike" && "👎"}
+                        </Text>
+                      )}
+                    </Stack>
                   </Box>
                 );
               })}
@@ -189,10 +197,30 @@ const QuestionField = ({
       );
 
     case "slider": {
-      const { min = 0, max = 10, step = 1 } = sliderProps || {};
+      const { min = 1, max = 7, step = 1 } = sliderProps || {};
       const num = typeof value === "number" ? value : Number(value ?? min);
       
-      // Generate divider marks
+      // Emoji and color mapping based on value
+      const getSliderEmoji = (value) => {
+        switch(value) {
+          case 1: return "😫";
+          case 2: return "😞";
+          case 3: return "😕";
+          case 4: return "😐";
+          case 5: return "🙂";
+          case 6: return "😊";
+          case 7: return "😄";
+          default: return "😐";
+        }
+      };
+
+      const getSliderColor = (value) => {
+        if (value <= 3) return "red.400";
+        if (value <= 5) return "yellow.400";
+        return "green.400";
+      };
+
+      // Generate number marks
       const marks = [];
       for (let i = min; i <= max; i += step) {
         marks.push(i);
@@ -208,22 +236,28 @@ const QuestionField = ({
               max={max}
               step={step}
               onChange={(v) => onChange(v)}
-              colorScheme={colorScheme}
             >
-              <SliderTrack>
-                <SliderFilledTrack bg={highlightColor} />
+              <SliderTrack
+                bg={useColorModeValue("gray.200", "gray.700")}
+                h="10px"
+                borderRadius="full"
+              >
+                <SliderFilledTrack bg={getSliderColor(num)} />
               </SliderTrack>
-              <SliderThumb boxSize={sliderFaces ? 8 : 4} bg={highlightColor}>
-                {sliderFaces && (
-                  <Text fontSize="lg" color="white">
-                    {num >= max * 0.8 ? "🤩" : num >= max * 0.6 ? "🙂" : num >= max * 0.4 ? "😐" : num >= max * 0.2 ? "🙁" : "😣"}
-                  </Text>
-                )}
+              <SliderThumb
+                boxSize={10}
+                bg={getSliderColor(num)}
+                _focus={{ boxShadow: `0 0 0 3px ${getSliderColor(num)}40` }}
+                transition="all 0.2s"
+              >
+                <Text fontSize="xl">
+                  {getSliderEmoji(num)}
+                </Text>
               </SliderThumb>
             </Slider>
             
-            {/* Number marks only */}
-            <Box position="relative" mt={2}>
+            {/* Number marks */}
+            <Box position="relative" mt={4}>
               <Box position="relative" height="20px">
                 {marks.map((mark) => (
                   <Box
@@ -233,7 +267,14 @@ const QuestionField = ({
                     transform="translateX(-50%)"
                     textAlign="center"
                   >
-                    <Text fontSize="xs" color="gray.600" fontWeight="medium">
+                    <Text 
+                      fontSize="sm" 
+                      color="gray.600" 
+                      fontWeight="medium"
+                      opacity={num === mark ? 1 : 0.7}
+                      transform={num === mark ? "scale(1.1)" : "scale(1)"}
+                      transition="all 0.2s"
+                    >
                       {mark}
                     </Text>
                   </Box>

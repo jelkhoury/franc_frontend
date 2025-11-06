@@ -31,10 +31,10 @@ const CoverTryPage = () => {
   const [evaluationResult, setEvaluationResult] = useState(null); // Store evaluation result
   const [loading, setLoading] = useState(false); 
 
-  const handleFileChange = (e, setFile, allowedType, fileTypeMessage) => {
+  const handleFileChange = (e, setFile, allowedTypes, fileTypeMessage) => {
     const file = e.target.files[0];
 
-    if (file && file.type !== allowedType) {
+    if (file && !allowedTypes.includes(file.type)) {
       toast({
         title: 'Invalid file type',
         description: fileTypeMessage,
@@ -53,7 +53,7 @@ const CoverTryPage = () => {
     if (!coverLetterFile) {
       toast({
         title: 'Missing Cover Letter',
-        description: 'Please upload a .docx cover letter to continue.',
+        description: 'Please upload a PDF or DOCX cover letter to continue.',
         status: 'warning',
         duration: 3000,
         isClosable: true,
@@ -68,7 +68,7 @@ const CoverTryPage = () => {
     if (!jobAdFile) {
       toast({
         title: 'Missing Job Ad',
-        description: 'Please upload a job advertisement (PDF).',
+        description: 'Please upload a job advertisement (PDF or DOCX).',
         status: 'warning',
         duration: 3000,
         isClosable: true,
@@ -171,7 +171,7 @@ const CoverTryPage = () => {
           {step === 1 && (
             <VStack spacing={5} align="stretch">
               <Box px={6} py={4} textAlign="center" bg="gray.50" borderRadius="2xl">
-                <Heading color="brand.500" size="md" mb={4} color="gray.700">
+                <Heading color="brand.500" size="md" mb={4} >
                   📄 Cover Letter Tips
                 </Heading>
                 <VStack spacing={2} color="gray.600" fontSize="md">
@@ -181,25 +181,25 @@ const CoverTryPage = () => {
                 </VStack>
               </Box>
 
-              <FormLabel fontWeight="bold">Upload Cover Letter (.docx)</FormLabel>
+              <FormLabel fontWeight="bold">Upload Cover Letter (PDF or DOCX)</FormLabel>
               <Button
                 leftIcon={<Icon as={AttachmentIcon} />}
                 colorScheme="brand"
                 onClick={() => coverLetterRef.current.click()}
               >
-                {coverLetterFile ? coverLetterFile.name : 'Select Cover Letter (.docx)'}
+                {coverLetterFile ? coverLetterFile.name : 'Select Cover Letter (PDF or DOCX)'}
               </Button>
               <Input
                 ref={coverLetterRef}
                 type="file"
-                accept=".docx"
+                accept=".pdf,.docx"
                 display="none"
                 onChange={(e) =>
                   handleFileChange(
                     e,
                     setCoverLetterFile,
-                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                    'Only .docx files are allowed for the Cover Letter.'
+                    ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+                    'Only PDF and DOCX files are allowed for the Cover Letter.'
                   )
                 }
               />
@@ -213,7 +213,7 @@ const CoverTryPage = () => {
           {step === 2 && (
             <VStack spacing={5} align="stretch">
               <Box px={6} py={4} textAlign="center" bg="gray.50" borderRadius="2xl">
-                <Heading color="brand.500" size="md" mb={4} color="gray.700">
+                <Heading color="brand.500" size="md" mb={4} >
                   📰 Job Ad Tips
                 </Heading>
                 <VStack spacing={2} color="gray.600" fontSize="md">
@@ -223,21 +223,21 @@ const CoverTryPage = () => {
                 </VStack>
               </Box>
 
-              <FormLabel fontWeight="bold">Upload Job Advertisement (PDF)</FormLabel>
+              <FormLabel fontWeight="bold">Upload Job Advertisement (PDF or DOCX)</FormLabel>
               <Button
                 leftIcon={<Icon as={AttachmentIcon} />}
                 colorScheme="brand"
                 onClick={() => jobAdRef.current.click()}
               >
-                {jobAdFile ? jobAdFile.name : 'Select Job Ad (PDF)'}
+                {jobAdFile ? jobAdFile.name : 'Select Job Ad (PDF or DOCX)'}
               </Button>
               <Input
                 ref={jobAdRef}
                 type="file"
-                accept=".pdf"
+                accept=".pdf,.docx"
                 display="none"
                 onChange={(e) =>
-                  handleFileChange(e, setJobAdFile, 'application/pdf', 'Only PDF files are allowed for the Job Ad.')
+                  handleFileChange(e, setJobAdFile, ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'], 'Only PDF and DOCX files are allowed for the Job Ad.')
                 }
               />
 

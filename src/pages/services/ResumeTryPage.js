@@ -30,10 +30,11 @@ const FrancResumeUpload = () => {
 
   const handleFileChange = (e) => {
     const selected = e.target.files[0];
-    if (selected && selected.type !== 'application/pdf') {
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (selected && !allowedTypes.includes(selected.type)) {
       toast({
         title: 'Invalid file type',
-        description: 'Only PDF files are allowed.',
+        description: 'Only PDF and DOCX files are allowed.',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -49,7 +50,7 @@ const FrancResumeUpload = () => {
     if (!file) {
       toast({
         title: 'No file selected',
-        description: 'Please upload a PDF before proceeding.',
+        description: 'Please upload a PDF or DOCX file before proceeding.',
         status: 'warning',
         duration: 3000,
         isClosable: true,
@@ -150,7 +151,7 @@ const FrancResumeUpload = () => {
                 borderRadius="2xl"
                 w="full"
               >
-                <Heading color="brand.500" size="md" mb={4} color="gray.700">
+                <Heading color="brand.500" size="md" mb={4} >
                   📌 Resume Tips from Franc
                 </Heading>
                 <VStack spacing={2} color="gray.600" fontSize="md">
@@ -161,7 +162,7 @@ const FrancResumeUpload = () => {
               </Box>
 
               <FormLabel htmlFor="cv-upload" fontWeight="bold" w="100%" textAlign="left">
-                PDF File Only
+                PDF or DOCX File
               </FormLabel>
 
               <Button
@@ -171,14 +172,14 @@ const FrancResumeUpload = () => {
                 onClick={() => inputRef.current.click()}
                 w="full"
               >
-                {file ? file.name : 'Select PDF File'}
+                {file ? file.name : 'Select PDF or DOCX File'}
               </Button>
 
               <Input
                 ref={inputRef}
                 type="file"
                 id="cv-upload"
-                accept=".pdf"
+                accept=".pdf,.docx"
                 display="none"
                 onChange={handleFileChange}
               />

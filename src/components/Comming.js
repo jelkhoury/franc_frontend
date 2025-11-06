@@ -10,6 +10,7 @@ import {
   Image,
 } from "@chakra-ui/react";
 import { motion } from 'framer-motion';
+import React from "react";
 import {
   FcAssistant,
   FcCollaboration,
@@ -43,9 +44,19 @@ const services = [
 ];
 
 const ServiceCard = ({ heading, description, icon, gif }) => {
+  const [flipped, setFlipped] = React.useState(false);
   const cardBg = useColorModeValue("white", "gray.800");
   const frontBg = useColorModeValue("gray.50", "gray.700");
   const backText = useColorModeValue("gray.600", "gray.300");
+
+  // Toggle flip on click/tap. Keep hover flip for desktop via _groupHover.
+  const handleToggle = () => setFlipped((v) => !v);
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleToggle();
+    }
+  };
 
   return (
     <Box
@@ -53,7 +64,14 @@ const ServiceCard = ({ heading, description, icon, gif }) => {
       h="250px"
       sx={{ perspective: "1000px" }}
       cursor="pointer"
-      role="group" // ✅ parent hover target
+      role="group"
+      // make clickable and keyboard accessible
+      as="button"
+      onClick={handleToggle}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      aria-pressed={flipped}
+      _focus={{ outline: "none" }}
     >
       <Box
         position="relative"
@@ -63,11 +81,12 @@ const ServiceCard = ({ heading, description, icon, gif }) => {
         sx={{
           transformStyle: "preserve-3d",
           willChange: "transform",
-          transform: "translateZ(0)", // GPU promote
+          // If flipped state is true, keep the card rotated. _groupHover still provides hover flip on desktop.
+          transform: flipped ? "rotateY(180deg)" : "translateZ(0)", // GPU promote
           transformOrigin: "center",
-          contain: "layout paint style", // reduce reflow/paint
+          contain: "layout paint style",
         }}
-        _groupHover={{ transform: "rotateY(180deg)" }} // ✅ only on hover
+        _groupHover={{ transform: "rotateY(180deg)" }}
       >
         {/* Front: ICON ONLY */}
         <Box

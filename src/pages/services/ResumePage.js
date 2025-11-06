@@ -32,6 +32,8 @@ import {
   ViewIcon,
 } from "@chakra-ui/icons";
 import Footer from "../../components/Footer";
+import { FaMagic } from "react-icons/fa";
+
 
 
 const PlainStep = ({ icon, title, desc, gif }) => (
@@ -140,7 +142,7 @@ const ResumePage = () => {
             colorScheme="brand"
             size="md"
             onClick={handleTryNow}
-            rightIcon={<StarIcon />} // ✅ icon after text
+            rightIcon={    <Icon as={FaMagic} boxSize={5} />} // ✅ icon after text
           >
             Abra Cadabra
           </Button>
