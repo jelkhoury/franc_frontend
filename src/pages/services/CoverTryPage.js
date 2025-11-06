@@ -171,7 +171,7 @@ const CoverTryPage = () => {
           {step === 1 && (
             <VStack spacing={5} align="stretch">
               <Box px={6} py={4} textAlign="center" bg="gray.50" borderRadius="2xl">
-                <Heading color="brand.500" size="md" mb={4} color="gray.700">
+                <Heading color="brand.500" size="md" mb={4} >
                   📄 Cover Letter Tips
                 </Heading>
                 <VStack spacing={2} color="gray.600" fontSize="md">
@@ -213,7 +213,7 @@ const CoverTryPage = () => {
           {step === 2 && (
             <VStack spacing={5} align="stretch">
               <Box px={6} py={4} textAlign="center" bg="gray.50" borderRadius="2xl">
-                <Heading color="brand.500" size="md" mb={4} color="gray.700">
+                <Heading color="brand.500" size="md" mb={4} >
                   📰 Job Ad Tips
                 </Heading>
                 <VStack spacing={2} color="gray.600" fontSize="md">

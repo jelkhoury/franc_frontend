@@ -151,7 +151,7 @@ const FrancResumeUpload = () => {
                 borderRadius="2xl"
                 w="full"
               >
-                <Heading color="brand.500" size="md" mb={4} color="gray.700">
+                <Heading color="brand.500" size="md" mb={4} >
                   📌 Resume Tips from Franc
                 </Heading>
                 <VStack spacing={2} color="gray.600" fontSize="md">

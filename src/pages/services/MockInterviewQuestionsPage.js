@@ -1000,7 +1000,7 @@ const MockInterviewQuestionsPage = () => {
                 boxShadow="md"
                 p={4}
               >
-                <Heading color="brand.500" size="sm" mb={3} color="gray.700">
+                <Heading color="brand.500" size="sm" mb={3} >
                   Your Camera
                 </Heading>
                 <VStack spacing={4} align="stretch">
@@ -1073,7 +1073,7 @@ const MockInterviewQuestionsPage = () => {
                 display="flex"
                 flexDirection="column"
               >
-                <Heading color="brand.500" size="sm" mb={3} color="gray.700">
+                <Heading color="brand.500" size="sm" mb={3} >
                   Interviewer
                 </Heading>
 
@@ -1194,7 +1194,7 @@ const MockInterviewQuestionsPage = () => {
               >
                 {currentSpecialQuestion ? (
                   <>
-                    <Heading color="brand.500" size="sm" mb={3} color="gray.700">
+                    <Heading color="brand.500" size="sm" mb={3} >
                       {currentSpecialQuestion.title}
                     </Heading>
                     <Text fontSize="lg" fontWeight="semibold" color="blue.600">
@@ -1212,7 +1212,7 @@ const MockInterviewQuestionsPage = () => {
                   </>
                 ) : (
                   <>
-                    <Heading color="brand.500" size="sm" mb={3} color="gray.700">
+                    <Heading color="brand.500" size="sm" mb={3}>
                       Question {currentQuestionIdx + 1} of {interviewQuestions.length}
                     </Heading>
                     <Text fontSize="lg" fontWeight="semibold" color="blue.600">
@@ -1339,7 +1339,7 @@ const MockInterviewQuestionsPage = () => {
               borderWidth="1px"
               boxShadow="md"
             >
-              <Heading color="brand.500" size="md" mb={2} textAlign="center" color="gray.700">
+              <Heading color="brand.500" size="md" mb={2} textAlign="center" >
                 How the Interview Works
               </Heading>
               <VStack

@@ -5,6 +5,7 @@ import {
   Button,
   Heading,
   HStack,
+  Icon,
   Accordion,
   AccordionItem,
   AccordionButton,
