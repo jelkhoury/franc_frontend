@@ -440,7 +440,7 @@ navigate("/self-directed-search/result", {
 
 toast({
   title: "Submitted Successfully!",
-  description: code ? `Your Holland code is: ${code}` : "Responses submitted.",
+  description: code ? `Your result code is: ${code}` : "Responses submitted.",
   status: "success",
   duration: 5000,
   isClosable: true

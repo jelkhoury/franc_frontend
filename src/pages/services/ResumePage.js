@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useContext } from "react";
 import {
   Box,
   Heading,
@@ -17,8 +17,6 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  SimpleGrid,           // ✅ added
-  useColorModeValue,    // ✅ added
 } from "@chakra-ui/react";
 import { FaBolt } from "react-icons/fa";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
@@ -32,7 +30,7 @@ import {
   ViewIcon,
 } from "@chakra-ui/icons";
 import Footer from "../../components/Footer";
-import { FaMagic } from "react-icons/fa";
+import { FaWandSparkles } from "react-icons/fa6";
 
 
 
@@ -142,7 +140,7 @@ const ResumePage = () => {
             colorScheme="brand"
             size="md"
             onClick={handleTryNow}
-            rightIcon={    <Icon as={FaMagic} boxSize={5} />} // ✅ icon after text
+            rightIcon={<Icon as={FaWandSparkles} boxSize={5} />} // ✅ icon after text
           >
             Abra Cadabra
           </Button>
