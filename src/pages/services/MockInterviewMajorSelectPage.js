@@ -381,7 +381,7 @@ const MockInterviewMajorSelectPage = () => {
             value={selectedFaculty}
             onChange={handleFacultyChange}
           >
-            {faculties.map((faculty) => (
+            {[...faculties].sort((a, b) => a.name.localeCompare(b.name)).map((faculty) => (
               <option key={faculty.id} value={faculty.id}>
                 {faculty.name}
               </option>

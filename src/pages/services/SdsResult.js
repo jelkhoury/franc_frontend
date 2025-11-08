@@ -760,20 +760,20 @@ const SdsResult = () => {
       <Box bgGradient="linear(to-r, blue.500, teal.500)" color="white" py={{ base: 8, md: 10 }} mb={8} boxShadow="sm">
         <Container maxW="5xl">
           <VStack spacing={4} align="stretch">
-            <Heading color="brand.500" size="lg" lineHeight="1.2">
-              Thank you for completing the Personality Test 🎉
+            <Heading color="white" size="lg" lineHeight="1.2">
+              Thank you for completing the Personality Test 
             </Heading>
             <HStack spacing={4} align="center" flexWrap="wrap">
-              <Text fontSize="lg">Your preliminary Holland code:</Text>
+              <Text fontSize="lg">Your summary code:</Text>
               <HStack spacing={2}>
                 {letters.map((ch, i) => (
                   <LetterBadge key={`${ch}-${i}`} ch={ch} />
                 ))}
               </HStack>
             </HStack>
-            <Text fontSize="sm" opacity={0.9} mt={2}>
+            {/* <Text fontSize="sm" opacity={0.9} mt={2}>
               This three-letter code represents your strongest interest areas according to John Holland's RIASEC model.
-            </Text>
+            </Text> */}
             <Text fontSize="sm" opacity={0.9}>
               Answered: <b>{state.answeredCount ?? "—"}</b> • Submitted at:{" "}
               <b>{new Date(state.submittedAt).toLocaleString()}</b>
@@ -874,7 +874,7 @@ const SdsResult = () => {
 
         {/* Comparison Section */}
         {occSuggestions && (
-          <Box bg="gray.50" border="1px solid" borderColor="gray.200" rounded="md" p={4} mb={6} mt={6}>
+          <Box bg="white" border="1px solid" borderColor="gray.200" rounded="md" p={4} mb={6} mt={6}>
             <Heading color="brand.500" size="md" mb={3}>Comparison with your dream occupations</Heading>
             {(() => {
               const occData = normalizeSuggestionsPayload(occSuggestions);
