@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
   Flex,
@@ -9,6 +9,7 @@ import {
   IconButton,
   Button,
   Stack,
+  VStack,
   Collapse,
   useColorModeValue,
   useDisclosure,
@@ -20,10 +21,14 @@ import {
   ModalHeader,
   ModalBody,
   ModalCloseButton,
+  ModalFooter,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
 import { HamburgerIcon, CloseIcon } from "@chakra-ui/icons";
 import UserProfileEdit from "../components/UserProfileEdit";
 import { AuthContext } from "../components/AuthContext"; // Import AuthContext
+import { useMockInterviewState } from "../contexts/MockInterviewStateContext";
 import { FaUser } from "react-icons/fa";
 
 const Navbar = () => {
@@ -34,8 +39,10 @@ const Navbar = () => {
     onClose: onProfileClose,
   } = useDisclosure();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const authContext = useContext(AuthContext);
+  const mockInterviewState = useMockInterviewState();
 
   if (!authContext) {
     console.error(
@@ -49,6 +56,33 @@ const Navbar = () => {
   const handleLogout = () => {
     logout(); // Logout the user and update state
     navigate("/login"); // Immediately navigate to login after logout
+  };
+
+  // Handle navigation with interview protection
+  const handleNavigation = (e, href) => {
+    // Allow navigation if interview is not active or if already on the target page
+    if (!mockInterviewState.isInterviewActive || location.pathname === href) {
+      return; // Let default Link behavior proceed
+    }
+    
+    // Prevent navigation and show warning
+    e.preventDefault();
+    mockInterviewState.setShowExitWarning(true);
+  };
+
+  const handleExitConfirm = () => {
+    if (mockInterviewState.onExitConfirm) {
+      mockInterviewState.onExitConfirm();
+    }
+    mockInterviewState.setShowExitWarning(false);
+    mockInterviewState.setIsInterviewActive(false);
+  };
+
+  const handleExitCancel = () => {
+    if (mockInterviewState.onExitCancel) {
+      mockInterviewState.onExitCancel();
+    }
+    mockInterviewState.setShowExitWarning(false);
   };
 
   return (
@@ -86,7 +120,12 @@ const Navbar = () => {
         />
 
         {/* Logo */}
-        <Link to="/">
+        <Box
+          as={Link}
+          to="/"
+          onClick={(e) => handleNavigation(e, "/")}
+          cursor="pointer"
+        >
           <Box
             height={{ base: "40px", md: "50px" }}
             width="auto"
@@ -103,11 +142,11 @@ const Navbar = () => {
               ignoreFallback
             />
           </Box>
-        </Link>
+        </Box>
 
         {/* Desktop Nav Items */}
         <Flex display={{ base: "none", md: "flex" }} ml={10} flex={1}>
-          <DesktopNav />
+          <DesktopNav onNavigation={handleNavigation} />
         </Flex>
 
         {/* Right Section (Login/Profile) */}
@@ -116,6 +155,7 @@ const Navbar = () => {
             <Button
               as={Link}
               to="/login"
+              onClick={(e) => handleNavigation(e, "/login")}
               fontSize={"sm"}
               fontWeight={600}
               color={"white"}
@@ -153,20 +193,86 @@ const Navbar = () => {
 
       {/* Mobile Nav Collapse */}
       <Collapse in={isMenuOpen} animateOpacity>
-        <MobileNav />
+        <MobileNav onNavigation={handleNavigation} />
       </Collapse>
+
+      {/* Exit Warning Modal */}
+      <Modal 
+        isOpen={mockInterviewState.showExitWarning} 
+        onClose={handleExitCancel} 
+        isCentered
+        closeOnOverlayClick={false}
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader color="red.500">
+            ⚠️ Warning: Leaving Interview
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Alert status="error" mb={4}>
+              <AlertIcon />
+              <Text fontWeight="bold">You will miss the interview!</Text>
+            </Alert>
+
+            <VStack align="stretch" spacing={4}>
+              <Text>
+                You are about to leave the mock interview. If you continue:
+              </Text>
+
+              <VStack align="stretch" spacing={2}>
+                <Text>
+                  •{" "}
+                  <strong>
+                    You will lose your chance to complete the interview
+                  </strong>
+                </Text>
+                <Text>
+                  • <strong>All your recorded answers will be lost</strong>
+                </Text>
+                <Text>
+                  •{" "}
+                  <strong>You'll need to start over from the beginning</strong>
+                </Text>
+              </VStack>
+
+              <Alert status="warning" mt={4}>
+                <AlertIcon />
+                <Text fontSize="sm">
+                  <strong>Progress:</strong> You have answered{" "}
+                  {mockInterviewState.answeredQuestionsCount} out of {mockInterviewState.totalQuestionsCount}{" "}
+                  questions.
+                </Text>
+              </Alert>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={handleExitCancel}>
+              Stay and Continue
+            </Button>
+            <Button colorScheme="red" onClick={handleExitConfirm}>
+              Leave Anyway
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };
 
-const DesktopNav = () => {
+const DesktopNav = ({ onNavigation }) => {
   const linkColor = useColorModeValue("black", "gray.200");
   const linkHoverColor = useColorModeValue("brand.500", "brand.300");
 
   return (
     <Stack direction={"row"} spacing={4}>
       {NAV_ITEMS.map((navItem) => (
-        <Link key={navItem.label} to={navItem.href}>
+        <Box
+          key={navItem.label}
+          as={Link}
+          to={navItem.href}
+          onClick={(e) => onNavigation(e, navItem.href)}
+        >
           <Text
             p={2}
             fontSize={"md"}
@@ -179,26 +285,31 @@ const DesktopNav = () => {
           >
             {navItem.label}
           </Text>
-        </Link>
+        </Box>
       ))}
     </Stack>
   );
 };
 
-const MobileNav = () => (
+const MobileNav = ({ onNavigation }) => (
   <Stack
     bg={useColorModeValue("white", "gray.800")}
     p={4}
     display={{ md: "none" }}
   >
     {NAV_ITEMS.map((navItem) => (
-      <MobileNavItem key={navItem.label} {...navItem} />
+      <MobileNavItem key={navItem.label} {...navItem} onNavigation={onNavigation} />
     ))}
   </Stack>
 );
 
-const MobileNavItem = ({ label, href }) => (
-  <Box as={Link} to={href} py={2}>
+const MobileNavItem = ({ label, href, onNavigation }) => (
+  <Box 
+    as={Link} 
+    to={href} 
+    onClick={(e) => onNavigation(e, href)}
+    py={2}
+  >
     <Text fontWeight={600} color={useColorModeValue("gray.600", "gray.200")}>
       {label}
     </Text>

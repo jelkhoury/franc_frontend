@@ -10,6 +10,7 @@ import Webcam from 'react-webcam';
 import { useTimer } from 'react-timer-hook';
 import Footer from '../../components/Footer';
 import { getStoredToken, decodeToken } from '../../utils/tokenUtils';
+import { useMockInterviewState } from '../../contexts/MockInterviewStateContext';
 
 import Lottie from 'lottie-react';
 import gptTalking from '../../assets/animations/chat_animation.json';
@@ -69,6 +70,17 @@ const MockInterviewQuestionsPage = () => {
   const major = location.state?.major || 'Nursing & Healthcare';
   const navigate = useNavigate();
   const toast = useToast();
+  const { 
+    setIsInterviewActive, 
+    showExitWarning,
+    setShowExitWarning, 
+    setOnExitConfirm, 
+    setOnExitCancel,
+    answeredQuestionsCount,
+    setAnsweredQuestionsCount,
+    totalQuestionsCount,
+    setTotalQuestionsCount
+  } = useMockInterviewState();
 
   // Helper function to get answer duration based on question type
   const getAnswerDuration = (questionType) => {
@@ -100,7 +112,6 @@ const MockInterviewQuestionsPage = () => {
   const [relaxationCountdown, setRelaxationCountdown] = useState(5);
   const [promptRetryUsed, setPromptRetryUsed] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
-  const [showExitWarning, setShowExitWarning] = useState(false);
   const [showStartInterviewReady, setShowStartInterviewReady] = useState(false);
   const [showReadyButton, setShowReadyButton] = useState(false);
   const [totalReplayCount, setTotalReplayCount] = useState(0);
@@ -332,7 +343,18 @@ const MockInterviewQuestionsPage = () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [interviewStarted]);
+  }, [interviewStarted, setShowExitWarning]);
+
+  // Cleanup: Reset interview state when component unmounts
+  useEffect(() => {
+    return () => {
+      // Reset interview state when component unmounts
+      if (interviewStarted) {
+        setIsInterviewActive(false);
+        setShowExitWarning(false);
+      }
+    };
+  }, [interviewStarted, setIsInterviewActive, setShowExitWarning]);
 
   // fetch questions with fallback
   useEffect(() => {
@@ -603,7 +625,12 @@ const MockInterviewQuestionsPage = () => {
         ]);
         
         if (questionType !== 'special') {
-          setAnsweredQuestions((prev) => [...prev, answerKey]);
+          setAnsweredQuestions((prev) => {
+            const updated = [...prev, answerKey];
+            // Update context with answered questions count
+            setAnsweredQuestionsCount(updated.length);
+            return updated;
+          });
         }
       }
       setShowRecorder(false);
@@ -709,7 +736,12 @@ const MockInterviewQuestionsPage = () => {
     
     // Remove from answeredQuestions if applicable
     if (currentQuestionType !== 'special') {
-      setAnsweredQuestions((prev) => prev.filter((key) => key !== answerKey));
+      setAnsweredQuestions((prev) => {
+        const updated = prev.filter((key) => key !== answerKey);
+        // Update context with answered questions count
+        setAnsweredQuestionsCount(updated.length);
+        return updated;
+      });
     }
 
     // Mark retry as used
@@ -850,7 +882,7 @@ const MockInterviewQuestionsPage = () => {
     setShowWarningModal(true);
   };
 
-  const handleConfirmStartInterview = () => {
+  const handleConfirmStartInterview = async () => {
     setShowWarningModal(false);
     setInterviewStarted(true);
     setInterviewStartTime(Date.now());
@@ -860,6 +892,47 @@ const MockInterviewQuestionsPage = () => {
     setCurrentCommonQuestionIdx(null);
     setCurrentQuestionType(null);
     setAnswerRetryUsed(new Set()); // Reset retry state for new interview
+    
+    // Set interview as active in context
+    setIsInterviewActive(true);
+    
+    // Set total questions count
+    setTotalQuestionsCount(commonQuestions.length + interviewQuestions.length);
+    
+    // Set up exit handlers in context
+    setOnExitConfirm(() => () => {
+      setShowExitWarning(false);
+      setIsInterviewActive(false);
+      navigate('/');
+    });
+    setOnExitCancel(() => () => {
+      setShowExitWarning(false);
+    });
+    
+    // Increment attempt count for user
+    try {
+      const token = getStoredToken();
+      if (!token) throw new Error('User not authenticated');
+      const decoded = decodeToken(token);
+      if (!decoded) throw new Error('Invalid token');
+      const userId = parseInt(decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL;
+      const res = await fetch(`${baseUrl}/api/Evaluation/increase-attempt/${userId}`, {
+        method: 'POST',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      });
+      
+      if (!res.ok) {
+        console.warn('Failed to increment attempt count:', res.statusText);
+      }
+    } catch (err) {
+      // Don't block interview start if this fails
+      console.error('Error incrementing attempt count:', err);
+    }
     
     // Show first "I'm Ready" modal before opening message
     setShowStartInterviewReady(true);
@@ -903,12 +976,14 @@ const MockInterviewQuestionsPage = () => {
   // ---- browser protection handlers ----
   const handleExitConfirm = () => {
     setShowExitWarning(false);
+    setIsInterviewActive(false);
     navigate('/');
   };
 
   const handleExitCancel = () => {
     setShowExitWarning(false);
   };
+  
 
   // ---- upload ----
   const handleSubmitVideos = async () => {
@@ -973,6 +1048,7 @@ const MockInterviewQuestionsPage = () => {
       setShowThankYou(true);
       setInterviewStartTime(null);
       setInterviewDuration(0);
+      setIsInterviewActive(false); // Interview completed, allow navigation
     } catch (err) {
       console.error(err);
       toast({ title: 'Upload failed', description: err.message, status: 'error', duration: 5000, isClosable: true });
@@ -1548,7 +1624,7 @@ const MockInterviewQuestionsPage = () => {
                 <AlertIcon />
                 <Text fontSize="sm">
                   <strong>Progress:</strong> You have answered{" "}
-                  {answeredQuestions.length} out of {commonQuestions.length + interviewQuestions.length}{" "}
+                  {answeredQuestionsCount} out of {totalQuestionsCount}{" "}
                   questions.
                 </Text>
               </Alert>
