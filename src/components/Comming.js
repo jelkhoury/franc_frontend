@@ -8,6 +8,7 @@ import {
   Text,
   useColorModeValue,
   Image,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import { motion } from 'framer-motion';
 import React from "react";
@@ -48,8 +49,9 @@ const ServiceCard = ({ heading, description, icon, gif }) => {
   const cardBg = useColorModeValue("white", "gray.800");
   const frontBg = useColorModeValue("gray.50", "gray.700");
   const backText = useColorModeValue("gray.600", "gray.300");
+  const isMobile = useBreakpointValue({ base: true, md: false });
 
-  // Toggle flip on click/tap. Keep hover flip for desktop via _groupHover.
+  // Toggle flip/fade on click/tap. Keep hover flip for desktop via _groupHover.
   const handleToggle = () => setFlipped((v) => !v);
   const handleKeyDown = (e) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -58,6 +60,75 @@ const ServiceCard = ({ heading, description, icon, gif }) => {
     }
   };
 
+  if (isMobile) {
+    // On mobile, show fade overlay with text
+    return (
+      <Box
+        w={{ base: "100%", sm: "47%", md: "300px" }}
+        h="250px"
+        cursor="pointer"
+        as="button"
+        onClick={handleToggle}
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+        aria-pressed={flipped}
+        _focus={{ outline: "none" }}
+        position="relative"
+      >
+        <Flex
+          w="100%"
+          h="100%"
+          align="center"
+          justify="center"
+          rounded="lg"
+          bg={cardBg}
+          boxShadow="sm"
+        >
+          {gif ? (
+            <Image
+              src={gif}
+              alt={heading}
+              maxW="80%"
+              maxH="80%"
+              objectFit="contain"
+              draggable={false}
+            />
+          ) : (
+            <Icon as={icon} boxSize={12} />
+          )}
+        </Flex>
+        {/* Fade overlay for text */}
+        {flipped && (
+          <MotionBox
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+            position="absolute"
+            inset={0}
+            bg={cardBg}
+            borderRadius="lg"
+            boxShadow="md"
+            display="flex"
+            flexDir="column"
+            alignItems="center"
+            justifyContent="center"
+            gap={3}
+            p={6}
+            textAlign="center"
+            zIndex={2}
+          >
+            <Heading color="brand.500" size="md">{heading}</Heading>
+            <Text fontSize="md" color={backText}>
+              {description}
+            </Text>
+          </MotionBox>
+        )}
+      </Box>
+    );
+  }
+
+  // Desktop: keep 3D flip
   return (
     <Box
       w={{ base: "100%", sm: "47%", md: "300px" }}
@@ -65,7 +136,6 @@ const ServiceCard = ({ heading, description, icon, gif }) => {
       sx={{ perspective: "1000px" }}
       cursor="pointer"
       role="group"
-      // make clickable and keyboard accessible
       as="button"
       onClick={handleToggle}
       onKeyDown={handleKeyDown}
@@ -81,8 +151,7 @@ const ServiceCard = ({ heading, description, icon, gif }) => {
         sx={{
           transformStyle: "preserve-3d",
           willChange: "transform",
-          // If flipped state is true, keep the card rotated. _groupHover still provides hover flip on desktop.
-          transform: flipped ? "rotateY(180deg)" : "translateZ(0)", // GPU promote
+          transform: flipped ? "rotateY(180deg)" : "translateZ(0)",
           transformOrigin: "center",
           contain: "layout paint style",
         }}
@@ -94,7 +163,6 @@ const ServiceCard = ({ heading, description, icon, gif }) => {
           inset={0}
           bg={cardBg}
           borderRadius="lg"
-          // keep shadows light to reduce paint cost:
           boxShadow="sm"
           display="flex"
           alignItems="center"
