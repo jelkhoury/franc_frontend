@@ -13,6 +13,7 @@ import {
 import { useState, useRef, useMemo } from 'react';
 import { ArrowForwardIcon } from '@chakra-ui/icons';
 import Footer from '../../components/Footer';
+import { post } from '../../utils/httpServices';
 
 const ChatBubble = ({ message, isUser }) => (
   <Flex justify={isUser ? 'flex-end' : 'flex-start'} w="100%">
@@ -32,57 +33,52 @@ const ChatBubble = ({ message, isUser }) => (
 );
 
 const Chatting = () => {
-  const baseUrl = useMemo(() => process.env.REACT_APP_API_AI_URL, []);
   const [messages, setMessages] = useState([
-    { text: 'Hello! How can I help you today?', sender: 'bot' },
+    { text: "Hello! How can I help you today?", sender: "bot" },
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const messagesEndRef = useRef();
 
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    // Append user message
-    const userMessage = { text: input, sender: 'user' };
+    const userMessage = { text: input, sender: "user" };
     setMessages((prev) => [...prev, userMessage]);
 
-    // Clear input field
-    setInput('');
+    setInput("");
 
     // Show typing indicator
-    setMessages((prev) => [...prev, { text: '...', sender: 'bot' }]);
+    setMessages((prev) => [...prev, { text: "...", sender: "bot" }]);
 
     try {
-      // Send request to backend
-      const response = await fetch(`${baseUrl}/ask`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: userMessage.text }),
-      });
+      // ✅ Using httpService now
+      const data = await post(
+        "/ask",
+        { question: userMessage.text },
+        { base: "ai" } // 👈 tells httpService to use your AI base URL
+      );
 
-      const data = await response.json();
-      const botResponse = data.response;
+      const botResponse = data.response || "No response";
 
-      // Remove typing indicator & Add an empty bot response placeholder
-      setMessages((prev) => [...prev.slice(0, -1), { text: '', sender: 'bot' }]);
+      // Remove typing indicator and prepare for typing animation
+      setMessages((prev) => [...prev.slice(0, -1), { text: "", sender: "bot" }]);
 
       // Simulate typing effect
-      let currentText = '';
+      let currentText = "";
       for (let i = 0; i < botResponse.length; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 30)); // Typing speed
+        await new Promise((resolve) => setTimeout(resolve, 30)); // typing speed
         currentText += botResponse[i];
         setMessages((prev) => {
-          const updatedMessages = [...prev];
-          updatedMessages[updatedMessages.length - 1] = { text: currentText, sender: 'bot' };
-          return updatedMessages;
+          const updated = [...prev];
+          updated[updated.length - 1] = { text: currentText, sender: "bot" };
+          return updated;
         });
       }
-
     } catch (error) {
-      console.error('Error fetching response:', error);
+      console.error("Error fetching response:", error);
       setMessages((prev) => [
         ...prev.slice(0, -1),
-        { text: "Sorry, I couldn't get a response.", sender: 'bot' }
+        { text: "Sorry, I couldn't get a response.", sender: "bot" },
       ]);
     }
   };

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { post } from '../utils/httpServices';
 import {
   Flex,
   Box,
@@ -28,81 +29,59 @@ const Login = () => {
   const navigate = useNavigate();
   const toast = useToast();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
 
-    try {
-      const baseUrl = process.env.REACT_APP_API_BASE_URL ;
-      const response = await fetch(`${baseUrl}/api/users/sign-in`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
 
-      const data = await response.json();
+  try {
+    // ---- login request ----
+    const data = await post("/api/users/sign-in", { email, password });
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Invalid credentials');
-      }
+    // ---- store and decode token ----
+    const { token } = data;
+    if (!token) throw new Error("No token received from server");
 
-      // Store token in localStorage
-      localStorage.setItem('token', data.token);
-      
-      // Decode token to get user role
-      const decodedToken = decodeToken(data.token);
-      
-      if (decodedToken) {
-        const userRole = getUserRole(data.token);
-        const userName = getUserName(data.token);
-        const userId = getUserId(data.token);
-        
-        // Store user info in localStorage
-        localStorage.setItem('userRole', userRole);
-        localStorage.setItem('userName', userName);
-        localStorage.setItem('userId', userId);
-        
-        // Update auth context
-        login();
-        
-        // Navigate based on role
-        if (userRole === 'Admin') {
-          navigate('/admin');
-          toast({
-            title: "Login successful!",
-            description: `Welcome back, ${userName}!`,
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-          });
-        } else {
-          navigate('/');
-          toast({
-            title: "Login successful!",
-            description: `Welcome back, ${userName}!`,
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-          });
-        }
-      } else {
-        throw new Error('Invalid token received');
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      toast({
-        title: "Login failed",
-        description: err.message,
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    localStorage.setItem("token", token);
+
+    const decoded = decodeToken(token);
+    if (!decoded) throw new Error("Invalid token received");
+
+    // ---- extract and store user details ----
+    const userRole = getUserRole(token);
+    const userName = getUserName(token);
+    const userId = getUserId(token);
+
+    localStorage.setItem("userRole", userRole);
+    localStorage.setItem("userName", userName);
+    localStorage.setItem("userId", userId);
+
+    // ---- update context & navigate ----
+    login();
+
+    toast({
+      title: "Login successful!",
+      description: `Welcome back, ${userName}!`,
+      status: "success",
+      duration: 3000,
+      isClosable: true,
+    });
+
+    navigate(userRole === "Admin" ? "/admin" : "/");
+
+  } catch (err) {
+    console.error("Login error:", err);
+    toast({
+      title: "Login failed",
+      description: err.message || "Invalid credentials",
+      status: "error",
+      duration: 5000,
+      isClosable: true,
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <Flex
