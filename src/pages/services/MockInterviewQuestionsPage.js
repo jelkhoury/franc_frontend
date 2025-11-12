@@ -10,6 +10,7 @@ import Webcam from 'react-webcam';
 import { useTimer } from 'react-timer-hook';
 import Footer from '../../components/Footer';
 import { getStoredToken, decodeToken } from '../../utils/tokenUtils';
+import { useMockInterviewState } from '../../contexts/MockInterviewStateContext';
 
 import Lottie from 'lottie-react';
 import gptTalking from '../../assets/animations/chat_animation.json';
@@ -69,6 +70,17 @@ const MockInterviewQuestionsPage = () => {
   const major = location.state?.major || 'Nursing & Healthcare';
   const navigate = useNavigate();
   const toast = useToast();
+  const { 
+    setIsInterviewActive, 
+    showExitWarning,
+    setShowExitWarning, 
+    setOnExitConfirm, 
+    setOnExitCancel,
+    answeredQuestionsCount,
+    setAnsweredQuestionsCount,
+    totalQuestionsCount,
+    setTotalQuestionsCount
+  } = useMockInterviewState();
 
   // Helper function to get answer duration based on question type
   const getAnswerDuration = (questionType) => {
@@ -100,7 +112,7 @@ const MockInterviewQuestionsPage = () => {
   const [relaxationCountdown, setRelaxationCountdown] = useState(5);
   const [promptRetryUsed, setPromptRetryUsed] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
-  const [showExitWarning, setShowExitWarning] = useState(false);
+  const [showStartInterviewReady, setShowStartInterviewReady] = useState(false);
   const [showReadyButton, setShowReadyButton] = useState(false);
   const [totalReplayCount, setTotalReplayCount] = useState(0);
   
@@ -127,6 +139,7 @@ const MockInterviewQuestionsPage = () => {
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [answeredQuestions, setAnsweredQuestions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [answerRetryUsed, setAnswerRetryUsed] = useState(new Set()); // Track which questions have used retry
 
   // timers
   const [interviewDuration, setInterviewDuration] = useState(0);
@@ -330,7 +343,18 @@ const MockInterviewQuestionsPage = () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [interviewStarted]);
+  }, [interviewStarted, setShowExitWarning]);
+
+  // Cleanup: Reset interview state when component unmounts
+  useEffect(() => {
+    return () => {
+      // Reset interview state when component unmounts
+      if (interviewStarted) {
+        setIsInterviewActive(false);
+        setShowExitWarning(false);
+      }
+    };
+  }, [interviewStarted, setIsInterviewActive, setShowExitWarning]);
 
   // fetch questions with fallback
   useEffect(() => {
@@ -601,7 +625,12 @@ const MockInterviewQuestionsPage = () => {
         ]);
         
         if (questionType !== 'special') {
-          setAnsweredQuestions((prev) => [...prev, answerKey]);
+          setAnsweredQuestions((prev) => {
+            const updated = [...prev, answerKey];
+            // Update context with answered questions count
+            setAnsweredQuestionsCount(updated.length);
+            return updated;
+          });
         }
       }
       setShowRecorder(false);
@@ -671,6 +700,62 @@ const MockInterviewQuestionsPage = () => {
       }
     };
     mediaRecorder.stop();
+  };
+
+  // Helper function to get current answer key
+  const getCurrentAnswerKey = () => {
+    if (currentQuestionType === 'common' && currentCommonQuestionIdx !== null) {
+      return `common-${currentCommonQuestionIdx}`;
+    } else if (currentQuestionType === 'major' && currentQuestionIdx !== null) {
+      return `major-${currentQuestionIdx}`;
+    } else if (currentSpecialQuestion?.title === 'Candidate Question') {
+      return `special-candidate`;
+    }
+    return null;
+  };
+
+  const handleRetryAnswer = () => {
+    const answerKey = getCurrentAnswerKey();
+    if (!answerKey) return;
+
+    // Check if retry already used
+    if (answerRetryUsed.has(answerKey)) {
+      toast({ title: 'Retry already used', description: 'You can only retry once per question.', status: 'warning', duration: 3000 });
+      return;
+    }
+
+    // Stop current recording if active
+    if (recording && mediaRecorder) {
+      mediaRecorder.stop();
+      setRecording(false);
+      pauseAnswerTimer();
+    }
+
+    // Remove the recorded answer for this question
+    setRecordedAnswers((prev) => prev.filter((a) => a.answerKey !== answerKey));
+    
+    // Remove from answeredQuestions if applicable
+    if (currentQuestionType !== 'special') {
+      setAnsweredQuestions((prev) => {
+        const updated = prev.filter((key) => key !== answerKey);
+        // Update context with answered questions count
+        setAnsweredQuestionsCount(updated.length);
+        return updated;
+      });
+    }
+
+    // Mark retry as used
+    setAnswerRetryUsed((prev) => new Set([...prev, answerKey]));
+
+    // Reset recording state
+    setRecordedChunks([]);
+    setMode('thinkingLoop');
+    setShowRecorder(false);
+
+    // Use the same countdown mechanism as after question finishes
+    setTimeout(() => {
+      beginAnswerCountdown();
+    }, 500);
   };
 
   const handleAnswerTimeout = () => { if (recording) handleStopRecording(true); };
@@ -797,7 +882,7 @@ const MockInterviewQuestionsPage = () => {
     setShowWarningModal(true);
   };
 
-  const handleConfirmStartInterview = () => {
+  const handleConfirmStartInterview = async () => {
     setShowWarningModal(false);
     setInterviewStarted(true);
     setInterviewStartTime(Date.now());
@@ -806,6 +891,58 @@ const MockInterviewQuestionsPage = () => {
     setCurrentQuestionIdx(null);
     setCurrentCommonQuestionIdx(null);
     setCurrentQuestionType(null);
+    setAnswerRetryUsed(new Set()); // Reset retry state for new interview
+    
+    // Set interview as active in context
+    setIsInterviewActive(true);
+    
+    // Set total questions count
+    setTotalQuestionsCount(commonQuestions.length + interviewQuestions.length);
+    
+    // Set up exit handlers in context
+    setOnExitConfirm(() => () => {
+      setShowExitWarning(false);
+      setIsInterviewActive(false);
+      navigate('/');
+    });
+    setOnExitCancel(() => () => {
+      setShowExitWarning(false);
+    });
+    
+    // Increment attempt count for user
+    try {
+      const token = getStoredToken();
+      if (!token) throw new Error('User not authenticated');
+      const decoded = decodeToken(token);
+      if (!decoded) throw new Error('Invalid token');
+      const userId = parseInt(decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
+      
+      const baseUrl = process.env.REACT_APP_API_BASE_URL;
+      const res = await fetch(`${baseUrl}/api/Evaluation/increase-attempt/${userId}`, {
+        method: 'POST',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      });
+      
+      if (!res.ok) {
+        console.warn('Failed to increment attempt count:', res.statusText);
+      }
+    } catch (err) {
+      // Don't block interview start if this fails
+      console.error('Error incrementing attempt count:', err);
+    }
+    
+    // Show first "I'm Ready" modal before opening message
+    setShowStartInterviewReady(true);
+    
+    // ensure idle animation is running
+    setMode('thinkingLoop');
+  };
+
+  const handleStartInterviewReady = () => {
+    setShowStartInterviewReady(false);
     
     // Check if we have an opening message
     if (specialQuestions['Opening Message']) {
@@ -814,12 +951,9 @@ const MockInterviewQuestionsPage = () => {
         playSpecialQuestion('Opening Message');
       }, 500);
     } else {
-      // No opening message, go directly to ready button
+      // No opening message, go directly to second ready button
       setShowReadyButton(true);
     }
-    
-    // ensure idle animation is running
-    setMode('thinkingLoop');
   };
 
   const handleImReady = () => {
@@ -842,12 +976,14 @@ const MockInterviewQuestionsPage = () => {
   // ---- browser protection handlers ----
   const handleExitConfirm = () => {
     setShowExitWarning(false);
+    setIsInterviewActive(false);
     navigate('/');
   };
 
   const handleExitCancel = () => {
     setShowExitWarning(false);
   };
+  
 
   // ---- upload ----
   const handleSubmitVideos = async () => {
@@ -912,6 +1048,7 @@ const MockInterviewQuestionsPage = () => {
       setShowThankYou(true);
       setInterviewStartTime(null);
       setInterviewDuration(0);
+      setIsInterviewActive(false); // Interview completed, allow navigation
     } catch (err) {
       console.error(err);
       toast({ title: 'Upload failed', description: err.message, status: 'error', duration: 5000, isClosable: true });
@@ -967,14 +1104,14 @@ const MockInterviewQuestionsPage = () => {
       )}
 
       <Box px={4} py={8}>
-        <Heading color="brand.500" size="lg" mb={4} textAlign="center">
+        <Heading size="lg" mb={4} textAlign="center">
           Interview Questions - {major}
         </Heading>
 
         {showThankYou ? (
           <Box textAlign="center" py={10} px={6}>
             <CheckCircleIcon boxSize={"50px"} color={"green.500"} />
-            <Heading color="brand.500" as="h2" size="xl" mt={6} mb={2}>
+            <Heading as="h2" size="xl" mt={6} mb={2}>
               Interview Complete
             </Heading>
             <Text color={"gray.500"} mb={6}>
@@ -1000,7 +1137,7 @@ const MockInterviewQuestionsPage = () => {
                 boxShadow="md"
                 p={4}
               >
-                <Heading color="brand.500" size="sm" mb={3} >
+                <Heading size="sm" mb={3} color="gray.700">
                   Your Camera
                 </Heading>
                 <VStack spacing={4} align="stretch">
@@ -1050,14 +1187,34 @@ const MockInterviewQuestionsPage = () => {
                           </Text>
                         </Box>
                       </Box>
-                      <Button
-                        colorScheme="red"
-                        size="md"
-                        onClick={handleUserStop}
-                        isFullWidth
-                      >
-                        Stop Recording
-                      </Button>
+                      <HStack spacing={3}>
+                        <Button
+                          colorScheme="green"
+                          size="md"
+                          onClick={handleRetryAnswer}
+                          isDisabled={(() => {
+                            const answerKey = getCurrentAnswerKey();
+                            return !answerKey || answerRetryUsed.has(answerKey) || !recording;
+                          })()}
+                          flex="1"
+                        >
+                          {(() => {
+                            const totalSeconds = answerMinutes * 60 + answerSeconds;
+                            if (recording && totalSeconds <= 5 && totalSeconds > 0) {
+                              return `Retry Answer (${totalSeconds})`;
+                            }
+                            return 'Retry Answer';
+                          })()}
+                        </Button>
+                        <Button
+                          colorScheme="red"
+                          size="md"
+                          onClick={handleUserStop}
+                          flex="1"
+                        >
+                          Stop Recording
+                        </Button>
+                      </HStack>
                     </VStack>
                   )}
                 </VStack>
@@ -1073,7 +1230,7 @@ const MockInterviewQuestionsPage = () => {
                 display="flex"
                 flexDirection="column"
               >
-                <Heading color="brand.500" size="sm" mb={3} >
+                <Heading size="sm" mb={3} color="gray.700">
                   Interviewer
                 </Heading>
 
@@ -1194,7 +1351,7 @@ const MockInterviewQuestionsPage = () => {
               >
                 {currentSpecialQuestion ? (
                   <>
-                    <Heading color="brand.500" size="sm" mb={3} >
+                    <Heading size="sm" mb={3} color="gray.700">
                       {currentSpecialQuestion.title}
                     </Heading>
                     <Text fontSize="lg" fontWeight="semibold" color="blue.600">
@@ -1212,7 +1369,7 @@ const MockInterviewQuestionsPage = () => {
                   </>
                 ) : (
                   <>
-                    <Heading color="brand.500" size="sm" mb={3}>
+                    <Heading size="sm" mb={3} color="gray.700">
                       Question {currentQuestionIdx + 1} of {interviewQuestions.length}
                     </Heading>
                     <Text fontSize="lg" fontWeight="semibold" color="blue.600">
@@ -1261,7 +1418,35 @@ const MockInterviewQuestionsPage = () => {
               </ModalContent>
             </Modal>
 
-            {/* I'm Ready Modal */}
+            {/* First I'm Ready Modal - Before Opening Message */}
+            <Modal
+              isOpen={showStartInterviewReady}
+              onClose={() => {}}
+              isCentered
+              closeOnOverlayClick={false}
+            >
+              <ModalOverlay />
+              <ModalContent>
+                <ModalHeader color="blue.700">Ready to Start Interview?</ModalHeader>
+                <ModalBody>
+                  <VStack spacing={4}>
+                    <Text color="blue.600">
+                      Make sure you're in a quiet environment with good
+                      lighting. The interview will begin shortly.
+                    </Text>
+                    <Button
+                      colorScheme="green"
+                      size="lg"
+                      onClick={handleStartInterviewReady}
+                    >
+                      I'm Ready - Start Interview
+                    </Button>
+                  </VStack>
+                </ModalBody>
+              </ModalContent>
+            </Modal>
+
+            {/* Second I'm Ready Modal - After Opening Message */}
             <Modal
               isOpen={showReadyButton}
               onClose={() => {}}
@@ -1339,7 +1524,7 @@ const MockInterviewQuestionsPage = () => {
               borderWidth="1px"
               boxShadow="md"
             >
-              <Heading color="brand.500" size="md" mb={2} textAlign="center" >
+              <Heading size="md" mb={2} textAlign="center" color="gray.700">
                 How the Interview Works
               </Heading>
               <VStack
@@ -1439,7 +1624,7 @@ const MockInterviewQuestionsPage = () => {
                 <AlertIcon />
                 <Text fontSize="sm">
                   <strong>Progress:</strong> You have answered{" "}
-                  {answeredQuestions.length} out of {commonQuestions.length + interviewQuestions.length}{" "}
+                  {answeredQuestionsCount} out of {totalQuestionsCount}{" "}
                   questions.
                 </Text>
               </Alert>
