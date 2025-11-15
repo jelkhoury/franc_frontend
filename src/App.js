@@ -17,6 +17,7 @@ import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import OTPVerification from './components/OTPVerification';
 import { AuthProvider } from './components/AuthContext';
+import { MockInterviewStateProvider } from './contexts/MockInterviewStateContext';
 import { MockInterviewPage, MockInterviewTryPage, MockInterviewMajorSelectPage, MockInterviewQuestionsPage } from './pages/services';
 import AvatarDemoPage from './pages/services/AvatarDemoPage';
 import AvatarAdvancedDemoPage from './pages/services/AvatarAdvancedDemoPage';
@@ -34,7 +35,9 @@ const App = () => {
   return (
     <Router>
       <AuthProvider>
-        <MainLayout />
+        <MockInterviewStateProvider>
+          <MainLayout />
+        </MockInterviewStateProvider>
       </AuthProvider>
     </Router>
   );
