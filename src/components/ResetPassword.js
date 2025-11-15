@@ -13,6 +13,7 @@ import {
 } from '@chakra-ui/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { post } from '../utils/httpServices';
 
 const ResetPassword = () => {
   const location = useLocation();
@@ -39,42 +40,26 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      const baseUrl = process.env.REACT_APP_API_BASE_URL;
-      const response = await fetch(`${baseUrl}/api/users/reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          verificationCode: otp,
-          newPassword,
-        }),
+      const data = await post('/api/users/reset-password', {
+        email,
+        verificationCode: otp,
+        newPassword,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        toast({
-          title: 'Password Reset Successful',
-          description: data.message,
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-
-        navigate('/login');
-      } else {
-        toast({
-          title: 'Reset Failed',
-          description: data.error || 'Something went wrong.',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-      }
-    } catch (error) {
       toast({
-        title: 'Network Error',
-        description: 'Failed to connect to the server.',
+        title: 'Password Reset Successful',
+        description: data.message || 'Your password has been updated successfully.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+
+      navigate('/login');
+    } catch (error) {
+      console.error('Reset password error:', error);
+      toast({
+        title: 'Reset Failed',
+        description: error.message || 'Something went wrong.',
         status: 'error',
         duration: 3000,
         isClosable: true,

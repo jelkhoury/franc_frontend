@@ -1,28 +1,14 @@
-// httpService.js
-// Generic fetch helpers for GET/POST/DELETE/etc. with token header support and multi-base URLs.
-
 import {
   getStoredToken,
   isTokenExpired,
   clearAuthData,
-} from "./tokenUtils"; // <-- change path if needed
+} from "./tokenUtils"; 
 
-// Define multiple base URLs via .env (extend as needed)
 const BASE_URLS = {
   default: (process.env.REACT_APP_API_BASE_URL || "").replace(/\/+$/, ""),
   ai: (process.env.REACT_APP_API_AI_URL || "").replace(/\/+$/, ""),
 };
 
-/**
- * Optional hooks you can set from your app (e.g., to redirect to login on 401):
- *   httpService.onUnauthorized = () => { ... };
- *   httpService.onRequest = (req) => { ... };
- *   httpService.onResponse = (res) => { ... };
- *
- * You can also tweak base URLs at runtime:
- *   httpService.setBaseUrl("ai", "https://new-ai-base");
- *   httpService.setBaseUrls({ default: "...", ai: "..." });
- */
 const httpService = {
   onUnauthorized: null,
   onRequest: null,

@@ -17,6 +17,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../components/AuthContext";
 import { decodeToken, getUserRole, getUserName, getUserId } from "../utils/tokenUtils";
+import { post } from "../utils/httpServices";
 
 const OTPVerification = () => {
   const location = useLocation();
@@ -49,21 +50,9 @@ const OTPVerification = () => {
     setLoading(true);
 
     try {
-      const baseUrl = process.env.REACT_APP_API_BASE_URL ;
-      const response = await fetch(
-        `${baseUrl}/api/users/verify-code?email=${encodeURIComponent(
-          email
-        )}&code=${otp}`,
-        {
-          method: "POST",
-        }
+      const data = await post(
+        `/api/users/verify-code?email=${encodeURIComponent(email)}&code=${otp}`
       );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Invalid OTP");
-      }
 
       // Store token in localStorage after successful verification
       if (data.token) {
