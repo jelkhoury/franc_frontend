@@ -5,6 +5,7 @@ import { useTimer } from "react-timer-hook";
 import { getStoredToken, decodeToken } from "../../../utils/tokenUtils";
 import { useMockInterviewState } from "../../../contexts/MockInterviewStateContext";
 import Footer from "../../../components/Footer";
+import fallbackVoiceover from "../../../assets/audio/voiceover.m4a";
 // Services
 import {
   checkMockInterviewStatus as checkMockInterviewStatusService,
