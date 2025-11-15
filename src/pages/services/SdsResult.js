@@ -1,22 +1,56 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Box, Container, Heading, Text, Button, VStack, HStack, Spinner, useToast, Badge,
-  SimpleGrid, Divider, List, ListItem, Icon, Alert, AlertIcon, useDisclosure, Table,
-  Thead, Tbody, Tr, Th, Td, TableContainer, Input, InputGroup, InputLeftElement,
-  Flex, Select, Wrap, WrapItem
+  Box,
+  Container,
+  Heading,
+  Text,
+  Button,
+  VStack,
+  HStack,
+  Spinner,
+  useToast,
+  Badge,
+  SimpleGrid,
+  Divider,
+  List,
+  ListItem,
+  Icon,
+  Alert,
+  AlertIcon,
+  useDisclosure,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  Flex,
+  Select,
+  Wrap,
+  WrapItem,
 } from "@chakra-ui/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { CheckCircle, ChevronRight, Search } from "lucide-react";
+import { get } from "../../utils/httpServices";
 
 /* --- Expandable card --- */
-const ExpandableRoleCard = ({ role, category, description, isHighlighted = false }) => {
+const ExpandableRoleCard = ({
+  role,
+  category,
+  description,
+  isHighlighted = false,
+}) => {
   const { isOpen, onToggle } = useDisclosure();
   const hasDescription = description && description.trim() !== "";
-  
+
   // All items with descriptions are expandable, highlighted items just have different styling
   const shouldShowDescription = isOpen;
   const isExpandable = hasDescription;
-  
+
   return (
     <Box
       onClick={isExpandable ? onToggle : undefined}
@@ -28,7 +62,14 @@ const ExpandableRoleCard = ({ role, category, description, isHighlighted = false
       border="1px solid"
       borderColor={isHighlighted ? "yellow.300" : "blue.200"}
       transition="box-shadow 0.2s ease, border-color 0.2s ease, transform 0.05s ease"
-      _hover={isExpandable ? { shadow: "md", borderColor: isHighlighted ? "yellow.400" : "blue.300" } : {}}
+      _hover={
+        isExpandable
+          ? {
+              shadow: "md",
+              borderColor: isHighlighted ? "yellow.400" : "blue.300",
+            }
+          : {}
+      }
       _active={isExpandable ? { transform: "scale(0.998)" } : {}}
       minH="70px"
       position="relative"
@@ -65,9 +106,14 @@ const ExpandableRoleCard = ({ role, category, description, isHighlighted = false
           <Box boxSize={5} mt="2px" flexShrink={0} />
         )}
         <VStack align="start" spacing={1} flex="1" minW={0}>
-            <Text fontWeight="semibold" color={isHighlighted ? "yellow.800" : "blue.700"} noOfLines={isOpen ? undefined : 2} flex="1">
-              {role} | {category || "Uncategorized"}
-            </Text>
+          <Text
+            fontWeight="semibold"
+            color={isHighlighted ? "yellow.800" : "blue.700"}
+            noOfLines={isOpen ? undefined : 2}
+            flex="1"
+          >
+            {role} | {category || "Uncategorized"}
+          </Text>
           {shouldShowDescription && description && (
             <Text fontSize="sm" color="gray.600" mt={2} lineHeight="1.4">
               {description}
@@ -116,19 +162,21 @@ function parseLegacy(raw) {
 /* --- parse category descriptions from response --- */
 function parseCategoryDescriptions(response, kind) {
   if (!response) return {};
-  
+
   const descriptions = {};
-  const lines = response.split('\n');
-  
+  const lines = response.split("\n");
+
   for (const line of lines) {
     if (kind === "occupation") {
       // Look for pattern: "- Title | category: CAT (Description) HIGHLIGHTED" for occupation
-      const match = line.match(/^- (.+?) \| category: (\w+) \((.+?)\)(?: HIGHLIGHTED)?$/);
+      const match = line.match(
+        /^- (.+?) \| category: (\w+) \((.+?)\)(?: HIGHLIGHTED)?$/
+      );
       if (match) {
         const [, title, category, description] = match;
         descriptions[title.trim()] = {
           category: category.trim(),
-          description: description.trim()
+          description: description.trim(),
         };
       }
     } else if (kind === "education") {
@@ -139,27 +187,34 @@ function parseCategoryDescriptions(response, kind) {
         const [, title, category] = match;
         descriptions[title.trim()] = {
           category: category.trim(),
-          description: "" // No descriptions for education
+          description: "", // No descriptions for education
         };
       }
     }
   }
-  
+
   return descriptions;
 }
 
 /* --- normalize API payload to a single UI shape --- */
 function normalizeSuggestionsPayload(payload) {
   // New structured shape present?
-  if (payload && Array.isArray(payload.available_items) && Array.isArray(payload.suggestions)) {
-    const categoryDescriptions = parseCategoryDescriptions(payload.response, payload.kind);
-    
+  if (
+    payload &&
+    Array.isArray(payload.available_items) &&
+    Array.isArray(payload.suggestions)
+  ) {
+    const categoryDescriptions = parseCategoryDescriptions(
+      payload.response,
+      payload.kind
+    );
+
     // Extract highlighted items from the response text
     const highlightedItems = [];
     if (payload.response) {
-      const lines = payload.response.split('\n');
-      lines.forEach(line => {
-        if (line.includes('(HIGHLIGHTED)') || line.includes('HIGHLIGHTED')) {
+      const lines = payload.response.split("\n");
+      lines.forEach((line) => {
+        if (line.includes("(HIGHLIGHTED)") || line.includes("HIGHLIGHTED")) {
           // Extract the item name before the category
           const match = line.match(/^- (.+?) \| category:/);
           if (match) {
@@ -168,7 +223,7 @@ function normalizeSuggestionsPayload(payload) {
         }
       });
     }
-    
+
     return {
       code: payload.code,
       kind: payload.kind,
@@ -194,13 +249,13 @@ function normalizeSuggestionsPayload(payload) {
 
   // Legacy fallback (string parsing)
   const parsed = parseLegacy(payload?.response);
-  
+
   // Extract highlighted items from legacy response
   const highlightedItems = [];
   if (payload?.response) {
-    const lines = payload.response.split('\n');
-    lines.forEach(line => {
-      if (line.includes('(HIGHLIGHTED)') || line.includes('HIGHLIGHTED')) {
+    const lines = payload.response.split("\n");
+    lines.forEach((line) => {
+      if (line.includes("(HIGHLIGHTED)") || line.includes("HIGHLIGHTED")) {
         const match = line.match(/^- (.+?) \| category:/);
         if (match) {
           highlightedItems.push(match[1].trim());
@@ -208,7 +263,7 @@ function normalizeSuggestionsPayload(payload) {
       }
     });
   }
-  
+
   return {
     code: payload?.code,
     kind: payload?.kind,
@@ -223,7 +278,11 @@ function normalizeSuggestionsPayload(payload) {
         description: "",
       };
     }),
-    top5: parsed.top5.map((t) => ({ text: t.title, category: "", reason: t.reason })),
+    top5: parsed.top5.map((t) => ({
+      text: t.title,
+      category: "",
+      reason: t.reason,
+    })),
     highlightedItems: highlightedItems,
     legacy: payload?.response || "",
     legacyComparisonLines: parsed.comparisonLines || [],
@@ -236,7 +295,11 @@ const LetterBadge = ({ ch }) => (
     px={3}
     py={1}
     rounded="full"
-    colorScheme={{ R: "teal", I: "purple", A: "pink", S: "green", E: "orange", C: "blue" }[ch] || "gray"}
+    colorScheme={
+      { R: "teal", I: "purple", A: "pink", S: "green", E: "orange", C: "blue" }[
+        ch
+      ] || "gray"
+    }
   >
     {ch}
   </Badge>
@@ -250,36 +313,42 @@ function calculateRIASECScores(responses, questionsData) {
     Occupations: { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
     "Self-Estimates Part 1": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
     "Self-Estimates Part 2": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
-    "Summary scores": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 }
+    "Summary scores": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
   };
 
   if (!responses || !questionsData) return scores;
 
   // Process each section
-  questionsData.forEach(section => {
+  questionsData.forEach((section) => {
     const sectionName = section.name;
     let sectionKey = sectionName;
-    
+
     // Map section names to our scoring keys
     if (sectionName === "Self-Estimates") {
       sectionKey = "Self-Estimates Part 1"; // We'll handle both parts
     }
 
-    section.questions.forEach(question => {
-      const response = responses.find(r => r.questionId === question.id);
+    section.questions.forEach((question) => {
+      const response = responses.find((r) => r.questionId === question.id);
       if (!response) return;
 
       // Handle different question types
-      if (question.type === 1) { // Like/Dislike questions
-        const selectedOption = question.answerOptions.find(opt => opt.id === response.selectedOptionId);
+      if (question.type === 1) {
+        // Like/Dislike questions
+        const selectedOption = question.answerOptions.find(
+          (opt) => opt.id === response.selectedOptionId
+        );
         if (selectedOption && selectedOption.value) {
           const letter = selectedOption.value;
           if (scores[sectionKey] && scores[sectionKey][letter] !== undefined) {
             scores[sectionKey][letter]++;
           }
         }
-      } else if (question.type === 4) { // Self-Estimates (1-7 scale)
-        const selectedOption = question.answerOptions.find(opt => opt.id === response.selectedOptionId);
+      } else if (question.type === 4) {
+        // Self-Estimates (1-7 scale)
+        const selectedOption = question.answerOptions.find(
+          (opt) => opt.id === response.selectedOptionId
+        );
         if (selectedOption && selectedOption.value) {
           const value = selectedOption.value;
           // Extract letter and number from values like "3R", "5I", etc.
@@ -287,7 +356,10 @@ function calculateRIASECScores(responses, questionsData) {
           if (match) {
             const number = parseInt(match[1]);
             const letter = match[2];
-            if (scores[sectionKey] && scores[sectionKey][letter] !== undefined) {
+            if (
+              scores[sectionKey] &&
+              scores[sectionKey][letter] !== undefined
+            ) {
               scores[sectionKey][letter] += number;
             }
           }
@@ -297,8 +369,8 @@ function calculateRIASECScores(responses, questionsData) {
   });
 
   // Calculate summary scores
-  Object.keys(scores["Summary scores"]).forEach(letter => {
-    scores["Summary scores"][letter] = 
+  Object.keys(scores["Summary scores"]).forEach((letter) => {
+    scores["Summary scores"][letter] =
       scores["Activities"][letter] +
       scores["Competencies"][letter] +
       scores["Occupations"][letter] +
@@ -311,18 +383,40 @@ function calculateRIASECScores(responses, questionsData) {
 
 /* --- RIASEC Scoring Table Component --- */
 const RIASECScoringTable = ({ scores, loading, error }) => {
-  const sections = ["Activities", "Competencies", "Occupations", "Self-Estimates Part 1", "Self-Estimates Part 2", "Summary scores"];
+  const sections = [
+    "Activities",
+    "Competencies",
+    "Occupations",
+    "Self-Estimates Part 1",
+    "Self-Estimates Part 2",
+    "Summary scores",
+  ];
   const letters = ["R", "I", "A", "S", "E", "C"];
-  
+
   return (
-    <Box bg="white" rounded="xl" p={{ base: 5, md: 6 }} boxShadow="sm" border="1px solid" borderColor="gray.200" mb={6}>
+    <Box
+      bg="white"
+      rounded="xl"
+      p={{ base: 5, md: 6 }}
+      boxShadow="sm"
+      border="1px solid"
+      borderColor="gray.200"
+      mb={6}
+    >
       <VStack align="stretch" spacing={4}>
-        <Heading color="brand.500" size="md" textAlign="center">RIASEC Scoring Summary</Heading>
+        <Heading color="brand.500" size="md" textAlign="center">
+          RIASEC Scoring Summary
+        </Heading>
         <Text fontSize="sm" color="gray.600" textAlign="center">
           Your scores across different assessment sections
         </Text>
 
-        {error && <Alert status="error"><AlertIcon />{error}</Alert>}
+        {error && (
+          <Alert status="error">
+            <AlertIcon />
+            {error}
+          </Alert>
+        )}
 
         {loading && !error && (
           <VStack py={8}>
@@ -333,51 +427,84 @@ const RIASECScoringTable = ({ scores, loading, error }) => {
 
         {!loading && !error && scores && (
           <TableContainer>
-          <Table size="sm" variant="simple">
-            <Thead>
-              <Tr>
-                <Th>Section</Th>
-                {letters.map(letter => (
-                  <Th key={letter} textAlign="center">
-                    <LetterBadge ch={letter} />
-                  </Th>
-                ))}
-              </Tr>
-            </Thead>
-            <Tbody>
-              {sections.map(section => (
-                <Tr key={section}>
-                  <Td fontWeight={section === "Summary scores" ? "bold" : "normal"}>
-                    {section}
-                  </Td>
-                  {letters.map(letter => (
-                    <Td key={letter} textAlign="center">
-                      <Box
-                        bg={section === "Summary scores" ? 
-                          `${letter === "R" ? "teal" : letter === "I" ? "purple" : letter === "A" ? "pink" : letter === "S" ? "green" : letter === "E" ? "orange" : "blue"}.100` : 
-                          "gray.50"
-                        }
-                        p={2}
-                        rounded="md"
-                        fontWeight={section === "Summary scores" ? "bold" : "normal"}
-                        color={section === "Summary scores" ? 
-                          `${letter === "R" ? "teal" : letter === "I" ? "purple" : letter === "A" ? "pink" : letter === "S" ? "green" : letter === "E" ? "orange" : "blue"}.700` : 
-                          "gray.700"
-                        }
-                      >
-                        {scores[section]?.[letter] || 0}
-                      </Box>
-                    </Td>
+            <Table size="sm" variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Section</Th>
+                  {letters.map((letter) => (
+                    <Th key={letter} textAlign="center">
+                      <LetterBadge ch={letter} />
+                    </Th>
                   ))}
                 </Tr>
-              ))}
-            </Tbody>
-          </Table>
-          
-          <Text fontSize="xs" color="gray.500" textAlign="center" mt={2}>
-            (Add the five R scores, the five I scores, the five A scores, etc.)
-          </Text>
-        </TableContainer>
+              </Thead>
+              <Tbody>
+                {sections.map((section) => (
+                  <Tr key={section}>
+                    <Td
+                      fontWeight={
+                        section === "Summary scores" ? "bold" : "normal"
+                      }
+                    >
+                      {section}
+                    </Td>
+                    {letters.map((letter) => (
+                      <Td key={letter} textAlign="center">
+                        <Box
+                          bg={
+                            section === "Summary scores"
+                              ? `${
+                                  letter === "R"
+                                    ? "teal"
+                                    : letter === "I"
+                                    ? "purple"
+                                    : letter === "A"
+                                    ? "pink"
+                                    : letter === "S"
+                                    ? "green"
+                                    : letter === "E"
+                                    ? "orange"
+                                    : "blue"
+                                }.100`
+                              : "gray.50"
+                          }
+                          p={2}
+                          rounded="md"
+                          fontWeight={
+                            section === "Summary scores" ? "bold" : "normal"
+                          }
+                          color={
+                            section === "Summary scores"
+                              ? `${
+                                  letter === "R"
+                                    ? "teal"
+                                    : letter === "I"
+                                    ? "purple"
+                                    : letter === "A"
+                                    ? "pink"
+                                    : letter === "S"
+                                    ? "green"
+                                    : letter === "E"
+                                    ? "orange"
+                                    : "blue"
+                                }.700`
+                              : "gray.700"
+                          }
+                        >
+                          {scores[section]?.[letter] || 0}
+                        </Box>
+                      </Td>
+                    ))}
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+
+            <Text fontSize="xs" color="gray.500" textAlign="center" mt={2}>
+              (Add the five R scores, the five I scores, the five A scores,
+              etc.)
+            </Text>
+          </TableContainer>
         )}
       </VStack>
     </Box>
@@ -393,16 +520,21 @@ const PaginatedAvailableItems = ({ items, kind, highlightedItems = [] }) => {
 
   // Filter items based on search and category
   const filteredItems = useMemo(() => {
-    return items.filter(item => {
-      const matchesSearch = item.text.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = !selectedCategory || item.category === selectedCategory;
+    return items.filter((item) => {
+      const matchesSearch = item.text
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        !selectedCategory || item.category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
   }, [items, searchTerm, selectedCategory]);
 
   // Get unique categories for filter
   const categories = useMemo(() => {
-    const uniqueCategories = [...new Set(items.map(item => item.category))].filter(Boolean);
+    const uniqueCategories = [
+      ...new Set(items.map((item) => item.category)),
+    ].filter(Boolean);
     return uniqueCategories.sort();
   }, [items]);
 
@@ -424,12 +556,15 @@ const PaginatedAvailableItems = ({ items, kind, highlightedItems = [] }) => {
       </Heading>
       {kind === "occupation" && (
         <Text fontSize="sm" color="gray.600" mb={4}>
-          Based on your code, this is the list of occupations that align with your top interest areas,the highlighted ones are the ones related to your Faculty.
+          Based on your code, this is the list of occupations that align with
+          your top interest areas,the highlighted ones are the ones related to
+          your Faculty.
         </Text>
       )}
       {kind === "education" && (
         <Text fontSize="sm" color="gray.600" mb={4}>
-          Based on your code, this is the list of majors or fields that align with your top interest areas.
+          Based on your code, this is the list of majors or fields that align
+          with your top interest areas.
         </Text>
       )}
 
@@ -446,7 +581,7 @@ const PaginatedAvailableItems = ({ items, kind, highlightedItems = [] }) => {
             bg="white"
           />
         </InputGroup>
-        
+
         {categories.length > 0 && (
           <Select
             placeholder="Filter by category"
@@ -455,27 +590,29 @@ const PaginatedAvailableItems = ({ items, kind, highlightedItems = [] }) => {
             bg="white"
           >
             <option value="">All Categories</option>
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
             ))}
           </Select>
         )}
       </VStack>
 
       {/* Items Grid */}
-      <SimpleGrid 
-        columns={{ base: 1, sm: kind === "education" ? 1 : 2 }} 
-        spacing={3} 
+      <SimpleGrid
+        columns={{ base: 1, sm: kind === "education" ? 1 : 2 }}
+        spacing={3}
         alignItems="start"
         mb={4}
       >
         {currentItems.map((it, idx) => (
-          <ExpandableRoleCard 
-            role={it.text} 
-            category={it.category} 
+          <ExpandableRoleCard
+            role={it.text}
+            category={it.category}
             description={it.description}
             isHighlighted={highlightedItems.includes(it.text)}
-            key={`${it.text}-${idx}`} 
+            key={`${it.text}-${idx}`}
           />
         ))}
       </SimpleGrid>
@@ -484,13 +621,14 @@ const PaginatedAvailableItems = ({ items, kind, highlightedItems = [] }) => {
       {totalPages > 1 && (
         <Flex justify="space-between" align="center" mt={4}>
           <Text fontSize="sm" color="gray.600">
-            Showing {startIndex + 1}-{Math.min(endIndex, filteredItems.length)} of {filteredItems.length} items
+            Showing {startIndex + 1}-{Math.min(endIndex, filteredItems.length)}{" "}
+            of {filteredItems.length} items
           </Text>
           <HStack spacing={2}>
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               isDisabled={currentPage === 1}
             >
               Previous
@@ -507,7 +645,7 @@ const PaginatedAvailableItems = ({ items, kind, highlightedItems = [] }) => {
                 } else {
                   pageNum = currentPage - 2 + i;
                 }
-                
+
                 return (
                   <Button
                     key={pageNum}
@@ -524,7 +662,9 @@ const PaginatedAvailableItems = ({ items, kind, highlightedItems = [] }) => {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
               isDisabled={currentPage === totalPages}
             >
               Next
@@ -537,14 +677,30 @@ const PaginatedAvailableItems = ({ items, kind, highlightedItems = [] }) => {
 };
 
 /* --- Suggestions panel --- */
-const SuggestionsPanel = ({ label, code, kind, suggestions, loading, error }) => {
+const SuggestionsPanel = ({
+  label,
+  code,
+  kind,
+  suggestions,
+  loading,
+  error,
+}) => {
   const data = suggestions ? normalizeSuggestionsPayload(suggestions) : null;
 
   return (
-    <Box bg="white" rounded="xl" p={{ base: 5, md: 6 }} boxShadow="sm" border="1px solid" borderColor="gray.200">
+    <Box
+      bg="white"
+      rounded="xl"
+      p={{ base: 5, md: 6 }}
+      boxShadow="sm"
+      border="1px solid"
+      borderColor="gray.200"
+    >
       <VStack align="stretch" spacing={4}>
         <HStack justify="space-between" align="center">
-          <Heading color="brand.500" size="md">{label}</Heading>
+          <Heading color="brand.500" size="md">
+            {label}
+          </Heading>
           <HStack>
             <Badge>{data?.code || code}</Badge>
             <Badge colorScheme="purple" variant="subtle">
@@ -553,7 +709,12 @@ const SuggestionsPanel = ({ label, code, kind, suggestions, loading, error }) =>
           </HStack>
         </HStack>
 
-        {error && <Alert status="error"><AlertIcon />{error}</Alert>}
+        {error && (
+          <Alert status="error">
+            <AlertIcon />
+            {error}
+          </Alert>
+        )}
 
         {loading && !error && (
           <VStack py={8}>
@@ -568,10 +729,10 @@ const SuggestionsPanel = ({ label, code, kind, suggestions, loading, error }) =>
 
             {/* Available Items */}
             {data.availableItems?.length > 0 && (
-              <PaginatedAvailableItems 
-                items={data.availableItems} 
-                kind={kind} 
-                highlightedItems={data.highlightedItems || []} 
+              <PaginatedAvailableItems
+                items={data.availableItems}
+                kind={kind}
+                highlightedItems={data.highlightedItems || []}
               />
             )}
           </>
@@ -599,40 +760,69 @@ const SdsResult = () => {
   const [hollandPointsLoading, setHollandPointsLoading] = useState(true);
   const [hollandPointsError, setHollandPointsError] = useState("");
 
-  const apiAiUrl = useMemo(() => process.env.REACT_APP_API_AI_URL , []);
-
-    const apiBaseUrl = useMemo(() => process.env.REACT_APP_API_BASE_URL , []);
-
   // Process Holland points from API
   const riasecScores = useMemo(() => {
     if (!hollandPoints) return null;
-    
+
     // Transform API data to match our table structure
     const scores = {
-      Activities: hollandPoints.Activities || { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
-      Competencies: hollandPoints.Competencies || { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
-      Occupations: hollandPoints.Occupations || { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
-      "Self-Estimates Part 1": hollandPoints["Self-Estimates"] || { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
+      Activities: hollandPoints.Activities || {
+        R: 0,
+        I: 0,
+        A: 0,
+        S: 0,
+        E: 0,
+        C: 0,
+      },
+      Competencies: hollandPoints.Competencies || {
+        R: 0,
+        I: 0,
+        A: 0,
+        S: 0,
+        E: 0,
+        C: 0,
+      },
+      Occupations: hollandPoints.Occupations || {
+        R: 0,
+        I: 0,
+        A: 0,
+        S: 0,
+        E: 0,
+        C: 0,
+      },
+      "Self-Estimates Part 1": hollandPoints["Self-Estimates"] || {
+        R: 0,
+        I: 0,
+        A: 0,
+        S: 0,
+        E: 0,
+        C: 0,
+      },
       "Self-Estimates Part 2": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 }, // Not provided in API yet
-      "Summary scores": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 }
+      "Summary scores": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
     };
-    
+
     // Calculate summary scores
-    Object.keys(scores["Summary scores"]).forEach(letter => {
-      scores["Summary scores"][letter] = 
+    Object.keys(scores["Summary scores"]).forEach((letter) => {
+      scores["Summary scores"][letter] =
         scores["Activities"][letter] +
         scores["Competencies"][letter] +
         scores["Occupations"][letter] +
         scores["Self-Estimates Part 1"][letter] +
         scores["Self-Estimates Part 2"][letter];
     });
-    
+
     return scores;
   }, [hollandPoints]);
 
   useEffect(() => {
     if (!state) {
-      toast({ title: "No submission found.", status: "warning", duration: 4000, isClosable: true });
+      toast({
+        title: "No submission found.",
+        status: "warning",
+        duration: 4000,
+        isClosable: true,
+      });
       navigate("/services/sds");
     } else {
       // Debug: Log state structure to understand what data is available
@@ -644,40 +834,41 @@ const SdsResult = () => {
   const codeStr =
     typeof state?.hollandCode === "string"
       ? state.hollandCode
-      : (state?.hollandCode && typeof state.hollandCode === "object"
-          ? (state.hollandCode.hollandCode ?? "")
-          : "");
+      : state?.hollandCode && typeof state.hollandCode === "object"
+      ? state.hollandCode.hollandCode ?? ""
+      : "";
 
   const dreamOccupations = state?.responses?.[0]?.customAnswer || "";
   const userCode = state?.responses?.[1]?.customAnswer || "";
-  
+
   // Extract faculty value from responses
   const faculty = useMemo(() => {
     // Use allResponses if available, otherwise fall back to responses
     const responsesToSearch = state?.allResponses || state?.responses || [];
-    
+
     if (!responsesToSearch.length) return "";
-    
+
     // Debug logging to see the actual response structure
     console.log("All responses:", responsesToSearch);
     console.log("Looking for faculty question (ID 364)...");
-    
+
     // Look for faculty question by ID (364) - "Select your faculty"
-    const facultyResponse = responsesToSearch.find(response => {
+    const facultyResponse = responsesToSearch.find((response) => {
       console.log(`Checking response with questionId: ${response.questionId}`);
       return response.questionId === 364; // Faculty question ID
     });
-    
+
     console.log("Faculty response found:", facultyResponse);
-    
+
     if (facultyResponse) {
       // For type 3 (select), the value should be in selectedValue
       // The selectedValue contains the option value (e.g., "ENGINEERING", "BUSINESS ADMINISTRATION")
-      const facultyValue = facultyResponse.selectedValue || facultyResponse.customAnswer || "";
+      const facultyValue =
+        facultyResponse.selectedValue || facultyResponse.customAnswer || "";
       console.log("Extracted faculty value:", facultyValue);
       return facultyValue;
     }
-    
+
     console.log("No faculty response found");
     return "";
   }, [state?.allResponses, state?.responses]);
@@ -692,25 +883,25 @@ const SdsResult = () => {
     setEduError("");
     setHollandPointsError("");
 
-    const paramsOcc = new URLSearchParams({
+    const paramsOcc = {
       code: codeStr,
       kind: "occupation",
       user_holland_code: userCode,
       dreams_occupations: dreamOccupations, // server will split by comma
       faculty: faculty, // Add faculty parameter
-    });
-    
-    console.log("Faculty value being sent:", faculty);
-    console.log("Occupation API URL:", `${apiAiUrl}/suggest-by-code?${paramsOcc.toString()}`);
+    };
 
-    const paramsEdu = new URLSearchParams({
+    console.log("Faculty value being sent:", faculty);
+
+    const paramsEdu = {
       code: codeStr,
       kind: "education",
       user_holland_code: userCode,
-    });
+    };
     // Fetch Holland points from backend
-    const hollandPoints = fetch(`${apiBaseUrl}/api/Sds/responses/${state.userId}/holland-points`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+    const hollandPoints = get(
+      `/api/Sds/responses/${state.userId}/holland-points`
+    )
       .then((response) => {
         if (response.message && response.data) {
           setHollandPoints(response.data);
@@ -723,13 +914,11 @@ const SdsResult = () => {
         setHollandPointsError("Could not load Holland points.");
       });
 
-    const occ = fetch(`${apiAiUrl}/suggest-by-code?${paramsOcc.toString()}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+    const occ = get("/suggest-by-code", { params: paramsOcc, base: "ai" })
       .then(setOccSuggestions)
       .catch(() => setOccError("Could not load occupation suggestions."));
 
-    const edu = fetch(`${apiAiUrl}/suggest-by-code?${paramsEdu.toString()}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+    const edu = get("/suggest-by-code", { params: paramsEdu, base: "ai" })
       .then(setEduSuggestions)
       .catch(() => setEduError("Could not load education suggestions."));
 
@@ -738,7 +927,7 @@ const SdsResult = () => {
       setEduLoading(false);
       setHollandPointsLoading(false);
     });
-  }, [state, apiAiUrl, apiBaseUrl, codeStr, userCode, dreamOccupations, faculty]);
+  }, [state, codeStr, userCode, dreamOccupations, faculty]);
 
   if (!state) {
     return (
@@ -750,18 +939,24 @@ const SdsResult = () => {
   }
 
   const letters = (codeStr || "").split("").slice(0, 3);
-  
+
   // Helper function to check if a letter is in the user's Holland code
   const isInUserCode = (letter) => letters.includes(letter);
 
   return (
     <Box minH="100vh" bgGradient="linear(to-br, #ffffff, #f1f5f9)" pb={16}>
       {/* hero */}
-      <Box bgGradient="linear(to-r, blue.500, teal.500)" color="white" py={{ base: 8, md: 10 }} mb={8} boxShadow="sm">
+      <Box
+        bgGradient="linear(to-r, blue.500, teal.500)"
+        color="white"
+        py={{ base: 8, md: 10 }}
+        mb={8}
+        boxShadow="sm"
+      >
         <Container maxW="5xl">
           <VStack spacing={4} align="stretch">
             <Heading color="white" size="lg" lineHeight="1.2">
-              Thank you for completing the Personality Test 
+              Thank you for completing the Personality Test
             </Heading>
             <HStack spacing={4} align="center" flexWrap="wrap">
               <Text fontSize="lg">Your summary code:</Text>
@@ -784,62 +979,162 @@ const SdsResult = () => {
 
       <Container maxW="8xl">
         {/* RIASEC Dimensions Explanation */}
-        <Box bg="white" rounded="xl" p={{ base: 5, md: 6 }} boxShadow="sm" border="1px solid" borderColor="gray.200" mb={6}>
+        <Box
+          bg="white"
+          rounded="xl"
+          p={{ base: 5, md: 6 }}
+          boxShadow="sm"
+          border="1px solid"
+          borderColor="gray.200"
+          mb={6}
+        >
           <VStack align="stretch" spacing={4}>
-            <Heading color="brand.500" size="md" textAlign="center">Explanation of RIASEC Dimensions</Heading>
+            <Heading color="brand.500" size="md" textAlign="center">
+              Explanation of RIASEC Dimensions
+            </Heading>
             <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
-              <Box p={3} bg={isInUserCode("R") ? "teal.50" : "white"} rounded="md" border="1px solid" borderColor={isInUserCode("R") ? "teal.200" : "gray.200"}>
+              <Box
+                p={3}
+                bg={isInUserCode("R") ? "teal.50" : "white"}
+                rounded="md"
+                border="1px solid"
+                borderColor={isInUserCode("R") ? "teal.200" : "gray.200"}
+              >
                 <HStack mb={2}>
                   <LetterBadge ch="R" />
-                  <Text fontWeight="bold" color={isInUserCode("R") ? "teal.700" : "black"}>Realistic</Text>
+                  <Text
+                    fontWeight="bold"
+                    color={isInUserCode("R") ? "teal.700" : "black"}
+                  >
+                    Realistic
+                  </Text>
                 </HStack>
-                <Text fontSize="sm" color={isInUserCode("R") ? "gray.700" : "black"}>
-                  Prefers hands-on activities, working with tools, machines, or the outdoors. Practical, mechanical, and action-oriented.
+                <Text
+                  fontSize="sm"
+                  color={isInUserCode("R") ? "gray.700" : "black"}
+                >
+                  Prefers hands-on activities, working with tools, machines, or
+                  the outdoors. Practical, mechanical, and action-oriented.
                 </Text>
               </Box>
-              <Box p={3} bg={isInUserCode("I") ? "purple.50" : "white"} rounded="md" border="1px solid" borderColor={isInUserCode("I") ? "purple.200" : "gray.200"}>
+              <Box
+                p={3}
+                bg={isInUserCode("I") ? "purple.50" : "white"}
+                rounded="md"
+                border="1px solid"
+                borderColor={isInUserCode("I") ? "purple.200" : "gray.200"}
+              >
                 <HStack mb={2}>
                   <LetterBadge ch="I" />
-                  <Text fontWeight="bold" color={isInUserCode("I") ? "purple.700" : "black"}>Investigative</Text>
+                  <Text
+                    fontWeight="bold"
+                    color={isInUserCode("I") ? "purple.700" : "black"}
+                  >
+                    Investigative
+                  </Text>
                 </HStack>
-                <Text fontSize="sm" color={isInUserCode("I") ? "gray.700" : "black"}>
-                  Prefers working with ideas, thinking, and problem-solving. Analytical, curious, and scientific.
+                <Text
+                  fontSize="sm"
+                  color={isInUserCode("I") ? "gray.700" : "black"}
+                >
+                  Prefers working with ideas, thinking, and problem-solving.
+                  Analytical, curious, and scientific.
                 </Text>
               </Box>
-              <Box p={3} bg={isInUserCode("A") ? "pink.50" : "white"} rounded="md" border="1px solid" borderColor={isInUserCode("A") ? "pink.200" : "gray.200"}>
+              <Box
+                p={3}
+                bg={isInUserCode("A") ? "pink.50" : "white"}
+                rounded="md"
+                border="1px solid"
+                borderColor={isInUserCode("A") ? "pink.200" : "gray.200"}
+              >
                 <HStack mb={2}>
                   <LetterBadge ch="A" />
-                  <Text fontWeight="bold" color={isInUserCode("A") ? "pink.700" : "black"}>Artistic</Text>
+                  <Text
+                    fontWeight="bold"
+                    color={isInUserCode("A") ? "pink.700" : "black"}
+                  >
+                    Artistic
+                  </Text>
                 </HStack>
-                <Text fontSize="sm" color={isInUserCode("A") ? "gray.700" : "black"}>
-                  Prefers creative expression through art, music, writing, or design. Imaginative, innovative, and original.
+                <Text
+                  fontSize="sm"
+                  color={isInUserCode("A") ? "gray.700" : "black"}
+                >
+                  Prefers creative expression through art, music, writing, or
+                  design. Imaginative, innovative, and original.
                 </Text>
               </Box>
-              <Box p={3} bg={isInUserCode("S") ? "green.50" : "white"} rounded="md" border="1px solid" borderColor={isInUserCode("S") ? "green.200" : "gray.200"}>
+              <Box
+                p={3}
+                bg={isInUserCode("S") ? "green.50" : "white"}
+                rounded="md"
+                border="1px solid"
+                borderColor={isInUserCode("S") ? "green.200" : "gray.200"}
+              >
                 <HStack mb={2}>
                   <LetterBadge ch="S" />
-                  <Text fontWeight="bold" color={isInUserCode("S") ? "green.700" : "black"}>Social</Text>
+                  <Text
+                    fontWeight="bold"
+                    color={isInUserCode("S") ? "green.700" : "black"}
+                  >
+                    Social
+                  </Text>
                 </HStack>
-                <Text fontSize="sm" color={isInUserCode("S") ? "gray.700" : "black"}>
-                  Prefers working with people, helping, teaching, or serving. Cooperative, empathetic, and supportive.
+                <Text
+                  fontSize="sm"
+                  color={isInUserCode("S") ? "gray.700" : "black"}
+                >
+                  Prefers working with people, helping, teaching, or serving.
+                  Cooperative, empathetic, and supportive.
                 </Text>
               </Box>
-              <Box p={3} bg={isInUserCode("E") ? "orange.50" : "white"} rounded="md" border="1px solid" borderColor={isInUserCode("E") ? "orange.200" : "gray.200"}>
+              <Box
+                p={3}
+                bg={isInUserCode("E") ? "orange.50" : "white"}
+                rounded="md"
+                border="1px solid"
+                borderColor={isInUserCode("E") ? "orange.200" : "gray.200"}
+              >
                 <HStack mb={2}>
                   <LetterBadge ch="E" />
-                  <Text fontWeight="bold" color={isInUserCode("E") ? "orange.700" : "black"}>Enterprising</Text>
+                  <Text
+                    fontWeight="bold"
+                    color={isInUserCode("E") ? "orange.700" : "black"}
+                  >
+                    Enterprising
+                  </Text>
                 </HStack>
-                <Text fontSize="sm" color={isInUserCode("E") ? "gray.700" : "black"}>
-                  Prefers leadership roles, persuading, and managing projects or people. Energetic, ambitious, and outgoing.
+                <Text
+                  fontSize="sm"
+                  color={isInUserCode("E") ? "gray.700" : "black"}
+                >
+                  Prefers leadership roles, persuading, and managing projects or
+                  people. Energetic, ambitious, and outgoing.
                 </Text>
               </Box>
-              <Box p={3} bg={isInUserCode("C") ? "blue.50" : "white"} rounded="md" border="1px solid" borderColor={isInUserCode("C") ? "blue.200" : "gray.200"}>
+              <Box
+                p={3}
+                bg={isInUserCode("C") ? "blue.50" : "white"}
+                rounded="md"
+                border="1px solid"
+                borderColor={isInUserCode("C") ? "blue.200" : "gray.200"}
+              >
                 <HStack mb={2}>
                   <LetterBadge ch="C" />
-                  <Text fontWeight="bold" color={isInUserCode("C") ? "blue.700" : "black"}>Conventional</Text>
+                  <Text
+                    fontWeight="bold"
+                    color={isInUserCode("C") ? "blue.700" : "black"}
+                  >
+                    Conventional
+                  </Text>
                 </HStack>
-                <Text fontSize="sm" color={isInUserCode("C") ? "gray.700" : "black"}>
-                  Prefers structured tasks, organization, data management, and attention to detail. Methodical, efficient, and orderly.
+                <Text
+                  fontSize="sm"
+                  color={isInUserCode("C") ? "gray.700" : "black"}
+                >
+                  Prefers structured tasks, organization, data management, and
+                  attention to detail. Methodical, efficient, and orderly.
                 </Text>
               </Box>
             </SimpleGrid>
@@ -847,10 +1142,10 @@ const SdsResult = () => {
         </Box>
 
         {/* RIASEC Scoring Table */}
-        <RIASECScoringTable 
-          scores={riasecScores} 
-          loading={hollandPointsLoading} 
-          error={hollandPointsError} 
+        <RIASECScoringTable
+          scores={riasecScores}
+          loading={hollandPointsLoading}
+          error={hollandPointsError}
         />
 
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
@@ -874,14 +1169,26 @@ const SdsResult = () => {
 
         {/* Comparison Section */}
         {occSuggestions && (
-          <Box bg="white" border="1px solid" borderColor="gray.200" rounded="md" p={4} mb={6} mt={6}>
-            <Heading color="brand.500" size="md" mb={3}>Comparison with your dream occupations</Heading>
+          <Box
+            bg="white"
+            border="1px solid"
+            borderColor="gray.200"
+            rounded="md"
+            p={4}
+            mb={6}
+            mt={6}
+          >
+            <Heading color="brand.500" size="md" mb={3}>
+              Comparison with your dream occupations
+            </Heading>
             {(() => {
               const occData = normalizeSuggestionsPayload(occSuggestions);
               if (occData.comparison) {
                 return (
                   <>
-                    <Text><b>Code match:</b> {occData.comparison.code_match_message}</Text>
+                    <Text>
+                      <b>Code match:</b> {occData.comparison.code_match_message}
+                    </Text>
                     <Text>
                       <b>Dream occupations:</b>{" "}
                       {occData.comparison.dreams_provided?.length
@@ -889,16 +1196,24 @@ const SdsResult = () => {
                         : "none provided."}
                     </Text>
                     <Text>
-                      <b>Dreams alignment:</b> {occData.comparison.dreams_hit}/{occData.comparison.total_dreams} matched
+                      <b>Dreams alignment:</b> {occData.comparison.dreams_hit}/
+                      {occData.comparison.total_dreams} matched
                       {occData.comparison.dreams_matched?.length
-                        ? ` (matched: ${occData.comparison.dreams_matched.join(", ")})`
+                        ? ` (matched: ${occData.comparison.dreams_matched.join(
+                            ", "
+                          )})`
                         : ""}
                       .
                     </Text>
-                    <Text><b>Self-knowledge:</b> {occData.comparison.verdict}</Text>
+                    <Text>
+                      <b>Self-knowledge:</b> {occData.comparison.verdict}
+                    </Text>
                   </>
                 );
-              } else if (occSuggestions?.response && occData.legacyComparisonLines?.length > 0) {
+              } else if (
+                occSuggestions?.response &&
+                occData.legacyComparisonLines?.length > 0
+              ) {
                 return (
                   <>
                     {occData.legacyComparisonLines.map((l, i) => (

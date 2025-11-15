@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Flex,
   Box,
@@ -15,22 +15,28 @@ import {
   Text,
   useColorModeValue,
   useToast,
-} from '@chakra-ui/react';
-import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
-import { Link } from 'react-router-dom';
-import { useContext } from 'react';
-import { AuthContext } from './AuthContext';
-import { decodeToken, getUserRole, getUserName, getUserId } from '../utils/tokenUtils';
+} from "@chakra-ui/react";
+import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
+import { Link } from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "./AuthContext";
+import {
+  decodeToken,
+  getUserRole,
+  getUserName,
+  getUserId,
+} from "../utils/tokenUtils";
+import { post } from "../utils/httpServices";
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [passwordHash, setPassword] = useState('');
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [passwordHash, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSignUpSuccessful, setIsSignUpSuccessful] = useState(false);
-  const [emailError, setEmailError] = useState('');
+  const [emailError, setEmailError] = useState("");
   const navigate = useNavigate();
   const toast = useToast();
   const { login } = useContext(AuthContext);
@@ -43,53 +49,40 @@ const Signup = () => {
   const handleEmailChange = (e) => {
     const emailValue = e.target.value;
     setEmail(emailValue);
-    
+
     if (emailValue && !validateEmail(emailValue)) {
-      setEmailError('Email must end with @ua.edu.lb');
+      setEmailError("Email must end with @ua.edu.lb");
     } else {
-      setEmailError('');
+      setEmailError("");
     }
   };
 
   const handleSubmit = async () => {
     // Validate email before submitting
     if (!validateEmail(email)) {
-      setEmailError('Email must end with @ua.edu.lb');
+      setEmailError("Email must end with @ua.edu.lb");
       return;
     }
 
     setLoading(true);
     try {
-      const baseUrl = process.env.REACT_APP_API_BASE_URL ;
-      const response = await fetch(`${baseUrl}/api/users/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          passwordHash,
-        }),
+      await post("/api/users/signup", {
+        firstName,
+        lastName,
+        email,
+        passwordHash,
       });
-  
-      const data = await response.json();
-      
-      if (!response.ok) {
-        console.error('API Error:', data.error);
-        throw new Error(data.error || 'Something went wrong');
-      }
 
       // Don't log in immediately - user needs to verify email first
       // Navigate to OTP verification page
-      navigate('/otp-verification', { 
-        state: { 
+      navigate("/otp-verification", {
+        state: {
           email: email,
-          message: 'Please check your email and enter the verification code to complete your registration.'
-        } 
+          message:
+            "Please check your email and enter the verification code to complete your registration.",
+        },
       });
-      
+
       toast({
         title: "Signup successful!",
         description: "Please check your email for verification code.",
@@ -98,7 +91,7 @@ const Signup = () => {
         isClosable: true,
       });
     } catch (error) {
-      console.error('Error during sign-up:', error);
+      console.error("Error during sign-up:", error);
       toast({
         title: "Signup failed",
         description: error.message,
@@ -113,22 +106,28 @@ const Signup = () => {
 
   return (
     <Flex
-      minH={'100vh'}
-      align={'center'}
-      justify={'center'}
-      bg={useColorModeValue('gray.50', 'gray.800')}
+      minH={"100vh"}
+      align={"center"}
+      justify={"center"}
+      bg={useColorModeValue("gray.50", "gray.800")}
     >
-      <Stack spacing={8} mx={'auto'} maxW={'lg'} py={12} px={6}>
-        <Stack align={'center'}>
-          <Heading color="brand.500" fontSize={'4xl'}>Create your account</Heading>
-          <Text fontSize={'lg'} color={'gray.600'}>
-            to start using <Text as="span" color={'brand.500'}>Franc</Text> ✌️
+      <Stack spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
+        <Stack align={"center"}>
+          <Heading color="brand.500" fontSize={"4xl"}>
+            Create your account
+          </Heading>
+          <Text fontSize={"lg"} color={"gray.600"}>
+            to start using{" "}
+            <Text as="span" color={"brand.500"}>
+              Franc
+            </Text>{" "}
+            ✌️
           </Text>
         </Stack>
         <Box
-          rounded={'lg'}
-          bg={useColorModeValue('white', 'gray.700')}
-          boxShadow={'lg'}
+          rounded={"lg"}
+          bg={useColorModeValue("white", "gray.700")}
+          boxShadow={"lg"}
           p={8}
         >
           <Stack spacing={4}>
@@ -136,21 +135,29 @@ const Signup = () => {
               <Box>
                 <FormControl id="firstName" isRequired>
                   <FormLabel>First Name</FormLabel>
-                  <Input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                  <Input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                  />
                 </FormControl>
               </Box>
               <Box>
                 <FormControl id="lastName" isRequired>
                   <FormLabel>Last Name</FormLabel>
-                  <Input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                  <Input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
                 </FormControl>
               </Box>
             </HStack>
             <FormControl id="email" isRequired isInvalid={!!emailError}>
               <FormLabel>Email address</FormLabel>
-              <Input 
-                type="email" 
-                value={email} 
+              <Input
+                type="email"
+                value={email}
                 onChange={handleEmailChange}
                 placeholder="example@ua.edu.lb"
               />
@@ -164,13 +171,13 @@ const Signup = () => {
               <FormLabel>Password</FormLabel>
               <InputGroup>
                 <Input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   value={passwordHash}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-                <InputRightElement h={'full'}>
+                <InputRightElement h={"full"}>
                   <Button
-                    variant={'ghost'}
+                    variant={"ghost"}
                     onClick={() =>
                       setShowPassword((showPassword) => !showPassword)
                     }
@@ -183,10 +190,10 @@ const Signup = () => {
             <Stack spacing={10} pt={4}>
               <Button
                 size="lg"
-                bg={'brand.500'}
-                color={'white'}
+                bg={"brand.500"}
+                color={"white"}
                 _hover={{
-                  bg: 'blue.500',
+                  bg: "blue.500",
                 }}
                 onClick={handleSubmit}
                 isLoading={loading}
@@ -196,10 +203,10 @@ const Signup = () => {
               </Button>
             </Stack>
             <Stack pt={4}>
-              <Text textAlign={'center'}>
-                Already have an account?{' '}
+              <Text textAlign={"center"}>
+                Already have an account?{" "}
                 <Link to="/login">
-                  <Text as="span" color={'blue.400'} fontWeight="medium">
+                  <Text as="span" color={"blue.400"} fontWeight="medium">
                     Log in
                   </Text>
                 </Link>
