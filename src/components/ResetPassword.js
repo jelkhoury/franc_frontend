@@ -14,6 +14,7 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { post } from '../utils/httpServices';
+import { USER_ENDPOINTS } from '../services/apiService';
 
 const ResetPassword = () => {
   const location = useLocation();
@@ -40,7 +41,7 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      const data = await post('/api/users/reset-password', {
+      const data = await post(USER_ENDPOINTS.RESET_PASSWORD, {
         email,
         verificationCode: otp,
         newPassword,

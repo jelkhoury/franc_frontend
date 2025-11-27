@@ -14,6 +14,7 @@ import { useState, useRef, useMemo } from 'react';
 import { ArrowForwardIcon } from '@chakra-ui/icons';
 import Footer from '../../components/Footer';
 import { post } from '../../utils/httpServices';
+import { AI_ENDPOINTS } from '../../services/apiService';
 
 const ChatBubble = ({ message, isUser }) => (
   <Flex justify={isUser ? 'flex-end' : 'flex-start'} w="100%">
@@ -53,7 +54,7 @@ const Chatting = () => {
     try {
       // ✅ Using httpService now
       const data = await post(
-        "/ask",
+        AI_ENDPOINTS.ASK,
         { question: userMessage.text },
         { base: "ai" } // 👈 tells httpService to use your AI base URL
       );

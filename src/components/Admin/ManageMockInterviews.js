@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { jsPDF } from "jspdf";
 import { get, post, postForm } from "../../utils/httpServices";
+import { BLOB_STORAGE_ENDPOINTS, MOCK_INTERVIEW_ENDPOINTS, USER_ENDPOINTS } from "../../services/apiService";
 import {
   Box,
   Text,
@@ -39,6 +40,9 @@ const ManageMockInterviews = () => {
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isSubmittingEvaluation, setIsSubmittingEvaluation] = useState(false);
+  const [isSubmittingAll, setIsSubmittingAll] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const toast = useToast();
   const videoRef = useRef(null);
   const isMobile = useBreakpointValue({ base: true, md: false });
@@ -58,9 +62,13 @@ const ManageMockInterviews = () => {
   };
 
   const submitAllEvaluations = async () => {
+    if (isSubmittingAll) return;
+    
     try {
+      setIsSubmittingAll(true);
       const token = localStorage.getItem("token");
       if (!token) {
+        setIsSubmittingAll(false);
         toast({
           title: "Authentication Error",
           description: "Please log in again",
@@ -108,7 +116,7 @@ const ManageMockInterviews = () => {
 
       // Submit all evaluations in one request
       const result = await post(
-        "/api/Evaluation/evaluate-multiple",
+        MOCK_INTERVIEW_ENDPOINTS.EVALUATE_MULTIPLE,
         {
           evaluatorId: evaluatorId,
           evaluations: evaluations,
@@ -131,13 +139,19 @@ const ManageMockInterviews = () => {
         duration: 5000,
         isClosable: true,
       });
+    } finally {
+      setIsSubmittingAll(false);
     }
   };
 
   const submitSingleEvaluation = async (answerId, rating, comment) => {
+    if (isSubmittingEvaluation) return;
+    
     try {
+      setIsSubmittingEvaluation(true);
       const token = localStorage.getItem("token");
       if (!token) {
+        setIsSubmittingEvaluation(false);
         toast({
           title: "Authentication Error",
           description: "Please log in again",
@@ -157,7 +171,7 @@ const ManageMockInterviews = () => {
       );
 
       const result = await post(
-        "/api/Evaluation/evaluate",
+        MOCK_INTERVIEW_ENDPOINTS.EVALUATE,
         {
           answerId: answerId,
           evaluatorId: evaluatorId,
@@ -186,13 +200,19 @@ const ManageMockInterviews = () => {
         duration: 5000,
         isClosable: true,
       });
+    } finally {
+      setIsSubmittingEvaluation(false);
     }
   };
 
   const generateEvaluationReport = async () => {
+    if (isGeneratingReport) return;
+    
     try {
+      setIsGeneratingReport(true);
       const token = localStorage.getItem("token");
       if (!token) {
+        setIsGeneratingReport(false);
         toast({
           title: "Authentication Error",
           description: "Please log in again",
@@ -210,7 +230,7 @@ const ManageMockInterviews = () => {
       );
 
       const report = await post(
-        "/api/Evaluation/report",
+        MOCK_INTERVIEW_ENDPOINTS.CREATE_REPORT,
         {
           userId: userId,
           answerIds: answerIds,
@@ -238,6 +258,8 @@ const ManageMockInterviews = () => {
         duration: 5000,
         isClosable: true,
       });
+    } finally {
+      setIsGeneratingReport(false);
     }
   };
 
@@ -385,7 +407,7 @@ const ManageMockInterviews = () => {
       formData.append("userId", userId);
       formData.append("pdfFile", pdfFile);
 
-      const result = await postForm("/api/users/send-pdf", formData, { token });
+      const result = await postForm(USER_ENDPOINTS.SEND_PDF, formData, { token });
       toast({
         title: "PDF Sent",
         description: result.message,
@@ -429,7 +451,7 @@ const ManageMockInterviews = () => {
     const fetchInterviews = async () => {
       try {
         setLoading(true);
-        const data = await get("/api/BlobStorage/all-grouped");
+        const data = await get(BLOB_STORAGE_ENDPOINTS.GET_ALL_GROUPED);
         setInterviews(data);
       } catch (err) {
         console.error("Error fetching interviews:", err);
@@ -624,6 +646,8 @@ const ManageMockInterviews = () => {
               colorScheme="green"
               onClick={generateEvaluationReport}
               flex={{ base: "1", md: "0 1 auto" }}
+              isLoading={isGeneratingReport}
+              loadingText="Generating..."
             >
               Generate Report
             </Button>
@@ -742,6 +766,8 @@ const ManageMockInterviews = () => {
                     });
                   }
                 }}
+                isLoading={isSubmittingEvaluation}
+                loadingText="Submitting..."
               >
                 Submit Evaluation
               </Button>
@@ -765,6 +791,8 @@ const ManageMockInterviews = () => {
                 colorScheme="green"
                 onClick={onNext}
                 flex={{ base: "1", md: "0 1 auto" }}
+                isLoading={isSubmittingAll && currentQuestionIndex === selectedInterview.answers.length - 1}
+                loadingText="Saving..."
               >
                 {currentQuestionIndex === selectedInterview.answers.length - 1
                   ? "Summary →"

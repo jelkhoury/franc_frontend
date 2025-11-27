@@ -37,10 +37,11 @@ import QuestionField from "../../components/QuestionField";
 import { AuthContext } from "../../components/AuthContext";
 import { getStoredUserId } from "../../utils/tokenUtils";
 import { get, post } from "../../utils/httpServices";
+import { SDS_ENDPOINTS } from "../../services/apiService";
 
 /**
  * SDS Try page
- * Fetches SDS sections + questions from /api/Sds/sections and renders them.
+ * Fetches SDS sections + questions from /api/sds/get-sections and renders them.
  * - Supports single choice (type=1) and multi choice (type=2)
  * - Captures answers in local state { [questionId]: value | value[] }
  * - Provides a Submit button (console.logs payload) – wire to your API as needed
@@ -243,7 +244,7 @@ const SdsTry = () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await get("/api/Sds/sections");
+        const data = await get(SDS_ENDPOINTS.GET_SECTIONS);
         setSections(Array.isArray(data) ? data : []);
       } catch (e) {
         setError(e.message || "Failed to load");
@@ -433,7 +434,7 @@ const SdsTry = () => {
       // Handle both string and JSON responses
       let data;
       try {
-        data = await post("/api/Sds/responses", payload);
+        data = await post(SDS_ENDPOINTS.SUBMIT_RESPONSES, payload);
       } catch (err) {
         // If it's an HttpError with details, try to parse it
         if (err.details && typeof err.details === "string") {
@@ -455,10 +456,17 @@ const SdsTry = () => {
       // - "RIA"
       // - { hollandCode: "RIA" }
       // - { message, hollandCode: { hollandCode: "RIA", responses: [...] } }
+      // - { message, result: { hollandCode: "RIA", responses: [...] } }
       if (typeof data === "string") {
         code = data;
       } else if (data && typeof data === "object") {
-        if (typeof data.hollandCode === "string") {
+        // Check for result.hollandCode first (new API structure)
+        if (data.result && typeof data.result.hollandCode === "string") {
+          code = data.result.hollandCode;
+          normalizedResponses = Array.isArray(data.result.responses)
+            ? data.result.responses
+            : [];
+        } else if (typeof data.hollandCode === "string") {
           code = data.hollandCode;
         } else if (data.hollandCode && typeof data.hollandCode === "object") {
           code = data.hollandCode.hollandCode ?? null;
@@ -472,16 +480,37 @@ const SdsTry = () => {
       if (typeof code !== "string") code = "";
       if (!Array.isArray(normalizedResponses)) normalizedResponses = [];
 
+      // Extract dream occupations (questionId 362) and user Holland code (questionId 363) from API response
+      let dreamOccupations = "";
+      let userHollandCode = "";
+      
+      if (data.result && Array.isArray(data.result.responses)) {
+        const dreamOccResponse = data.result.responses.find(r => r.questionId === 362);
+        const userCodeResponse = data.result.responses.find(r => r.questionId === 363);
+        
+        dreamOccupations = dreamOccResponse?.customAnswer || "";
+        userHollandCode = userCodeResponse?.customAnswer || "";
+      } else if (Array.isArray(normalizedResponses)) {
+        // Fallback: try to find from normalized responses
+        const dreamOccResponse = normalizedResponses.find(r => r.questionId === 362);
+        const userCodeResponse = normalizedResponses.find(r => r.questionId === 363);
+        
+        dreamOccupations = dreamOccResponse?.customAnswer || "";
+        userHollandCode = userCodeResponse?.customAnswer || "";
+      }
+
       // ---- Navigate with normalized shape ----
       navigate("/self-directed-search/result", {
         state: {
           userId: Number(userId),
-          hollandCode: code, // always a string
+          hollandCode: code, // always a string (calculated Holland code from API)
           responses: normalizedResponses, // array (for Q265/Q266 if present)
           allResponses: originalResponses, // Pass all original responses including faculty
           serverResponse: data, // raw for debugging
           answeredCount: Object.keys(answers).length,
           submittedAt: new Date().toISOString(),
+          dreamOccupations: dreamOccupations, // extracted from questionId 362
+          userHollandCode: userHollandCode, // extracted from questionId 363
         },
       });
 

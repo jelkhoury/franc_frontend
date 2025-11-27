@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 
 import { post } from '../utils/httpServices';
+import { USER_ENDPOINTS } from '../services/apiService';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -41,7 +42,7 @@ const ForgotPassword = () => {
 
     setLoading(true);
     try {
-      const data = await post(`/api/users/forgot-password?email=${encodeURIComponent(email)}`);
+      const data = await post(`${USER_ENDPOINTS.FORGOT_PASSWORD}?email=${encodeURIComponent(email)}`);
 
       toast({
         title: 'Code Sent',

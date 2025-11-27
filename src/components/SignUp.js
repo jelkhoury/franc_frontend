@@ -27,6 +27,7 @@ import {
   getUserId,
 } from "../utils/tokenUtils";
 import { post } from "../utils/httpServices";
+import { USER_ENDPOINTS } from "../services/apiService";
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -66,7 +67,7 @@ const Signup = () => {
 
     setLoading(true);
     try {
-      await post("/api/users/signup", {
+      await post(USER_ENDPOINTS.SIGNUP, {
         firstName,
         lastName,
         email,

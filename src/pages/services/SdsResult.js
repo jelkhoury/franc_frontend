@@ -35,7 +35,8 @@ import {
 } from "@chakra-ui/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { CheckCircle, ChevronRight, Search } from "lucide-react";
-import { get } from "../../utils/httpServices";
+import { get, post } from "../../utils/httpServices";
+import { SDS_ENDPOINTS, AI_ENDPOINTS } from "../../services/apiService";
 
 /* --- Expandable card --- */
 const ExpandableRoleCard = ({
@@ -838,8 +839,28 @@ const SdsResult = () => {
       ? state.hollandCode.hollandCode ?? ""
       : "";
 
-  const dreamOccupations = state?.responses?.[0]?.customAnswer || "";
-  const userCode = state?.responses?.[1]?.customAnswer || "";
+  // Extract dream occupations and user Holland code from state or responses
+  const dreamOccupations = useMemo(() => {
+    // First try to get from state (passed from SdsTry)
+    if (state?.dreamOccupations) {
+      return state.dreamOccupations;
+    }
+    // Fallback: extract from responses by questionId 362
+    const responsesToSearch = state?.allResponses || state?.responses || [];
+    const dreamOccResponse = responsesToSearch.find(r => r.questionId === 362);
+    return dreamOccResponse?.customAnswer || "";
+  }, [state?.dreamOccupations, state?.allResponses, state?.responses]);
+
+  const userCode = useMemo(() => {
+    // First try to get from state (passed from SdsTry)
+    if (state?.userHollandCode) {
+      return state.userHollandCode;
+    }
+    // Fallback: extract from responses by questionId 363
+    const responsesToSearch = state?.allResponses || state?.responses || [];
+    const userCodeResponse = responsesToSearch.find(r => r.questionId === 363);
+    return userCodeResponse?.customAnswer || "";
+  }, [state?.userHollandCode, state?.allResponses, state?.responses]);
 
   // Extract faculty value from responses
   const faculty = useMemo(() => {
@@ -900,7 +921,7 @@ const SdsResult = () => {
     };
     // Fetch Holland points from backend
     const hollandPoints = get(
-      `/api/Sds/responses/${state.userId}/holland-points`
+      SDS_ENDPOINTS.GET_HOLLAND_POINTS(state.userId)
     )
       .then((response) => {
         if (response.message && response.data) {
@@ -914,11 +935,30 @@ const SdsResult = () => {
         setHollandPointsError("Could not load Holland points.");
       });
 
-    const occ = get("/suggest-by-code", { params: paramsOcc, base: "ai" })
-      .then(setOccSuggestions)
+    const occ = get(AI_ENDPOINTS.SUGGEST_BY_CODE, { params: paramsOcc, base: "ai" })
+      .then((suggestions) => {
+        setOccSuggestions(suggestions);
+        
+        // Save AI feedback (only work/occupation suggestions, not education)
+        if (suggestions && suggestions.response && state?.userId) {
+          const aiFeedback = suggestions.response;
+          // Save AI feedback asynchronously (don't block UI)
+          post(SDS_ENDPOINTS.SAVE_AI_FEEDBACK, {
+            userId: state.userId,
+            aiFeedback: aiFeedback,
+          })
+            .then(() => {
+              console.log("AI feedback saved successfully");
+            })
+            .catch((error) => {
+              console.error("Error saving AI feedback:", error);
+              // Don't show error to user, just log it
+            });
+        }
+      })
       .catch(() => setOccError("Could not load occupation suggestions."));
 
-    const edu = get("/suggest-by-code", { params: paramsEdu, base: "ai" })
+    const edu = get(AI_ENDPOINTS.SUGGEST_BY_CODE, { params: paramsEdu, base: "ai" })
       .then(setEduSuggestions)
       .catch(() => setEduError("Could not load education suggestions."));
 

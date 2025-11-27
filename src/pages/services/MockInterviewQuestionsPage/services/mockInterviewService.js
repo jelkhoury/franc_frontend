@@ -1,5 +1,6 @@
 import { get, post, postForm } from "../../../../utils/httpServices";
 import { getStoredToken, decodeToken } from "../../../../utils/tokenUtils";
+import { MOCK_INTERVIEW_ENDPOINTS, BLOB_STORAGE_ENDPOINTS } from "../../../../services/apiService";
 
 /**
  * Check if user can do a mock interview
@@ -23,7 +24,7 @@ export const checkMockInterviewStatus = async (
         "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
       ]
     );
-    const data = await get(`/api/Evaluation/can-do-mock/${userId}`, {
+    const data = await get(MOCK_INTERVIEW_ENDPOINTS.CAN_DO_MOCK(userId), {
       token,
     });
     setCanDoMock(data.canDoMock);
@@ -76,7 +77,7 @@ export const fetchQuestions = async (
 ) => {
   try {
     setLoading(true);
-    const data = await get("/api/BlobStorage/random-questions", {
+    const data = await get(BLOB_STORAGE_ENDPOINTS.GET_RANDOM_QUESTIONS, {
       params: { majorName: major, count: 5 },
     });
     if (!Array.isArray(data) || data.length === 0) {
@@ -153,7 +154,7 @@ export const increaseAttemptCount = async () => {
       ]
     );
 
-    await post(`/api/Evaluation/increase-attempt/${userId}`, {});
+    await post(MOCK_INTERVIEW_ENDPOINTS.INCREASE_ATTEMPT(userId), {});
   } catch (err) {
     // Don't block interview start if this fails
     console.error("Error incrementing attempt count:", err);
@@ -239,7 +240,7 @@ export const handleSubmitVideos = async (
     });
 
     const result = await postForm(
-      "/api/BlobStorage/upload-mock-interview",
+      BLOB_STORAGE_ENDPOINTS.UPLOAD_MOCK_INTERVIEW,
       formData,
       { token }
     );

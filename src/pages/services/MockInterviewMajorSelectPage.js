@@ -19,6 +19,7 @@ import Footer from "../../components/Footer";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../components/AuthContext";
 import { get } from "../../utils/httpServices";
+import { BLOB_STORAGE_ENDPOINTS } from "../../services/apiService";
 
 // Dummy faculties
 const dummyFaculties = [
@@ -183,7 +184,7 @@ const MockInterviewMajorSelectPage = () => {
         try {
           // Try to fetch faculties
           try {
-            facultiesData = await get("/api/BlobStorage/get-faculties");
+            facultiesData = await get(BLOB_STORAGE_ENDPOINTS.GET_FACULTIES);
             if (facultiesData && facultiesData.length > 0) {
               apiSuccess = true;
             }
@@ -193,7 +194,7 @@ const MockInterviewMajorSelectPage = () => {
 
           // Try to fetch majors
           try {
-            majorsData = await get("/api/BlobStorage/get-majors");
+            majorsData = await get(BLOB_STORAGE_ENDPOINTS.GET_MAJORS);
             if (majorsData && majorsData.length > 0) {
               apiSuccess = true;
             }

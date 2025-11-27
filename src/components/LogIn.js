@@ -20,6 +20,7 @@ import { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../components/AuthContext';
 import { decodeToken, getUserRole, getUserName, getUserId } from '../utils/tokenUtils';
+import { USER_ENDPOINTS } from '../services/apiService';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -36,7 +37,7 @@ const handleSubmit = async (e) => {
 
   try {
     // ---- login request ----
-    const data = await post("/api/users/sign-in", { email, password });
+    const data = await post(USER_ENDPOINTS.SIGN_IN, { email, password });
 
     // ---- store and decode token ----
     const { token } = data;

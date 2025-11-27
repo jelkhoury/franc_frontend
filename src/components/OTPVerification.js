@@ -18,6 +18,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../components/AuthContext";
 import { decodeToken, getUserRole, getUserName, getUserId } from "../utils/tokenUtils";
 import { post } from "../utils/httpServices";
+import { USER_ENDPOINTS } from "../services/apiService";
 
 const OTPVerification = () => {
   const location = useLocation();
@@ -51,7 +52,7 @@ const OTPVerification = () => {
 
     try {
       const data = await post(
-        `/api/users/verify-code?email=${encodeURIComponent(email)}&code=${otp}`
+        `${USER_ENDPOINTS.VERIFY_CODE}?email=${encodeURIComponent(email)}&code=${otp}`
       );
 
       // Store token in localStorage after successful verification
