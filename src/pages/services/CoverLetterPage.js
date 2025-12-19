@@ -1,4 +1,4 @@
-import { Box, Heading, Text, Image, Button, Flex, Icon, VStack, HStack, Circle, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter } from '@chakra-ui/react';
+import { Box, Heading, Text, Image, Button, Flex, Icon, VStack, HStack, Circle, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Alert, AlertIcon } from '@chakra-ui/react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   CheckCircleIcon,
@@ -11,9 +11,11 @@ import {
   ArrowUpIcon,
 } from '@chakra-ui/icons';
 import Footer from '../../components/Footer';
-import { useContext } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { AuthContext } from "../../components/AuthContext"; // Assuming you have the AuthContext in this path
 import { FaBolt } from "react-icons/fa";
+import { checkUserActionPermission } from '../../utils/userActionUtils';
+import { USER_ACTION_TYPES } from '../../services/apiService';
 
 
 const PlainStep = ({ icon, title, desc, gif }) => (
@@ -55,13 +57,33 @@ const CoverLetterPage = () => {
   const { isLoggedIn } = useContext(AuthContext);  // Get the login state from context
   const { isOpen, onOpen, onClose } = useDisclosure();  // For handling the modal
   const navigate = useNavigate();
+  const [canPerformAction, setCanPerformAction] = useState(true);
+  const [checkingPermission, setCheckingPermission] = useState(false);
+
+  // Check permission when component mounts and user is logged in
+  useEffect(() => {
+    if (isLoggedIn) {
+      checkUserActionPermission(
+        USER_ACTION_TYPES.COVER_LETTER,
+        setCheckingPermission,
+        setCanPerformAction,
+        null // Don't show toast on initial check
+      );
+    }
+  }, [isLoggedIn]);
 
   const handleTryNowClick = () => {
     if (!isLoggedIn) {
       onOpen();  // Open the modal if not logged in
-    } else {
-      navigate("/cover-letter-evaluation/try");  // Redirect to the cover letter evaluation page if logged in
+      return;
     }
+
+    if (!canPerformAction) {
+      onOpen(); // Show modal with restriction message
+      return;
+    }
+
+    navigate("/cover-letter-evaluation/try");  // Redirect to the cover letter evaluation page if logged in
   };
 
   const handleLoginClick = () => {
@@ -128,13 +150,41 @@ const CoverLetterPage = () => {
             </VStack>
           </HStack>
 
-          <Button
-            onClick={handleTryNowClick}  // Use this to handle click event
-            colorScheme="brand"
-            size="md"
-          >
-            Try It Now
-          </Button>
+          {checkingPermission ? (
+            <Button
+              colorScheme="brand"
+              size="md"
+              isDisabled
+              isLoading
+            >
+              Checking Permission...
+            </Button>
+          ) : !canPerformAction && isLoggedIn ? (
+            <VStack spacing={3} align="stretch">
+              <Alert status="warning">
+                <AlertIcon />
+                <Text fontSize="sm">
+                  You cannot evaluate a cover letter right now. Please try again later.
+                </Text>
+              </Alert>
+              <Button
+                onClick={handleTryNowClick}
+                colorScheme="brand"
+                size="md"
+                isDisabled
+              >
+                Try It Now
+              </Button>
+            </VStack>
+          ) : (
+            <Button
+              onClick={handleTryNowClick}
+              colorScheme="brand"
+              size="md"
+            >
+              Try It Now
+            </Button>
+          )}
         </Box>
       </Flex>
 
@@ -237,19 +287,39 @@ const CoverLetterPage = () => {
       </Box> */}
 
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
-  <ModalOverlay />
-  <ModalContent>
-    <ModalHeader>Login Required</ModalHeader>
-    <ModalCloseButton />
-    <ModalBody>
-      <Text>Please login to benefit from the service.</Text>
-    </ModalBody>
-    <ModalFooter>
-      <Button colorScheme="blue" onClick={handleLoginClick}>Go to Login</Button>
-      <Button variant="ghost" onClick={onClose}>Cancel</Button>
-    </ModalFooter>
-  </ModalContent>
-</Modal>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            {!isLoggedIn ? 'Login Required' : 'Cannot Evaluate Cover Letter'}
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {!isLoggedIn ? (
+              <Text>Please login to benefit from the service.</Text>
+            ) : (
+              <>
+                <Alert status="warning" mb={4}>
+                  <AlertIcon />
+                  <Text fontWeight="bold">Action Restricted</Text>
+                </Alert>
+                <Text>
+                  You cannot evaluate a cover letter right now. Please try again later.
+                </Text>
+              </>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            {!isLoggedIn ? (
+              <>
+                <Button colorScheme="blue" onClick={handleLoginClick}>Go to Login</Button>
+                <Button variant="ghost" onClick={onClose}>Cancel</Button>
+              </>
+            ) : (
+              <Button variant="ghost" onClick={onClose}>Close</Button>
+            )}
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
 
       <Footer />

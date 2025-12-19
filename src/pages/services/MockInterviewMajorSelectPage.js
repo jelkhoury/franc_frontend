@@ -13,6 +13,8 @@ import {
   InputGroup,
   Select,
   Spinner,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
 import { useState, useEffect, useContext } from "react";
 import Footer from "../../components/Footer";
@@ -282,6 +284,7 @@ const MockInterviewMajorSelectPage = () => {
       });
       return;
     }
+
     navigate("/mock-interview/questions", {
       state: { major: selectedMajor.name || selectedMajor.title },
     });

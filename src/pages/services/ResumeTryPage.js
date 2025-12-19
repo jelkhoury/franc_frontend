@@ -19,6 +19,8 @@ import { AttachmentIcon, CheckIcon } from "@chakra-ui/icons";
 import { useRef, useState } from "react";
 import Footer from "../../components/Footer";
 import { postForm } from "../../utils/httpServices";
+import { BLOB_STORAGE_ENDPOINTS } from "../../services/apiService";
+import { getStoredToken, decodeToken } from "../../utils/tokenUtils";
 
 const FrancResumeUpload = () => {
   const inputRef = useRef(null);
@@ -65,11 +67,53 @@ const FrancResumeUpload = () => {
     setLoading(true);
     setProgress(75);
 
+    // Step 1: Get AI evaluation
     const formData = new FormData();
     formData.append("file", file);
     try {
       const data = await postForm("/evaluate_cv", formData, { base: "ai" });
-      setEvaluationResult(data.evaluation_result);
+      const aiEvaluation = data.evaluation_result;
+      setEvaluationResult(aiEvaluation);
+
+      // Step 2: Upload file and save evaluation to backend
+      try {
+        const token = getStoredToken();
+        if (!token) {
+          throw new Error("User not authenticated");
+        }
+
+        const decoded = decodeToken(token);
+        if (!decoded) {
+          throw new Error("Invalid token");
+        }
+
+        const userId = parseInt(
+          decoded[
+            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+          ]
+        );
+
+        if (!userId || isNaN(userId)) {
+          throw new Error("Invalid user ID");
+        }
+
+        // Prepare upload form data
+        const uploadFormData = new FormData();
+        uploadFormData.append("UserId", userId.toString());
+        uploadFormData.append("Title", "Resume");
+        uploadFormData.append("ResumeFile", file);
+        uploadFormData.append("FolderName", `resume${userId}`);
+        uploadFormData.append("AiEvaluation", aiEvaluation);
+
+        // Upload to backend (silently, don't notify user)
+        await postForm(BLOB_STORAGE_ENDPOINTS.UPLOAD_FILE, uploadFormData, {
+          token,
+        });
+      } catch (uploadError) {
+        // Silently fail - don't notify user about upload issues
+        console.error("Error uploading file:", uploadError);
+      }
+
       setStep(2);
       setProgress(100);
     } catch (error) {

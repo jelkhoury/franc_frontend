@@ -1,4 +1,4 @@
-import { Box, Heading, Text, Image, Button, Flex, Icon, VStack, HStack, Circle, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter } from '@chakra-ui/react';
+import { Box, Heading, Text, Image, Button, Flex, Icon, VStack, HStack, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Alert, AlertIcon } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import {
   CheckCircleIcon,
@@ -6,20 +6,42 @@ import {
   TimeIcon,
 } from '@chakra-ui/icons';
 import Footer from '../../components/Footer';
-import { useContext } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../components/AuthContext';
+import { checkUserActionPermission } from '../../utils/userActionUtils';
+import { USER_ACTION_TYPES } from '../../services/apiService';
 
 const MockInterviewPage = () => {
   const { isLoggedIn } = useContext(AuthContext);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
+  const [canPerformAction, setCanPerformAction] = useState(true);
+  const [checkingPermission, setCheckingPermission] = useState(false);
+
+  // Check permission when component mounts and user is logged in
+  useEffect(() => {
+    if (isLoggedIn) {
+      checkUserActionPermission(
+        USER_ACTION_TYPES.MOCK_INTERVIEW,
+        setCheckingPermission,
+        setCanPerformAction,
+        null // Don't show toast on initial check
+      );
+    }
+  }, [isLoggedIn]);
 
   const handleTryNowClick = () => {
-    if (isLoggedIn) {
-      navigate("/mock-interview/select-major");
-    } else {
+    if (!isLoggedIn) {
       onOpen();
+      return;
     }
+
+    if (!canPerformAction) {
+      onOpen(); // Show modal with restriction message
+      return;
+    }
+
+    navigate("/mock-interview/select-major");
   };
 
   const handleLoginClick = () => {
@@ -86,15 +108,45 @@ const MockInterviewPage = () => {
             </VStack>
           </HStack>
 
-          <VStack spacing={3} align="stretch">
-            <Button
-              onClick={handleTryNowClick}
-              colorScheme="brand"
-              size="md"
-            >
-              Try Mock Interview
-            </Button>
-          </VStack>
+          {checkingPermission ? (
+            <VStack spacing={3} align="stretch">
+              <Button
+                colorScheme="brand"
+                size="md"
+                isDisabled
+                isLoading
+              >
+                Checking Permission...
+              </Button>
+            </VStack>
+          ) : !canPerformAction && isLoggedIn ? (
+            <VStack spacing={3} align="stretch">
+              <Alert status="warning">
+                <AlertIcon />
+                <Text fontSize="sm">
+                  You cannot start another interview right now. Please try again later.
+                </Text>
+              </Alert>
+              <Button
+                onClick={handleTryNowClick}
+                colorScheme="brand"
+                size="md"
+                isDisabled
+              >
+                Try Mock Interview
+              </Button>
+            </VStack>
+          ) : (
+            <VStack spacing={3} align="stretch">
+              <Button
+                onClick={handleTryNowClick}
+                colorScheme="brand"
+                size="md"
+              >
+                Try Mock Interview
+              </Button>
+            </VStack>
+          )}
         </Box>
       </Flex>
 
@@ -121,8 +173,10 @@ const MockInterviewPage = () => {
             bg="white"
             color="brand.500"
             _hover={{ bg: "gray.100" }}
+            isDisabled={checkingPermission || (isLoggedIn && !canPerformAction)}
+            isLoading={checkingPermission}
           >
-            Try Mock Interview
+            {checkingPermission ? "Checking..." : "Try Mock Interview"}
           </Button>
         </HStack>
       </Box>
@@ -130,18 +184,40 @@ const MockInterviewPage = () => {
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Login Required</ModalHeader>
+          <ModalHeader>
+            {!isLoggedIn ? 'Login Required' : 'Cannot Start Interview'}
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Text>Please log in to start the mock interview.</Text>
+            {!isLoggedIn ? (
+              <Text>Please log in to start the mock interview.</Text>
+            ) : (
+              <>
+                <Alert status="warning" mb={4}>
+                  <AlertIcon />
+                  <Text fontWeight="bold">Action Restricted</Text>
+                </Alert>
+                <Text>
+                  You cannot do another interview right now. Please try again later.
+                </Text>
+              </>
+            )}
           </ModalBody>
           <ModalFooter>
-            <Button colorScheme="blue" onClick={handleLoginClick}>
-              Go to Login
-            </Button>
-            <Button variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
+            {!isLoggedIn ? (
+              <>
+                <Button colorScheme="blue" onClick={handleLoginClick}>
+                  Go to Login
+                </Button>
+                <Button variant="ghost" onClick={onClose}>
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <Button variant="ghost" onClick={onClose}>
+                Close
+              </Button>
+            )}
           </ModalFooter>
         </ModalContent>
       </Modal>
