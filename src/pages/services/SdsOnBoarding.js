@@ -30,6 +30,7 @@ import {
 } from "@chakra-ui/react";
 import { TimeIcon, InfoIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
+import { get } from "../../utils/httpServices";
 
 /**
  * SDS Onboarding
@@ -42,7 +43,12 @@ import { useNavigate } from "react-router-dom";
  * - searchQuery: fallback text to search for if no playlistId provided
  * - maxResults: how many videos to fetch (default 6)
  */
-const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxResults = 6, embedSrcs = [] }) => {
+const SdsOnBoarding = ({
+  playlistId,
+  searchQuery = "RIASEC Holland Code",
+  maxResults = 6,
+  embedSrcs = [],
+}) => {
   const [activeIndex, setActiveIndex] = useState(-1);
   const [videos, setVideos] = useState([]);
   const [selectedVideoId, setSelectedVideoId] = useState(null);
@@ -85,13 +91,20 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
   // Fetch videos only when the first item is opened the first time
   useEffect(() => {
     // If explicit embed sources are provided, use them and skip API
-    if (activeIndex === 0 && videos.length === 0 && Array.isArray(embedSrcs) && embedSrcs.length > 0) {
+    if (
+      activeIndex === 0 &&
+      videos.length === 0 &&
+      Array.isArray(embedSrcs) &&
+      embedSrcs.length > 0
+    ) {
       const items = embedSrcs.map((src) => {
         const id = getYouTubeId(src);
         return {
           id,
           title: "",
-          thumb: id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : undefined,
+          thumb: id
+            ? `https://img.youtube.com/vi/${id}/mqdefault.jpg`
+            : undefined,
           channelTitle: "YouTube",
           embedSrc: src,
         };
@@ -115,21 +128,30 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
           const q = encodeURIComponent(searchQuery);
           url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=${maxResults}&q=${q}&key=${apiKey}`;
         }
+        // YouTube API is external, so use fetch directly
         const res = await fetch(url);
         const data = await res.json();
 
-        const items = (data.items || []).map((it) => {
-          const sn = it.snippet || {};
-          const videoId = it.contentDetails?.videoId || it.id?.videoId || it.resourceId?.videoId || sn?.resourceId?.videoId;
-          const embedSrc = videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-          return {
-            id: videoId,
-            title: sn.title,
-            thumb: sn.thumbnails?.medium?.url || sn.thumbnails?.default?.url,
-            channelTitle: sn.channelTitle,
-            embedSrc,
-          };
-        }).filter(v => !!v.id);
+        const items = (data.items || [])
+          .map((it) => {
+            const sn = it.snippet || {};
+            const videoId =
+              it.contentDetails?.videoId ||
+              it.id?.videoId ||
+              it.resourceId?.videoId ||
+              sn?.resourceId?.videoId;
+            const embedSrc = videoId
+              ? `https://www.youtube.com/embed/${videoId}`
+              : null;
+            return {
+              id: videoId,
+              title: sn.title,
+              thumb: sn.thumbnails?.medium?.url || sn.thumbnails?.default?.url,
+              channelTitle: sn.channelTitle,
+              embedSrc,
+            };
+          })
+          .filter((v) => !!v.id);
 
         setVideos(items);
         if (items.length > 0) {
@@ -142,7 +164,15 @@ const SdsOnBoarding = ({ playlistId, searchQuery = "RIASEC Holland Code", maxRes
     };
 
     fetchVideos();
-  }, [activeIndex, videos.length, apiKey, playlistId, searchQuery, maxResults, embedSrcs]);
+  }, [
+    activeIndex,
+    videos.length,
+    apiKey,
+    playlistId,
+    searchQuery,
+    maxResults,
+    embedSrcs,
+  ]);
 
   return (
     <Box minH="100vh" bgGradient="linear(to-r, white, #ebf8ff)">

@@ -1,4 +1,4 @@
-import { Box, Heading, Text, Image, Button, Flex, Icon, VStack, HStack, Circle, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter } from '@chakra-ui/react';
+import { Box, Heading, Text, Image, Button, Flex, Icon, VStack, HStack, Circle, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Alert, AlertIcon } from '@chakra-ui/react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   CheckCircleIcon,
@@ -10,20 +10,42 @@ import {
   ArrowUpIcon,
 } from '@chakra-ui/icons';
 import Footer from '../../components/Footer';
-import { useContext } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { AuthContext } from "../../components/AuthContext";
+import { checkUserActionPermission } from '../../utils/userActionUtils';
+import { USER_ACTION_TYPES } from '../../services/apiService';
 
 const SdsPage = () => {
   const { isLoggedIn } = useContext(AuthContext);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
+  const [canPerformAction, setCanPerformAction] = useState(true);
+  const [checkingPermission, setCheckingPermission] = useState(false);
+
+  // Check permission when component mounts and user is logged in
+  useEffect(() => {
+    if (isLoggedIn) {
+      checkUserActionPermission(
+        USER_ACTION_TYPES.SDS,
+        setCheckingPermission,
+        setCanPerformAction,
+        null // Don't show toast on initial check
+      );
+    }
+  }, [isLoggedIn]);
 
   const handleTryNowClick = () => {
-    if (isLoggedIn) {
-      navigate("/self-directed-search/brief");
-    } else {
+    if (!isLoggedIn) {
       onOpen();
+      return;
     }
+
+    if (!canPerformAction) {
+      onOpen(); // Show modal with restriction message
+      return;
+    }
+
+    navigate("/self-directed-search/brief");
   };
 
   const handleLoginClick = () => {
@@ -92,9 +114,27 @@ const SdsPage = () => {
             </VStack>
           </HStack>
 
-          <Button onClick={handleTryNowClick} colorScheme="brand" size="md">
-            Start Test
-          </Button>
+          {checkingPermission ? (
+            <Button colorScheme="brand" size="md" isDisabled isLoading>
+              Checking Permission...
+            </Button>
+          ) : !canPerformAction && isLoggedIn ? (
+            <VStack spacing={3} align="stretch">
+              <Alert status="warning">
+                <AlertIcon />
+                <Text fontSize="sm">
+                  You cannot start the SDS test right now. Please try again later.
+                </Text>
+              </Alert>
+              <Button onClick={handleTryNowClick} colorScheme="brand" size="md" isDisabled>
+                Start Test
+              </Button>
+            </VStack>
+          ) : (
+            <Button onClick={handleTryNowClick} colorScheme="brand" size="md">
+              Start Test
+            </Button>
+          )}
         </Box>
       </Flex>
 
@@ -197,26 +237,50 @@ const SdsPage = () => {
           bg="white"
           color="brand.500"
           _hover={{ bg: "gray.100" }}
+          isDisabled={checkingPermission || (isLoggedIn && !canPerformAction)}
+          isLoading={checkingPermission}
         >
-          Start Test
+          {checkingPermission ? "Checking..." : "Start Test"}
         </Button>
       </Box>
 
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Login Required</ModalHeader>
+          <ModalHeader>
+            {!isLoggedIn ? 'Login Required' : 'Cannot Start SDS Test'}
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Text>Please log in to take the test.</Text>
+            {!isLoggedIn ? (
+              <Text>Please log in to take the test.</Text>
+            ) : (
+              <>
+                <Alert status="warning" mb={4}>
+                  <AlertIcon />
+                  <Text fontWeight="bold">Action Restricted</Text>
+                </Alert>
+                <Text>
+                  You cannot start the SDS test right now. Please try again later.
+                </Text>
+              </>
+            )}
           </ModalBody>
           <ModalFooter>
-            <Button colorScheme="blue" onClick={handleLoginClick}>
-              Go to Login
-            </Button>
-            <Button variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
+            {!isLoggedIn ? (
+              <>
+                <Button colorScheme="blue" onClick={handleLoginClick}>
+                  Go to Login
+                </Button>
+                <Button variant="ghost" onClick={onClose}>
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <Button variant="ghost" onClick={onClose}>
+                Close
+              </Button>
+            )}
           </ModalFooter>
         </ModalContent>
       </Modal>

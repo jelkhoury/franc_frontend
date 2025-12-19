@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Box,
@@ -14,10 +14,13 @@ import {
   useToast,
   Image,
   Spinner,
-} from '@chakra-ui/react';
-import { AttachmentIcon, CheckIcon } from '@chakra-ui/icons';
-import { useRef, useState } from 'react';
-import Footer from '../../components/Footer';
+} from "@chakra-ui/react";
+import { AttachmentIcon, CheckIcon } from "@chakra-ui/icons";
+import { useRef, useState } from "react";
+import Footer from "../../components/Footer";
+import { postForm } from "../../utils/httpServices";
+import { BLOB_STORAGE_ENDPOINTS } from "../../services/apiService";
+import { getStoredToken, decodeToken } from "../../utils/tokenUtils";
 
 const FrancResumeUpload = () => {
   const inputRef = useRef(null);
@@ -30,12 +33,15 @@ const FrancResumeUpload = () => {
 
   const handleFileChange = (e) => {
     const selected = e.target.files[0];
-    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const allowedTypes = [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
     if (selected && !allowedTypes.includes(selected.type)) {
       toast({
-        title: 'Invalid file type',
-        description: 'Only PDF and DOCX files are allowed.',
-        status: 'error',
+        title: "Invalid file type",
+        description: "Only PDF and DOCX files are allowed.",
+        status: "error",
         duration: 3000,
         isClosable: true,
       });
@@ -49,9 +55,9 @@ const FrancResumeUpload = () => {
   const handleNext = async () => {
     if (!file) {
       toast({
-        title: 'No file selected',
-        description: 'Please upload a PDF or DOCX file before proceeding.',
-        status: 'warning',
+        title: "No file selected",
+        description: "Please upload a PDF or DOCX file before proceeding.",
+        status: "warning",
         duration: 3000,
         isClosable: true,
       });
@@ -61,35 +67,61 @@ const FrancResumeUpload = () => {
     setLoading(true);
     setProgress(75);
 
+    // Step 1: Get AI evaluation
     const formData = new FormData();
-    formData.append('file', file);
-    const apiAiUrl = process.env.REACT_APP_API_AI_URL;
+    formData.append("file", file);
     try {
-      const response = await fetch(`${apiAiUrl}/evaluate_cv`, {
-        method: 'POST',
-        body: formData,
-      });
+      const data = await postForm("/evaluate_cv", formData, { base: "ai" });
+      const aiEvaluation = data.evaluation_result;
+      setEvaluationResult(aiEvaluation);
 
-      const data = await response.json();
+      // Step 2: Upload file and save evaluation to backend
+      try {
+        const token = getStoredToken();
+        if (!token) {
+          throw new Error("User not authenticated");
+        }
 
-      if (response.ok) {
-        setEvaluationResult(data.evaluation_result);
-        setStep(2);
-        setProgress(100);
-      } else {
-        toast({
-          title: 'Evaluation failed',
-          description: data.error || 'Something went wrong',
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
+        const decoded = decodeToken(token);
+        if (!decoded) {
+          throw new Error("Invalid token");
+        }
+
+        const userId = parseInt(
+          decoded[
+            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+          ]
+        );
+
+        if (!userId || isNaN(userId)) {
+          throw new Error("Invalid user ID");
+        }
+
+        // Prepare upload form data
+        const uploadFormData = new FormData();
+        uploadFormData.append("UserId", userId.toString());
+        uploadFormData.append("Title", "Resume");
+        uploadFormData.append("ResumeFile", file);
+        uploadFormData.append("FolderName", `resume${userId}`);
+        uploadFormData.append("AiEvaluation", aiEvaluation);
+
+        // Upload to backend (silently, don't notify user)
+        await postForm(BLOB_STORAGE_ENDPOINTS.UPLOAD_FILE, uploadFormData, {
+          token,
         });
+      } catch (uploadError) {
+        // Silently fail - don't notify user about upload issues
+        console.error("Error uploading file:", uploadError);
       }
+
+      setStep(2);
+      setProgress(100);
     } catch (error) {
+      console.error("Error submitting resume:", error);
       toast({
-        title: 'Network error',
-        description: 'Unable to connect to the server',
-        status: 'error',
+        title: "Evaluation failed",
+        description: error.message || "Unable to connect to the server",
+        status: "error",
         duration: 5000,
         isClosable: true,
       });
@@ -132,14 +164,20 @@ const FrancResumeUpload = () => {
             mx="auto"
             mb={4}
             transition="transform 0.3s"
-            _hover={{ transform: 'scale(1.05)' }}
+            _hover={{ transform: "scale(1.05)" }}
           />
 
           <Heading color="brand.500" size="lg" mb={4}>
             Upload Your Resume
           </Heading>
 
-          <Progress value={progress} size="sm" colorScheme="brand" mb={6} borderRadius="md" />
+          <Progress
+            value={progress}
+            size="sm"
+            colorScheme="brand"
+            mb={6}
+            borderRadius="md"
+          />
 
           {step === 1 && (
             <VStack spacing={5}>
@@ -151,17 +189,28 @@ const FrancResumeUpload = () => {
                 borderRadius="2xl"
                 w="full"
               >
-                <Heading color="brand.500" size="md" mb={4} >
+                <Heading color="brand.500" size="md" mb={4}>
                   📌 Resume Tips from Franc
                 </Heading>
                 <VStack spacing={2} color="gray.600" fontSize="md">
-                  <Text>✅ Keep it to <b>1 page</b></Text>
-                  <Text>🎯 Tailor it to <b>each job/internship</b></Text>
-                  <Text>🧹 Keep it <b>clean and readable</b></Text>
+                  <Text>
+                    ✅ Keep it to <b>1 page</b>
+                  </Text>
+                  <Text>
+                    🎯 Tailor it to <b>each job/internship</b>
+                  </Text>
+                  <Text>
+                    🧹 Keep it <b>clean and readable</b>
+                  </Text>
                 </VStack>
               </Box>
 
-              <FormLabel htmlFor="cv-upload" fontWeight="bold" w="100%" textAlign="left">
+              <FormLabel
+                htmlFor="cv-upload"
+                fontWeight="bold"
+                w="100%"
+                textAlign="left"
+              >
                 PDF or DOCX File
               </FormLabel>
 
@@ -172,7 +221,7 @@ const FrancResumeUpload = () => {
                 onClick={() => inputRef.current.click()}
                 w="full"
               >
-                {file ? file.name : 'Select PDF or DOCX File'}
+                {file ? file.name : "Select PDF or DOCX File"}
               </Button>
 
               <Input
@@ -192,7 +241,7 @@ const FrancResumeUpload = () => {
                 onClick={handleNext}
                 isDisabled={loading}
               >
-                {loading ? 'Submitting...' : 'Submit'}
+                {loading ? "Submitting..." : "Submit"}
               </Button>
             </VStack>
           )}
@@ -222,11 +271,7 @@ const FrancResumeUpload = () => {
                 <Spinner size="lg" />
               )}
 
-              <Button
-                variant="ghost"
-                colorScheme="gray"
-                onClick={handleBack}
-              >
+              <Button variant="ghost" colorScheme="gray" onClick={handleBack}>
                 Back
               </Button>
             </VStack>

@@ -36,10 +36,12 @@ import confetti from "canvas-confetti";
 import QuestionField from "../../components/QuestionField";
 import { AuthContext } from "../../components/AuthContext";
 import { getStoredUserId } from "../../utils/tokenUtils";
+import { get, post } from "../../utils/httpServices";
+import { SDS_ENDPOINTS } from "../../services/apiService";
 
 /**
  * SDS Try page
- * Fetches SDS sections + questions from /api/Sds/sections and renders them.
+ * Fetches SDS sections + questions from /api/sds/get-sections and renders them.
  * - Supports single choice (type=1) and multi choice (type=2)
  * - Captures answers in local state { [questionId]: value | value[] }
  * - Provides a Submit button (console.logs payload) – wire to your API as needed
@@ -47,15 +49,39 @@ import { getStoredUserId } from "../../utils/tokenUtils";
 const SdsTry = () => {
   const { isLoggedIn } = useContext(AuthContext);
   const navigate = useNavigate();
-  const baseUrl = useMemo(() => process.env.REACT_APP_API_BASE_URL , []);
 
   const sectionThemes = {
-  "Occupational Day Dreams": { color: "#6B46C1", scheme: "purple", bg: "paint", bgFile: "/assets/images/nnnoise.svg" },
-  "Activities":              { color: "#0D9488", scheme: "teal",   bg: "dots",  bgFile: "/assets/images/sds_bg.svg" },
-  "Competencies":            { color: "#2563EB", scheme: "blue",   bg: "paint", bgFile: "/assets/images/ssspot.svg" },
-  "Occupations":             { color: "#F59E0B", scheme: "orange", bg: "dots",  bgFile: "/assets/images/cccoil.svg" },
-  "Self-Estimates":          { color: "#EF4444", scheme: "red",    bg: "paint", bgFile: "/assets/images/bg-selfestimates.svg" },
-};
+    "Occupational Day Dreams": {
+      color: "#6B46C1",
+      scheme: "purple",
+      bg: "paint",
+      bgFile: "/assets/images/nnnoise.svg",
+    },
+    Activities: {
+      color: "#0D9488",
+      scheme: "teal",
+      bg: "dots",
+      bgFile: "/assets/images/sds_bg.svg",
+    },
+    Competencies: {
+      color: "#2563EB",
+      scheme: "blue",
+      bg: "paint",
+      bgFile: "/assets/images/ssspot.svg",
+    },
+    Occupations: {
+      color: "#F59E0B",
+      scheme: "orange",
+      bg: "dots",
+      bgFile: "/assets/images/cccoil.svg",
+    },
+    "Self-Estimates": {
+      color: "#EF4444",
+      scheme: "red",
+      bg: "paint",
+      bgFile: "/assets/images/bg-selfestimates.svg",
+    },
+  };
   const svgPaint = (hex) => {
     const svg = `
       <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 300'>
@@ -108,13 +134,16 @@ const SdsTry = () => {
     setShowExitWarning(false);
   };
 
-  const totalQs = sections.reduce((sum, s) => sum + ((s.questions || []).length), 0);
+  const totalQs = sections.reduce(
+    (sum, s) => sum + (s.questions || []).length,
+    0
+  );
   const answered = Object.keys(answers).length;
 
   // Check if all questions are answered
   const isAllQuestionsAnswered = () => {
-    return sections.every(section => 
-      (section.questions || []).every(q => {
+    return sections.every((section) =>
+      (section.questions || []).every((q) => {
         const answer = answers[q.id];
         if (q.type === 5) {
           // Text questions need non-empty text
@@ -160,60 +189,62 @@ const SdsTry = () => {
 
   // Validation function for RIASEC personality traits question
   const validateRiasecInput = (questionText, inputValue) => {
-    const riasecQuestionText = "From the RIASEC videos, list your top three personality traits ranked from most dominant to least";
-    
+    const riasecQuestionText =
+      "From the RIASEC videos, list your top three personality traits ranked from most dominant to least";
+
     if (questionText && questionText.includes(riasecQuestionText)) {
-      if (!inputValue || typeof inputValue !== 'string') {
+      if (!inputValue || typeof inputValue !== "string") {
         return "Please enter your top 3 RIASEC personality traits";
       }
-      
+
       const trimmedValue = inputValue.trim().toUpperCase();
-      
+
       // Check if exactly 3 characters
       if (trimmedValue.length !== 3) {
         return "Please enter exactly 3 letters (e.g., RIA, SEC, AIR)";
       }
-      
+
       // Check if all characters are valid RIASEC letters
-      const validLetters = ['R', 'I', 'A', 'S', 'E', 'C'];
+      const validLetters = ["R", "I", "A", "S", "E", "C"];
       const invalidChars = [];
-      
+
       for (let i = 0; i < trimmedValue.length; i++) {
         if (!validLetters.includes(trimmedValue[i])) {
           invalidChars.push(trimmedValue[i]);
         }
       }
-      
+
       if (invalidChars.length > 0) {
-        return `Invalid characters: ${invalidChars.join(', ')}. Only use letters: R, I, A, S, E, C`;
+        return `Invalid characters: ${invalidChars.join(
+          ", "
+        )}. Only use letters: R, I, A, S, E, C`;
       }
-      
+
       // Check for duplicates
-      const uniqueChars = [...new Set(trimmedValue.split(''))];
+      const uniqueChars = [...new Set(trimmedValue.split(""))];
       if (uniqueChars.length !== 3) {
         return "Each letter should appear only once. Use 3 different RIASEC letters: R, I, A, S, E, C";
       }
-      
+
       return null; // Valid input
     }
-    
+
     return null; // Not a RIASEC question, no validation needed
   };
 
   const earnedBadges = [];
   if (answered > 0) earnedBadges.push({ label: "Getting Started", icon: "✨" });
-  if (answered >= Math.ceil(totalQs / 2) && totalQs > 0) earnedBadges.push({ label: "Halfway", icon: "🧭" });
-  if (answered === totalQs && totalQs > 0) earnedBadges.push({ label: "Finisher", icon: "🎖️" });
+  if (answered >= Math.ceil(totalQs / 2) && totalQs > 0)
+    earnedBadges.push({ label: "Halfway", icon: "🧭" });
+  if (answered === totalQs && totalQs > 0)
+    earnedBadges.push({ label: "Finisher", icon: "🎖️" });
 
   useEffect(() => {
     const fetchSections = async () => {
       setLoading(true);
       setError(null);
       try {
-        console.log("baseUrl", baseUrl);
-        const res = await fetch(`${baseUrl}/api/Sds/sections`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const data = await get(SDS_ENDPOINTS.GET_SECTIONS);
         setSections(Array.isArray(data) ? data : []);
       } catch (e) {
         setError(e.message || "Failed to load");
@@ -222,13 +253,14 @@ const SdsTry = () => {
       }
     };
     fetchSections();
-  }, [baseUrl]);
+  }, []);
 
   // Browser back button and page unload warning
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       e.preventDefault();
-      e.returnValue = "Are you sure you want to leave? Your answers will be lost and the test will be incomplete.";
+      e.returnValue =
+        "Are you sure you want to leave? Your answers will be lost and the test will be incomplete.";
       return "Are you sure you want to leave? Your answers will be lost and the test will be incomplete.";
     };
 
@@ -242,7 +274,7 @@ const SdsTry = () => {
     // Add event listeners
     window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("popstate", handlePopState);
-    
+
     // Push initial state to enable popstate detection
     window.history.pushState(null, "", window.location.href);
 
@@ -253,17 +285,19 @@ const SdsTry = () => {
     };
   }, []);
 
-
   const handleSubmit = async () => {
     // Check for RIASEC validation errors
-    const hasRiasecErrors = Object.values(riasecValidationErrors).some(error => error !== null);
+    const hasRiasecErrors = Object.values(riasecValidationErrors).some(
+      (error) => error !== null
+    );
     if (hasRiasecErrors) {
       toast({
         title: "Invalid RIASEC Input",
-        description: "Please fix the RIASEC validation errors before submitting.",
+        description:
+          "Please fix the RIASEC validation errors before submitting.",
         status: "error",
         duration: 5000,
-        isClosable: true
+        isClosable: true,
       });
       return;
     }
@@ -276,7 +310,7 @@ const SdsTry = () => {
         description: "Please answer all questions before submitting.",
         status: "warning",
         duration: 5000,
-        isClosable: true
+        isClosable: true,
       });
       return;
     }
@@ -291,7 +325,7 @@ const SdsTry = () => {
 
   const performSubmission = async () => {
     // Get user ID from token
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
       toast({
         title: "Authentication Error",
@@ -305,9 +339,13 @@ const SdsTry = () => {
     }
 
     // Decode token to get user ID
-    const tokenData = JSON.parse(atob(token.split('.')[1]));
-    const userId = parseInt(tokenData['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
-    
+    const tokenData = JSON.parse(atob(token.split(".")[1]));
+    const userId = parseInt(
+      tokenData[
+        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+      ]
+    );
+
     if (!userId || isNaN(userId)) {
       toast({
         title: "Authentication Error",
@@ -323,8 +361,8 @@ const SdsTry = () => {
     setSubmitting(true);
 
     const typeMap = {};
-    sections.forEach(s => {
-      (s.questions || []).forEach(q => {
+    sections.forEach((s) => {
+      (s.questions || []).forEach((q) => {
         typeMap[q.id] = q.type;
       });
     });
@@ -363,8 +401,12 @@ const SdsTry = () => {
     });
 
     const missingText = responses
-      .filter(r => typeMap[r.questionId] === 5 && (!r.customAnswer || !r.customAnswer.trim()))
-      .map(r => r.questionId);
+      .filter(
+        (r) =>
+          typeMap[r.questionId] === 5 &&
+          (!r.customAnswer || !r.customAnswer.trim())
+      )
+      .map((r) => r.questionId);
 
     if (missingText.length > 0) {
       toast({
@@ -372,7 +414,7 @@ const SdsTry = () => {
         description: `These questions need text: ${missingText.join(", ")}`,
         status: "warning",
         duration: 6000,
-        isClosable: true
+        isClosable: true,
       });
       setSubmitting(false);
       return;
@@ -381,7 +423,7 @@ const SdsTry = () => {
     const payload = { userId: Number(userId), responses };
 
     // Debug logging for faculty question in final payload
-    const facultyResponse = responses.find(r => r.questionId === 364);
+    const facultyResponse = responses.find((r) => r.questionId === 364);
     console.log("Faculty response in final payload:", facultyResponse);
     console.log("All responses in payload:", responses);
 
@@ -389,74 +431,111 @@ const SdsTry = () => {
     const originalResponses = [...responses];
 
     try {
-      const response = await fetch(`${baseUrl}/api/Sds/responses`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+      // Handle both string and JSON responses
+      let data;
+      try {
+        data = await post(SDS_ENDPOINTS.SUBMIT_RESPONSES, payload);
+      } catch (err) {
+        // If it's an HttpError with details, try to parse it
+        if (err.details && typeof err.details === "string") {
+          try {
+            data = JSON.parse(err.details);
+          } catch {
+            data = err.details;
+          }
+        } else {
+          throw err;
+        }
+      }
+
+      // ---- Normalize to ALWAYS have a string code and an array of responses ----
+      let code = null;
+      let normalizedResponses = [];
+
+      // Cases handled:
+      // - "RIA"
+      // - { hollandCode: "RIA" }
+      // - { message, hollandCode: { hollandCode: "RIA", responses: [...] } }
+      // - { message, result: { hollandCode: "RIA", responses: [...] } }
+      if (typeof data === "string") {
+        code = data;
+      } else if (data && typeof data === "object") {
+        // Check for result.hollandCode first (new API structure)
+        if (data.result && typeof data.result.hollandCode === "string") {
+          code = data.result.hollandCode;
+          normalizedResponses = Array.isArray(data.result.responses)
+            ? data.result.responses
+            : [];
+        } else if (typeof data.hollandCode === "string") {
+          code = data.hollandCode;
+        } else if (data.hollandCode && typeof data.hollandCode === "object") {
+          code = data.hollandCode.hollandCode ?? null;
+          normalizedResponses = Array.isArray(data.hollandCode.responses)
+            ? data.hollandCode.responses
+            : [];
+        }
+      }
+
+      // Fallbacks to keep UI stable
+      if (typeof code !== "string") code = "";
+      if (!Array.isArray(normalizedResponses)) normalizedResponses = [];
+
+      // Extract dream occupations (questionId 362) and user Holland code (questionId 363) from API response
+      let dreamOccupations = "";
+      let userHollandCode = "";
+      
+      if (data.result && Array.isArray(data.result.responses)) {
+        const dreamOccResponse = data.result.responses.find(r => r.questionId === 362);
+        const userCodeResponse = data.result.responses.find(r => r.questionId === 363);
+        
+        dreamOccupations = dreamOccResponse?.customAnswer || "";
+        userHollandCode = userCodeResponse?.customAnswer || "";
+      } else if (Array.isArray(normalizedResponses)) {
+        // Fallback: try to find from normalized responses
+        const dreamOccResponse = normalizedResponses.find(r => r.questionId === 362);
+        const userCodeResponse = normalizedResponses.find(r => r.questionId === 363);
+        
+        dreamOccupations = dreamOccResponse?.customAnswer || "";
+        userHollandCode = userCodeResponse?.customAnswer || "";
+      }
+
+      // ---- Navigate with normalized shape ----
+      navigate("/self-directed-search/result", {
+        state: {
+          userId: Number(userId),
+          hollandCode: code, // always a string (calculated Holland code from API)
+          responses: normalizedResponses, // array (for Q265/Q266 if present)
+          allResponses: originalResponses, // Pass all original responses including faculty
+          serverResponse: data, // raw for debugging
+          answeredCount: Object.keys(answers).length,
+          submittedAt: new Date().toISOString(),
+          dreamOccupations: dreamOccupations, // extracted from questionId 362
+          userHollandCode: userHollandCode, // extracted from questionId 363
+        },
       });
 
-// Read raw so we can handle string or JSON from backend
-const raw = await response.text();
-if (!response.ok) throw new Error(raw || `HTTP ${response.status}`);
+      toast({
+        title: "Submitted Successfully!",
+        description: code
+          ? `Your result code is: ${code}`
+          : "Responses submitted.",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
 
-let data;
-try { data = JSON.parse(raw); } catch { data = raw; }
-
-// ---- Normalize to ALWAYS have a string code and an array of responses ----
-let code = null;
-let responses = [];
-
-// Cases handled:
-// - "RIA"
-// - { hollandCode: "RIA" }
-// - { message, hollandCode: { hollandCode: "RIA", responses: [...] } }
-if (typeof data === "string") {
-  code = data;
-} else if (data && typeof data === "object") {
-  if (typeof data.hollandCode === "string") {
-    code = data.hollandCode;
-  } else if (data.hollandCode && typeof data.hollandCode === "object") {
-    code = data.hollandCode.hollandCode ?? null;
-    responses = Array.isArray(data.hollandCode.responses) ? data.hollandCode.responses : [];
-  }
-}
-
-// Fallbacks to keep UI stable
-if (typeof code !== "string") code = "";
-if (!Array.isArray(responses)) responses = [];
-
-// ---- Navigate with normalized shape ----
-navigate("/self-directed-search/result", {
-  state: {
-    userId: Number(userId),
-    hollandCode: code,                 // always a string
-    responses,                         // array (for Q265/Q266 if present)
-    allResponses: originalResponses,  // Pass all original responses including faculty
-    serverResponse: data,              // raw for debugging
-    answeredCount: Object.keys(answers).length,
-    submittedAt: new Date().toISOString()
-  }
-});
-
-toast({
-  title: "Submitted Successfully!",
-  description: code ? `Your result code is: ${code}` : "Responses submitted.",
-  status: "success",
-  duration: 5000,
-  isClosable: true
-});
-
-confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
-// eslint-disable-next-line no-console
-console.log("SDS response (normalized):", { code, responses, data });
+      confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+      // eslint-disable-next-line no-console
+      console.log("SDS response (normalized):", { code, responses, data });
     } catch (error) {
       console.error("Error submitting SDS responses:", error);
       toast({
         title: "Submission Failed",
-        description: error.message || "Failed to submit responses. Please try again.",
+        description:
+          error.message || "Failed to submit responses. Please try again.",
         status: "error",
         duration: 5000,
-        isClosable: true
+        isClosable: true,
       });
     } finally {
       setSubmitting(false);
@@ -465,7 +544,12 @@ console.log("SDS response (normalized):", { code, responses, data });
 
   return (
     <Box minH="100vh" bgGradient="linear(to-r, white, #ebf8ff)">
-      <Box maxW="1000px" mx="auto" px={{ base: 4, md: 8 }} py={{ base: 6, md: 10 }}>
+      <Box
+        maxW="1000px"
+        mx="auto"
+        px={{ base: 4, md: 8 }}
+        py={{ base: 6, md: 10 }}
+      >
         <Heading color="brand.500" textAlign="center" mb={{ base: 6, md: 8 }}>
           Personality Test Sections & Questions
         </Heading>
@@ -477,10 +561,14 @@ console.log("SDS response (normalized):", { code, responses, data });
         <Box mb={6}>
           <Progress value={progressPct} rounded="full" size="sm" />
           <HStack mt={2} justify="space-between">
-            <Text fontSize="sm" color="gray.600">{answered}/{totalQs} answered ({progressPct}%)</Text>
+            <Text fontSize="sm" color="gray.600">
+              {answered}/{totalQs} answered ({progressPct}%)
+            </Text>
             <HStack spacing={2}>
               {earnedBadges.map((b, i) => (
-                <Badge key={i}  variant="subtle">{b.icon} {b.label}</Badge>
+                <Badge key={i} variant="subtle">
+                  {b.icon} {b.label}
+                </Badge>
               ))}
             </HStack>
           </HStack>
@@ -502,136 +590,190 @@ console.log("SDS response (normalized):", { code, responses, data });
         {!loading && !error && (
           <Accordion allowMultiple>
             {sections.map((section) => {
-              const theme = sectionThemes[section.name] || { color: "#6366F1", scheme: "purple", bg: "dots", bgFile: "/assets/images/nnnoise.svg" };
-              const bgImage = theme.bg === "paint" ? svgPaint(theme.color) : svgDots(theme.color);
+              const theme = sectionThemes[section.name] || {
+                color: "#6366F1",
+                scheme: "purple",
+                bg: "dots",
+                bgFile: "/assets/images/nnnoise.svg",
+              };
+              const bgImage =
+                theme.bg === "paint"
+                  ? svgPaint(theme.color)
+                  : svgDots(theme.color);
 
               return (
-                  <AccordionItem
-                    key={section.id}
-                    border="1px"
-                    borderColor={cardBorder}
-                    rounded="md"
-                    mb={4}
-                    bg={cardBg}
-                    boxShadow={`0 0 0 1px rgba(0,0,0,0.03), 0 6px 20px -8px ${theme.color}40`}
-                  >
+                <AccordionItem
+                  key={section.id}
+                  border="1px"
+                  borderColor={cardBorder}
+                  rounded="md"
+                  mb={4}
+                  bg={cardBg}
+                  boxShadow={`0 0 0 1px rgba(0,0,0,0.03), 0 6px 20px -8px ${theme.color}40`}
+                >
                   <h2>
                     <AccordionButton py={5} px={6}>
                       <Box as="span" flex="1" textAlign="left">
                         {(() => {
-                          const meta = riasecMeta[section.name] || { emoji: "⭐" };
+                          const meta = riasecMeta[section.name] || {
+                            emoji: "⭐",
+                          };
                           return (
                             <HStack>
-                              <Badge colorScheme={theme.scheme}>{meta.emoji}</Badge>
-                              <Text fontWeight="semibold" color={theme.color}>{section.name}</Text>
+                              <Badge colorScheme={theme.scheme}>
+                                {meta.emoji}
+                              </Badge>
+                              <Text fontWeight="semibold" color={theme.color}>
+                                {section.name}
+                              </Text>
                             </HStack>
                           );
                         })()}
                         {section.description && (
-                          <Text fontSize="sm" color={`${theme.color}cc`}>{section.description}</Text>
+                          <Text fontSize="sm" color={`${theme.color}cc`}>
+                            {section.description}
+                          </Text>
                         )}
                       </Box>
                       <AccordionIcon />
                     </AccordionButton>
                   </h2>
-<AccordionPanel
-  pb={6}
-  px={{ base: 4, md: 6 }}
-  roundedBottom="md"
->
-  {/* content with solid white bg */}
-  <Box
-    bg="white"
-    rounded="md"
-    p={4}
-    boxShadow="sm"
-    border="0.5px solid"
-    borderColor={theme.color}
-  >
-    <VStack align="stretch" spacing={6}>
-      {(section.questions || []).map((q, idx) => {
-        const isAnswered = isQuestionAnswered(q);
-        const showError = showValidationErrors && !isAnswered;
-        return (
-        <Box key={q.id}>
-          <HStack spacing={2} mb={2}>
-            <Text fontWeight="semibold" color={showError ? "red.500" : "inherit"}>
-              {idx + 1}. {q.text}
-            </Text>
-            {showError && (
-              <WarningIcon color="red.500" boxSize={4} />
-            )}
-          </HStack>
-                     <QuestionField
-             type={q.type}
-             text=""
-             value={q.type === 4 ? (() => {
-             
-               if (answers[q.id]) {
-                 const option = q.answerOptions.find(opt => opt.value === answers[q.id]);
-                 return option ? Number(option.text) : 1;
-               }
-               return 1; 
-             })() : answers[q.id]}
-             options={(q.answerOptions || []).map(opt => ({
-               id: opt.id,
-               text: opt.text,
-               value: String(opt.value),
-             }))}
-             onChange={(val) => {
-              
-               if (q.type === 4) { 
-                 
-                 const sliderValue = Math.max(1, Math.min(7, Math.round(val))); 
-                 const selectedOption = q.answerOptions.find(opt => opt.text === String(sliderValue));
-                 setAnswers((prev) => ({ ...prev, [q.id]: selectedOption ? selectedOption.value : null }));
-               } else {
-                 // Log faculty question selection
-                 if (q.id === 364) {
-                   console.log("Faculty question (ID 364) answered!");
-                   console.log("Question text:", q.text);
-                   console.log("Selected value:", val);
-                   console.log("Available options:", q.answerOptions);
-                   
-                   // Find the selected option details
-                   const selectedOption = q.answerOptions.find(opt => String(opt.value) === String(val));
-                   console.log("Selected option details:", selectedOption);
-                 }
-                 
-                 // Validate RIASEC input for specific question
-                 const validationError = validateRiasecInput(q.text, val);
-                 
-                 // Update validation errors
-                 setRiasecValidationErrors((prev) => ({
-                   ...prev,
-                   [q.id]: validationError
-                 }));
-                 
-                 setAnswers((prev) => ({ ...prev, [q.id]: val }));
-               }
-             }}
-             sliderProps={{
-               min: 1,
-               max: 7,
-               step: 1
-             }}
-             highlightColor={theme.color}
-             colorScheme={theme.scheme}
-           />
-          {/* RIASEC Validation Error Display */}
-          {riasecValidationErrors[q.id] && (
-            <Alert status="error" mt={2} size="sm">
-              <AlertIcon />
-              <Text fontSize="sm">{riasecValidationErrors[q.id]}</Text>
-            </Alert>
-          )}
-          <Divider mt={4} />
-        </Box>
-        );
-      })}
-    </VStack>
-  </Box>
-</AccordionPanel>
+                  <AccordionPanel
+                    pb={6}
+                    px={{ base: 4, md: 6 }}
+                    roundedBottom="md"
+                  >
+                    {/* content with solid white bg */}
+                    <Box
+                      bg="white"
+                      rounded="md"
+                      p={4}
+                      boxShadow="sm"
+                      border="0.5px solid"
+                      borderColor={theme.color}
+                    >
+                      <VStack align="stretch" spacing={6}>
+                        {(section.questions || []).map((q, idx) => {
+                          const isAnswered = isQuestionAnswered(q);
+                          const showError = showValidationErrors && !isAnswered;
+                          return (
+                            <Box key={q.id}>
+                              <HStack spacing={2} mb={2}>
+                                <Text
+                                  fontWeight="semibold"
+                                  color={showError ? "red.500" : "inherit"}
+                                >
+                                  {idx + 1}. {q.text}
+                                </Text>
+                                {showError && (
+                                  <WarningIcon color="red.500" boxSize={4} />
+                                )}
+                              </HStack>
+                              <QuestionField
+                                type={q.type}
+                                text=""
+                                value={
+                                  q.type === 4
+                                    ? (() => {
+                                        if (answers[q.id]) {
+                                          const option = q.answerOptions.find(
+                                            (opt) => opt.value === answers[q.id]
+                                          );
+                                          return option
+                                            ? Number(option.text)
+                                            : 1;
+                                        }
+                                        return 1;
+                                      })()
+                                    : answers[q.id]
+                                }
+                                options={(q.answerOptions || []).map((opt) => ({
+                                  id: opt.id,
+                                  text: opt.text,
+                                  value: String(opt.value),
+                                }))}
+                                onChange={(val) => {
+                                  if (q.type === 4) {
+                                    const sliderValue = Math.max(
+                                      1,
+                                      Math.min(7, Math.round(val))
+                                    );
+                                    const selectedOption = q.answerOptions.find(
+                                      (opt) => opt.text === String(sliderValue)
+                                    );
+                                    setAnswers((prev) => ({
+                                      ...prev,
+                                      [q.id]: selectedOption
+                                        ? selectedOption.value
+                                        : null,
+                                    }));
+                                  } else {
+                                    // Log faculty question selection
+                                    if (q.id === 364) {
+                                      console.log(
+                                        "Faculty question (ID 364) answered!"
+                                      );
+                                      console.log("Question text:", q.text);
+                                      console.log("Selected value:", val);
+                                      console.log(
+                                        "Available options:",
+                                        q.answerOptions
+                                      );
+
+                                      // Find the selected option details
+                                      const selectedOption =
+                                        q.answerOptions.find(
+                                          (opt) =>
+                                            String(opt.value) === String(val)
+                                        );
+                                      console.log(
+                                        "Selected option details:",
+                                        selectedOption
+                                      );
+                                    }
+
+                                    // Validate RIASEC input for specific question
+                                    const validationError = validateRiasecInput(
+                                      q.text,
+                                      val
+                                    );
+
+                                    // Update validation errors
+                                    setRiasecValidationErrors((prev) => ({
+                                      ...prev,
+                                      [q.id]: validationError,
+                                    }));
+
+                                    setAnswers((prev) => ({
+                                      ...prev,
+                                      [q.id]: val,
+                                    }));
+                                  }
+                                }}
+                                sliderProps={{
+                                  min: 1,
+                                  max: 7,
+                                  step: 1,
+                                }}
+                                highlightColor={theme.color}
+                                colorScheme={theme.scheme}
+                              />
+                              {/* RIASEC Validation Error Display */}
+                              {riasecValidationErrors[q.id] && (
+                                <Alert status="error" mt={2} size="sm">
+                                  <AlertIcon />
+                                  <Text fontSize="sm">
+                                    {riasecValidationErrors[q.id]}
+                                  </Text>
+                                </Alert>
+                              )}
+                              <Divider mt={4} />
+                            </Box>
+                          );
+                        })}
+                      </VStack>
+                    </Box>
+                  </AccordionPanel>
                 </AccordionItem>
               );
             })}
@@ -641,10 +783,10 @@ console.log("SDS response (normalized):", { code, responses, data });
         {!loading && !error && sections.length > 0 && (
           <Box textAlign="center">
             <VStack spacing={4}>
-              <Button 
-                colorScheme="blue" 
-                size="lg" 
-                mt={6} 
+              <Button
+                colorScheme="blue"
+                size="lg"
+                mt={6}
                 onClick={handleSubmit}
                 isLoading={submitting}
                 loadingText="Submitting..."
@@ -652,11 +794,11 @@ console.log("SDS response (normalized):", { code, responses, data });
               >
                 Submit
               </Button>
-              
+
               {/* Test Submit Button - for testing purposes */}
-              <Button 
-                colorScheme="orange" 
-                size="md" 
+              <Button
+                colorScheme="orange"
+                size="md"
                 variant="outline"
                 onClick={handleTestSubmit}
                 isLoading={submitting}
@@ -673,31 +815,37 @@ console.log("SDS response (normalized):", { code, responses, data });
         <Modal isOpen={showExitWarning} onClose={handleExitCancel} isCentered>
           <ModalOverlay />
           <ModalContent>
-            <ModalHeader color="red.500">
-              ⚠️ Warning: Leaving Test
-            </ModalHeader>
+            <ModalHeader color="red.500">⚠️ Warning: Leaving Test</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
               <Alert status="error" mb={4}>
                 <AlertIcon />
                 <Text fontWeight="bold">Your answers will be lost!</Text>
               </Alert>
-              
+
               <VStack align="stretch" spacing={4}>
-                <Text>
-                  You are about to leave the test. If you continue:
-                </Text>
-                
+                <Text>You are about to leave the test. If you continue:</Text>
+
                 <VStack align="stretch" spacing={2}>
-                  <Text>• <strong>All your answers will be deleted</strong></Text>
-                  <Text>• <strong>The test will be marked as incomplete</strong></Text>
-                  <Text>• <strong>You'll need to start over from the beginning</strong></Text>
+                  <Text>
+                    • <strong>All your answers will be deleted</strong>
+                  </Text>
+                  <Text>
+                    • <strong>The test will be marked as incomplete</strong>
+                  </Text>
+                  <Text>
+                    •{" "}
+                    <strong>
+                      You'll need to start over from the beginning
+                    </strong>
+                  </Text>
                 </VStack>
-                
+
                 <Alert status="warning" mt={4}>
                   <AlertIcon />
                   <Text fontSize="sm">
-                    <strong>Progress:</strong> You have answered {answered} out of {totalQs} questions ({progressPct}% complete).
+                    <strong>Progress:</strong> You have answered {answered} out
+                    of {totalQs} questions ({progressPct}% complete).
                   </Text>
                 </Alert>
               </VStack>

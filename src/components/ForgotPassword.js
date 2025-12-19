@@ -16,6 +16,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 
+import { post } from '../utils/httpServices';
+import { USER_ENDPOINTS } from '../services/apiService';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -40,37 +42,21 @@ const ForgotPassword = () => {
 
     setLoading(true);
     try {
-      const response = await fetch(
-        `https://localhost:7022/api/users/forgot-password?email=${encodeURIComponent(email)}`,
-        {
-          method: 'POST',
-        }
-      );
+      const data = await post(`${USER_ENDPOINTS.FORGOT_PASSWORD}?email=${encodeURIComponent(email)}`);
 
-      const data = await response.json();
-
-      if (response.ok) {
-        toast({
-          title: 'Code Sent',
-          description: data.message,
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-        navigate('/forgot-password', { state: { from: 'profile-edit' } });
-      } else {
-        toast({
-          title: 'Error',
-          description: data.error || 'Something went wrong.',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-      }
-    } catch (err) {
       toast({
-        title: 'Network Error',
-        description: 'Could not reach the server.',
+        title: 'Code Sent',
+        description: data.message || 'A reset code has been sent to your email.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      navigate('/forgot-password', { state: { from: 'profile-edit' } });
+    } catch (err) {
+      console.error('Forgot password error:', err);
+      toast({
+        title: 'Error',
+        description: err.message || 'Something went wrong.',
         status: 'error',
         duration: 3000,
         isClosable: true,

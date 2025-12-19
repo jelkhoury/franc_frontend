@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState, useEffect } from "react";
 import {
   Box,
   Heading,
@@ -17,6 +17,8 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
 import { FaBolt } from "react-icons/fa";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
@@ -31,6 +33,8 @@ import {
 } from "@chakra-ui/icons";
 import Footer from "../../components/Footer";
 import { FaWandSparkles } from "react-icons/fa6";
+import { checkUserActionPermission } from "../../utils/userActionUtils";
+import { USER_ACTION_TYPES } from "../../services/apiService";
 
 
 
@@ -72,13 +76,33 @@ const ResumePage = () => {
   const { isLoggedIn } = useContext(AuthContext);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
+  const [canPerformAction, setCanPerformAction] = useState(true);
+  const [checkingPermission, setCheckingPermission] = useState(false);
+
+  // Check permission when component mounts and user is logged in
+  useEffect(() => {
+    if (isLoggedIn) {
+      checkUserActionPermission(
+        USER_ACTION_TYPES.RESUME,
+        setCheckingPermission,
+        setCanPerformAction,
+        null // Don't show toast on initial check
+      );
+    }
+  }, [isLoggedIn]);
 
   const handleTryNow = () => {
-    if (isLoggedIn) {
-      navigate("/resume-evaluation/try");
-    } else {
+    if (!isLoggedIn) {
       onOpen();
+      return;
     }
+
+    if (!canPerformAction) {
+      onOpen(); // Show modal with restriction message
+      return;
+    }
+
+    navigate("/resume-evaluation/try");
   };
 
   return (
@@ -136,14 +160,43 @@ const ResumePage = () => {
               <Text fontSize="sm">Fast</Text>
             </VStack>
           </HStack>
-          <Button
-            colorScheme="brand"
-            size="md"
-            onClick={handleTryNow}
-            rightIcon={<Icon as={FaWandSparkles} boxSize={5} />} // ✅ icon after text
-          >
-            Abra Cadabra
-          </Button>
+          {checkingPermission ? (
+            <Button
+              colorScheme="brand"
+              size="md"
+              isDisabled
+              isLoading
+            >
+              Checking Permission...
+            </Button>
+          ) : !canPerformAction && isLoggedIn ? (
+            <VStack spacing={3} align="stretch">
+              <Alert status="warning">
+                <AlertIcon />
+                <Text fontSize="sm">
+                  You cannot evaluate a resume right now. Please try again later.
+                </Text>
+              </Alert>
+              <Button
+                colorScheme="brand"
+                size="md"
+                onClick={handleTryNow}
+                rightIcon={<Icon as={FaWandSparkles} boxSize={5} />}
+                isDisabled
+              >
+                Abra Cadabra
+              </Button>
+            </VStack>
+          ) : (
+            <Button
+              colorScheme="brand"
+              size="md"
+              onClick={handleTryNow}
+              rightIcon={<Icon as={FaWandSparkles} boxSize={5} />}
+            >
+              Abra Cadabra
+            </Button>
+          )}
         </Box>
       </Flex>
 
@@ -208,17 +261,39 @@ const ResumePage = () => {
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Please Login</ModalHeader>
+          <ModalHeader>
+            {!isLoggedIn ? 'Please Login' : 'Cannot Evaluate Resume'}
+          </ModalHeader>
           <ModalBody>
-            <Text>You need to be logged in to benefit from this service.</Text>
+            {!isLoggedIn ? (
+              <Text>You need to be logged in to benefit from this service.</Text>
+            ) : (
+              <>
+                <Alert status="warning" mb={4}>
+                  <AlertIcon />
+                  <Text fontWeight="bold">Action Restricted</Text>
+                </Alert>
+                <Text>
+                  You cannot evaluate a resume right now. Please try again later.
+                </Text>
+              </>
+            )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
-              Cancel
-            </Button>
-            <Button colorScheme="blue" onClick={() => navigate("/login")}>
-              Go to Login
-            </Button>
+            {!isLoggedIn ? (
+              <>
+                <Button variant="ghost" mr={3} onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button colorScheme="blue" onClick={() => navigate("/login")}>
+                  Go to Login
+                </Button>
+              </>
+            ) : (
+              <Button variant="ghost" onClick={onClose}>
+                Close
+              </Button>
+            )}
           </ModalFooter>
         </ModalContent>
       </Modal>

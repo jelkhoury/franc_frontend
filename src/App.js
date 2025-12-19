@@ -19,15 +19,11 @@ import OTPVerification from './components/OTPVerification';
 import { AuthProvider } from './components/AuthContext';
 import { MockInterviewStateProvider } from './contexts/MockInterviewStateContext';
 import { MockInterviewPage, MockInterviewTryPage, MockInterviewMajorSelectPage, MockInterviewQuestionsPage } from './pages/services';
-import AvatarDemoPage from './pages/services/AvatarDemoPage';
-import AvatarAdvancedDemoPage from './pages/services/AvatarAdvancedDemoPage';
 import AdminPanel from './pages/AdminPanel';
 import SdsPage from './pages/services/SdsPage';
 import SdsOnBoarding from './pages/services/SdsOnBoarding';
 import SdsTry from './pages/services/SdsTry';
-import SdsFunDemo from './pages/services/SdsFunDemo';
 import SdsResult from './pages/services/SdsResult';
-import DemoMockInterviewStandalone from './pages/demo/DemoMockInterviewStandalone';
 
 
 
@@ -70,8 +66,6 @@ const MainLayout = () => {
         <Route path="/mock-interview/try" element={<MockInterviewTryPage />} />
         <Route path="/mock-interview/select-major" element={<MockInterviewMajorSelectPage />} />
         <Route path="/mock-interview/questions" element={<MockInterviewQuestionsPage />} />
-        <Route path="/mock-interview/avatar-demo" element={<AvatarDemoPage />} />
-        <Route path="/mock-interview/avatar-advanced" element={<AvatarAdvancedDemoPage />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/self-directed-search" element={<SdsPage />} />
         <Route
@@ -91,8 +85,6 @@ const MainLayout = () => {
         />
         <Route path="/self-directed-search/try" element={<SdsTry />} />
         <Route path="/self-directed-search/result" element={<SdsResult />} />
-        <Route path="/sds/fun-demo" element={<SdsFunDemo />} />
-        <Route path="/mock/fun-demo" element={<DemoMockInterviewStandalone />} />
       </Routes>
     </>
   );

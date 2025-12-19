@@ -13,11 +13,15 @@ import {
   InputGroup,
   Select,
   Spinner,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
 import { useState, useEffect, useContext } from "react";
 import Footer from "../../components/Footer";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../components/AuthContext";
+import { get } from "../../utils/httpServices";
+import { BLOB_STORAGE_ENDPOINTS } from "../../services/apiService";
 
 // Dummy faculties
 const dummyFaculties = [
@@ -174,7 +178,6 @@ const MockInterviewMajorSelectPage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const baseUrl = process.env.REACT_APP_API_BASE_URL;
 
         let facultiesData = [];
         let majorsData = [];
@@ -182,25 +185,23 @@ const MockInterviewMajorSelectPage = () => {
 
         try {
           // Try to fetch faculties
-          const facultiesResponse = await fetch(
-            `${baseUrl}/api/BlobStorage/get-faculties`
-          );
-          if (facultiesResponse.ok) {
-            facultiesData = await facultiesResponse.json();
+          try {
+            facultiesData = await get(BLOB_STORAGE_ENDPOINTS.GET_FACULTIES);
             if (facultiesData && facultiesData.length > 0) {
               apiSuccess = true;
             }
+          } catch (err) {
+            console.warn("Failed to fetch faculties:", err);
           }
 
           // Try to fetch majors
-          const majorsResponse = await fetch(
-            `${baseUrl}/api/BlobStorage/get-majors`
-          );
-          if (majorsResponse.ok) {
-            majorsData = await majorsResponse.json();
+          try {
+            majorsData = await get(BLOB_STORAGE_ENDPOINTS.GET_MAJORS);
             if (majorsData && majorsData.length > 0) {
               apiSuccess = true;
             }
+          } catch (err) {
+            console.warn("Failed to fetch majors:", err);
           }
         } catch (apiError) {
           console.warn(
@@ -283,6 +284,7 @@ const MockInterviewMajorSelectPage = () => {
       });
       return;
     }
+
     navigate("/mock-interview/questions", {
       state: { major: selectedMajor.name || selectedMajor.title },
     });
@@ -353,7 +355,9 @@ const MockInterviewMajorSelectPage = () => {
     >
       <Box px={4} py={16}>
         <Stack spacing={8} mb={12} textAlign="center">
-          <Heading color="brand.500" size="2xl">Mock Interview</Heading>
+          <Heading color="brand.500" size="2xl">
+            Mock Interview
+          </Heading>
           <Text fontSize="lg" color="gray.600">
             Tailor your interview practice to your academic major. Select your
             major to get started!
@@ -381,11 +385,13 @@ const MockInterviewMajorSelectPage = () => {
             value={selectedFaculty}
             onChange={handleFacultyChange}
           >
-            {[...faculties].sort((a, b) => a.name.localeCompare(b.name)).map((faculty) => (
-              <option key={faculty.id} value={faculty.id}>
-                {faculty.name}
-              </option>
-            ))}
+            {[...faculties]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((faculty) => (
+                <option key={faculty.id} value={faculty.id}>
+                  {faculty.name}
+                </option>
+              ))}
           </Select>
           <InputGroup maxW="400px">
             <Input

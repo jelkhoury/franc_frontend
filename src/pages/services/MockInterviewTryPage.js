@@ -15,8 +15,6 @@ import {
   ModalCloseButton,
   ModalBody,
   ModalFooter,
-  Alert,
-  AlertIcon,
   useDisclosure,
 } from '@chakra-ui/react';
 import { useState, useContext } from 'react';
@@ -31,6 +29,7 @@ const MockInterviewTryPage = () => {
   const [showWarningModal, setShowWarningModal] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const handleNext = () => {
     setStep(2);
@@ -42,11 +41,12 @@ const MockInterviewTryPage = () => {
   };
 
   const handleStartInterview = () => {
-    if (isLoggedIn) {
-      setShowWarningModal(true);
-    } else {
+    if (!isLoggedIn) {
       onOpen();
+      return;
     }
+
+    setShowWarningModal(true);
   };
 
   const handleLoginClick = () => {
