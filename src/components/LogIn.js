@@ -72,13 +72,38 @@ const handleSubmit = async (e) => {
 
   } catch (err) {
     console.error("Login error:", err);
-    toast({
-      title: "Login failed",
-      description: err.message || "Invalid credentials",
-      status: "error",
-      duration: 5000,
-      isClosable: true,
-    });
+    const errorMessage = err.message || "Invalid credentials";
+    
+    // Check if account is not verified
+    if (errorMessage.toLowerCase().includes("account not verified") || 
+        errorMessage.toLowerCase().includes("not verified")) {
+      toast({
+        title: "Account not verified",
+        description: "Please verify your email to continue.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      
+      // Wait 2 seconds then navigate to OTP verification page
+      setTimeout(() => {
+        navigate('/otp-verification', {
+          state: { 
+            email: email,
+            shouldSendCode: true 
+          }
+        });
+      }, 2000);
+    } else {
+      // Show invalid credentials error
+      toast({
+        title: "Login failed",
+        description: "Invalid credentials",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   } finally {
     setLoading(false);
   }

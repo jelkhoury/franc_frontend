@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect, useCallback } from "react";
 import {
   Button,
   FormControl,
@@ -23,12 +23,48 @@ import { USER_ENDPOINTS } from "../services/apiService";
 const OTPVerification = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { email } = location.state || {};
+  const { email, shouldSendCode } = location.state || {};
   const { login } = useContext(AuthContext);
 
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
   const toast = useToast();
+
+  const sendVerificationCode = useCallback(async () => {
+    if (!email) return;
+
+    setSendingCode(true);
+    try {
+      await post(
+        `${USER_ENDPOINTS.SEND_VERIFICATION_CODE}?email=${encodeURIComponent(email)}`
+      );
+      toast({
+        title: "Verification code sent",
+        description: "Please check your email for the verification code.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to send code",
+        description: err.message || "Could not send verification code. Please try again.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setSendingCode(false);
+    }
+  }, [email, toast]);
+
+  // Automatically send verification code if coming from login
+  useEffect(() => {
+    if (shouldSendCode && email) {
+      sendVerificationCode();
+    }
+  }, [shouldSendCode, email, sendVerificationCode]);
 
   const handleChange = (value) => {
     setOtp(value);
@@ -55,19 +91,65 @@ const OTPVerification = () => {
         `${USER_ENDPOINTS.VERIFY_CODE}?email=${encodeURIComponent(email)}&code=${otp}`
       );
 
-      // Store token in localStorage after successful verification
-      if (data.token) {
-        localStorage.setItem('token', data.token);
+      // Check if verification was successful
+      const isSuccess = data.message && 
+        data.message.toLowerCase().includes("verification successful");
+
+      if (isSuccess) {
+        // If token is already in response, use it
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          
+          const decodedToken = decodeToken(data.token);
+          
+          if (decodedToken) {
+            const userRole = getUserRole(data.token);
+            const userName = getUserName(data.token);
+            const userId = getUserId(data.token);
+            
+            localStorage.setItem('userRole', userRole);
+            localStorage.setItem('userName', userName);
+            localStorage.setItem('userId', userId);
+            
+            login();
+            
+            toast({
+              title: "Verification Successful!",
+              description: `Welcome, ${userName}! Your email has been verified successfully.`,
+              status: "success",
+              duration: 3000,
+              isClosable: true,
+            });
+            
+            // Navigate based on role
+            if (userRole === 'Admin') {
+              navigate('/admin');
+            } else {
+              navigate('/');
+            }
+            return;
+          }
+        }
+
+        // If no token but verification successful, generate token using email
+        const tokenData = await post(
+          `${USER_ENDPOINTS.GENERATE_TOKEN_BY_EMAIL}?email=${encodeURIComponent(email)}`
+        );
         
-        // Decode token to get user role
-        const decodedToken = decodeToken(data.token);
+        if (!tokenData.token) {
+          throw new Error('Failed to generate token');
+        }
+
+        // Store token and decode user info
+        localStorage.setItem('token', tokenData.token);
+        
+        const decodedToken = decodeToken(tokenData.token);
         
         if (decodedToken) {
-          const userRole = getUserRole(data.token);
-          const userName = getUserName(data.token);
-          const userId = getUserId(data.token);
+          const userRole = getUserRole(tokenData.token);
+          const userName = getUserName(tokenData.token);
+          const userId = getUserId(tokenData.token);
           
-          // Store user info in localStorage
           localStorage.setItem('userRole', userRole);
           localStorage.setItem('userName', userName);
           localStorage.setItem('userId', userId);
@@ -83,7 +165,7 @@ const OTPVerification = () => {
             isClosable: true,
           });
           
-          // Navigate based on role
+          // Navigate to home page
           if (userRole === 'Admin') {
             navigate('/admin');
           } else {
@@ -93,15 +175,7 @@ const OTPVerification = () => {
           throw new Error('Invalid token received');
         }
       } else {
-        // If no token in response, just show success message
-        toast({
-          title: "Verification Successful!",
-          description: "Your email has been verified successfully.",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-        navigate('/login');
+        throw new Error(data.message || 'Verification failed');
       }
     } catch (err) {
       toast({
@@ -168,7 +242,14 @@ const OTPVerification = () => {
         <Stack pt={6}>
           <Text textAlign={"center"}>
             Didn't receive the code?{" "}
-            <Text as="span" color={"blue.400"} fontWeight="medium">
+            <Text 
+              as="span" 
+              color={"blue.400"} 
+              fontWeight="medium"
+              cursor="pointer"
+              onClick={sendVerificationCode}
+              _hover={{ textDecoration: "underline" }}
+            >
               Resend
             </Text>
           </Text>

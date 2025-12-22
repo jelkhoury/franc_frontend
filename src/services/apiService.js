@@ -10,6 +10,8 @@ export const USER_ENDPOINTS = {
   FORGOT_PASSWORD: '/api/users/forgot-password',
   RESET_PASSWORD: '/api/users/reset-password',
   VERIFY_CODE: '/api/users/verify-code',
+  SEND_VERIFICATION_CODE: '/api/users/send-verification-code',
+  GENERATE_TOKEN_BY_EMAIL: '/api/users/generate-token-by-email',
   SEND_PDF: '/api/users/send-pdf',
   SEND_MOCK_SUBMISSION_NOTIFICATION: '/api/users/send-mock-submission-notification',
   GET_ALL_USERS: '/api/users/get-all-users',
@@ -73,5 +75,6 @@ export const BLOB_STORAGE_ENDPOINTS = {
 export const AI_ENDPOINTS = {
   ASK: '/ask',
   SUGGEST_BY_CODE: '/suggest-by-code',
+  GET_OCCUPATIONS_OR_EDUCATIONS_FOR_CODE: '/get-occupations-or-educations-for-code',
 };
 
