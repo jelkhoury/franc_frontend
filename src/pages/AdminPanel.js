@@ -256,7 +256,7 @@ const AdminPanel = () => {
             >
               <ModalOverlay />
               <ModalContent>
-                <ModalHeader>Edit Profile</ModalHeader>
+                <ModalHeader>View Profile</ModalHeader>
                 <ModalCloseButton />
                 <ModalBody pb={6}>
                   <UserProfileEdit

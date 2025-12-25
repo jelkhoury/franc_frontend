@@ -1,31 +1,54 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import LandingPage from './pages/LandingPage';
-import FrancPage from './pages/FrancPage';
-import AboutUsPage from './pages/AboutUsPage';
-import ContactUsPage from './pages/ContactUsPage';
-import ResumePage from './pages/services/ResumePage';
-import ChattingPage from './pages/services/ChattingPage';
-import CoverLetterPage from './pages/services/CoverLetterPage';
-import ResumeTryPage from './pages/services/ResumeTryPage';
-import CoverTryPage from './pages/services/CoverTryPage';
-import Chatting from './pages/services/Chatting';
-import LogIn from './components/LogIn';
-import SignUp from './components/SignUp';
-import ForgotPassword from './components/ForgotPassword';
-import ResetPassword from './components/ResetPassword';
-import OTPVerification from './components/OTPVerification';
-import { AuthProvider } from './components/AuthContext';
-import { MockInterviewStateProvider } from './contexts/MockInterviewStateContext';
-import { MockInterviewPage, MockInterviewTryPage, MockInterviewMajorSelectPage, MockInterviewQuestionsPage } from './pages/services';
-import AdminPanel from './pages/AdminPanel';
-import SdsPage from './pages/services/SdsPage';
-import SdsOnBoarding from './pages/services/SdsOnBoarding';
-import SdsTry from './pages/services/SdsTry';
-import SdsResult from './pages/services/SdsResult';
+import React, { useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
+import Navbar from "./components/Navbar";
+import LandingPage from "./pages/LandingPage";
+import FrancPage from "./pages/FrancPage";
+import AboutUsPage from "./pages/AboutUsPage";
+import ContactUsPage from "./pages/ContactUsPage";
+import ResumePage from "./pages/services/ResumePage";
+import ChattingPage from "./pages/services/ChattingPage";
+import CoverLetterPage from "./pages/services/CoverLetterPage";
+import ResumeTryPage from "./pages/services/ResumeTryPage";
+import CoverTryPage from "./pages/services/CoverTryPage";
+import Chatting from "./pages/services/Chatting";
+import LogIn from "./components/LogIn";
+import SignUp from "./components/SignUp";
+import ForgotPassword from "./components/ForgotPassword";
+import ResetPassword from "./components/ResetPassword";
+import OTPVerification from "./components/OTPVerification";
+import { AuthProvider } from "./components/AuthContext";
+import { MockInterviewStateProvider } from "./contexts/MockInterviewStateContext";
+import {
+  MockInterviewPage,
+  MockInterviewTryPage,
+  MockInterviewMajorSelectPage,
+  MockInterviewQuestionsPage,
+} from "./pages/services";
+import AdminPanel from "./pages/AdminPanel";
+import SdsPage from "./pages/services/SdsPage";
+import SdsOnBoarding from "./pages/services/SdsOnBoarding";
+import SdsTry from "./pages/services/SdsTry";
+import SdsResult from "./pages/services/SdsResult";
 
+// ScrollToTop component to reset scroll position on route change
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
 
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+     // behavior: "smooth",
+    });
+  }, [pathname]);
+
+  return null;
+};
 
 const App = () => {
   return (
@@ -41,10 +64,11 @@ const App = () => {
 
 const MainLayout = () => {
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   return (
     <>
+      <ScrollToTop />
       {!isAdminRoute && <Navbar />}
       <Routes>
         <Route path="/" element={<LandingPage />} />
@@ -64,8 +88,14 @@ const MainLayout = () => {
         <Route path="/OTP-Verification" element={<OTPVerification />} />
         <Route path="/mock-interview" element={<MockInterviewPage />} />
         <Route path="/mock-interview/try" element={<MockInterviewTryPage />} />
-        <Route path="/mock-interview/select-major" element={<MockInterviewMajorSelectPage />} />
-        <Route path="/mock-interview/questions" element={<MockInterviewQuestionsPage />} />
+        <Route
+          path="/mock-interview/select-major"
+          element={<MockInterviewMajorSelectPage />}
+        />
+        <Route
+          path="/mock-interview/questions"
+          element={<MockInterviewQuestionsPage />}
+        />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/self-directed-search" element={<SdsPage />} />
         <Route
@@ -78,7 +108,7 @@ const MainLayout = () => {
                 "https://www.youtube.com/embed/Bp1C1BULYdc?si=CMgX7jQ2O6o2El3e",
                 "https://www.youtube.com/embed/Lfs-Ww_VZJw?si=JfRIDiaMnWiPEYjB",
                 "https://www.youtube.com/embed/hXZVaf9ig20?si=1uWOdNCowGfwi6VW",
-                "https://www.youtube.com/embed/CYgCCDw0wys?si=-yQBiiCVjI8TKvza"
+                "https://www.youtube.com/embed/CYgCCDw0wys?si=-yQBiiCVjI8TKvza",
               ]}
             />
           }

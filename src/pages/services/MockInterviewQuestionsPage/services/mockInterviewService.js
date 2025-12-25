@@ -1,6 +1,11 @@
 import { get, post, postForm } from "../../../../utils/httpServices";
 import { getStoredToken, decodeToken } from "../../../../utils/tokenUtils";
-import { MOCK_INTERVIEW_ENDPOINTS, BLOB_STORAGE_ENDPOINTS } from "../../../../services/apiService";
+import {
+  MOCK_INTERVIEW_ENDPOINTS,
+  BLOB_STORAGE_ENDPOINTS,
+  USER_ENDPOINTS,
+  USER_ACTION_TYPES,
+} from "../../../../services/apiService";
 
 /**
  * Check if user can do a mock interview
@@ -24,9 +29,15 @@ export const checkMockInterviewStatus = async (
         "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
       ]
     );
-    const data = await get(MOCK_INTERVIEW_ENDPOINTS.CAN_DO_MOCK(userId), {
-      token,
-    });
+    const data = await get(
+      USER_ENDPOINTS.CAN_USER_PERFORM_ACTION(
+        userId,
+        USER_ACTION_TYPES.MOCK_INTERVIEW
+      ),
+      {
+        token,
+      }
+    );
     setCanDoMock(data.canDoMock);
     if (!data.canDoMock) {
       toast({

@@ -38,30 +38,129 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [isSignUpSuccessful, setIsSignUpSuccessful] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [firstNameError, setFirstNameError] = useState("");
+  const [lastNameError, setLastNameError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const navigate = useNavigate();
   const toast = useToast();
   const { login } = useContext(AuthContext);
 
   const validateEmail = (email) => {
+    if (!email || email.trim() === "") {
+      return { isValid: false, error: "Email is required" };
+    }
     const emailRegex = /^[^\s@]+@ua\.edu\.lb$/;
-    return emailRegex.test(email);
+    if (!emailRegex.test(email)) {
+      return { isValid: false, error: "Email must end with @ua.edu.lb" };
+    }
+    return { isValid: true, error: "" };
+  };
+
+  const validateName = (name, fieldName) => {
+    if (!name || name.trim() === "") {
+      return { isValid: false, error: `${fieldName} is required` };
+    }
+    if (name.trim().length < 2) {
+      return {
+        isValid: false,
+        error: `${fieldName} must be at least 2 characters`,
+      };
+    }
+    if (!/^[a-zA-Z\s'-]+$/.test(name.trim())) {
+      return {
+        isValid: false,
+        error: `${fieldName} can only contain letters, spaces, hyphens, and apostrophes`,
+      };
+    }
+    return { isValid: true, error: "" };
+  };
+
+  const validatePassword = (password) => {
+    if (!password || password.trim() === "") {
+      return { isValid: false, error: "Password is required" };
+    }
+    if (password.length < 8) {
+      return {
+        isValid: false,
+        error: "Password must be at least 8 characters long",
+      };
+    }
+    if (!/(?=.*[a-z])/.test(password)) {
+      return {
+        isValid: false,
+        error: "Password must contain at least one lowercase letter",
+      };
+    }
+    if (!/(?=.*[A-Z])/.test(password)) {
+      return {
+        isValid: false,
+        error: "Password must contain at least one uppercase letter",
+      };
+    }
+    if (!/(?=.*\d)/.test(password)) {
+      return {
+        isValid: false,
+        error: "Password must contain at least one number",
+      };
+    }
+    return { isValid: true, error: "" };
   };
 
   const handleEmailChange = (e) => {
     const emailValue = e.target.value;
     setEmail(emailValue);
+    const validation = validateEmail(emailValue);
+    setEmailError(validation.error);
+  };
 
-    if (emailValue && !validateEmail(emailValue)) {
-      setEmailError("Email must end with @ua.edu.lb");
-    } else {
-      setEmailError("");
-    }
+  const handleFirstNameChange = (e) => {
+    const firstNameValue = e.target.value;
+    setFirstName(firstNameValue);
+    const validation = validateName(firstNameValue, "First Name");
+    setFirstNameError(validation.error);
+  };
+
+  const handleLastNameChange = (e) => {
+    const lastNameValue = e.target.value;
+    setLastName(lastNameValue);
+    const validation = validateName(lastNameValue, "Last Name");
+    setLastNameError(validation.error);
+  };
+
+  const handlePasswordChange = (e) => {
+    const passwordValue = e.target.value;
+    setPassword(passwordValue);
+    const validation = validatePassword(passwordValue);
+    setPasswordError(validation.error);
   };
 
   const handleSubmit = async () => {
-    // Validate email before submitting
-    if (!validateEmail(email)) {
-      setEmailError("Email must end with @ua.edu.lb");
+    // Validate all fields before submitting
+    const emailValidation = validateEmail(email);
+    const firstNameValidation = validateName(firstName, "First Name");
+    const lastNameValidation = validateName(lastName, "Last Name");
+    const passwordValidation = validatePassword(passwordHash);
+
+    // Set all error messages
+    setEmailError(emailValidation.error);
+    setFirstNameError(firstNameValidation.error);
+    setLastNameError(lastNameValidation.error);
+    setPasswordError(passwordValidation.error);
+
+    // Check if any validation failed
+    if (
+      !emailValidation.isValid ||
+      !firstNameValidation.isValid ||
+      !lastNameValidation.isValid ||
+      !passwordValidation.isValid
+    ) {
+      toast({
+        title: "Validation failed",
+        description: "Please fix all errors before submitting",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
       return;
     }
 
@@ -134,23 +233,51 @@ const Signup = () => {
           <Stack spacing={4}>
             <HStack>
               <Box>
-                <FormControl id="firstName" isRequired>
+                <FormControl
+                  id="firstName"
+                  isRequired
+                  isInvalid={!!firstNameError}
+                >
                   <FormLabel>First Name</FormLabel>
                   <Input
                     type="text"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={handleFirstNameChange}
                   />
+                  <Text
+                    color="red.500"
+                    fontSize="xs"
+                    mt={1}
+                    noOfLines={1}
+                    minH="16px"
+                    visibility={firstNameError ? "visible" : "hidden"}
+                  >
+                    {firstNameError || "\u00A0"}
+                  </Text>
                 </FormControl>
               </Box>
               <Box>
-                <FormControl id="lastName" isRequired>
+                <FormControl
+                  id="lastName"
+                  isRequired
+                  isInvalid={!!lastNameError}
+                >
                   <FormLabel>Last Name</FormLabel>
                   <Input
                     type="text"
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    onChange={handleLastNameChange}
                   />
+                  <Text
+                    color="red.500"
+                    fontSize="xs"
+                    mt={1}
+                    noOfLines={1}
+                    minH="16px"
+                    visibility={lastNameError ? "visible" : "hidden"}
+                  >
+                    {lastNameError || "\u00A0"}
+                  </Text>
                 </FormControl>
               </Box>
             </HStack>
@@ -162,19 +289,24 @@ const Signup = () => {
                 onChange={handleEmailChange}
                 placeholder="example@ua.edu.lb"
               />
-              {emailError && (
-                <Text color="red.500" fontSize="sm" mt={1}>
-                  {emailError}
-                </Text>
-              )}
+              <Text
+                color="red.500"
+                fontSize="xs"
+                mt={1}
+                noOfLines={1}
+                minH="16px"
+                visibility={emailError ? "visible" : "hidden"}
+              >
+                {emailError || "\u00A0"}
+              </Text>
             </FormControl>
-            <FormControl id="password" isRequired>
+            <FormControl id="password" isRequired isInvalid={!!passwordError}>
               <FormLabel>Password</FormLabel>
               <InputGroup>
                 <Input
                   type={showPassword ? "text" : "password"}
                   value={passwordHash}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                 />
                 <InputRightElement h={"full"}>
                   <Button
@@ -187,6 +319,16 @@ const Signup = () => {
                   </Button>
                 </InputRightElement>
               </InputGroup>
+              <Text
+                color="red.500"
+                fontSize="xs"
+                mt={1}
+                noOfLines={1}
+                minH="16px"
+                visibility={passwordError ? "visible" : "hidden"}
+              >
+                {passwordError || "\u00A0"}
+              </Text>
             </FormControl>
             <Stack spacing={10} pt={4}>
               <Button
@@ -198,7 +340,17 @@ const Signup = () => {
                 }}
                 onClick={handleSubmit}
                 isLoading={loading}
-                isDisabled={loading || !!emailError}
+                isDisabled={
+                  loading ||
+                  !!emailError ||
+                  !!firstNameError ||
+                  !!lastNameError ||
+                  !!passwordError ||
+                  !firstName.trim() ||
+                  !lastName.trim() ||
+                  !email.trim() ||
+                  !passwordHash.trim()
+                }
               >
                 Sign up
               </Button>

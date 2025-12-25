@@ -1,123 +1,177 @@
-'use client';
+"use client";
 
+import { useState, useEffect } from "react";
 import {
   Button,
   Flex,
-  FormControl,
-  FormLabel,
   Heading,
-  Input,
   Stack,
-  useColorModeValue,
   HStack,
   Avatar,
-  AvatarBadge,
-  IconButton,
-  Center,
-} from '@chakra-ui/react';
-import { SmallCloseIcon } from '@chakra-ui/icons';
-import { useNavigate } from 'react-router-dom';
-import { FaUser } from 'react-icons/fa';
+  Text,
+  VStack,
+  Box,
+  SimpleGrid,
+} from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom";
+import { FaUser } from "react-icons/fa";
+import {
+  getStoredToken,
+  getStoredUserName,
+  decodeToken,
+} from "../utils/tokenUtils";
 
-
-export default function UserProfileEdit({ onClose ,onLogout  }) {
+export default function UserProfileEdit({ onClose, onLogout }) {
   const navigate = useNavigate();
+
+  // Dummy data for attempts - will be replaced with API call
+  const [attempts, setAttempts] = useState({
+    cvEvaluation: 2,
+    coverLetterEvaluation: 2,
+    mockInterview: 2,
+    sds: 2,
+  });
+
+  // TODO: Replace with actual API call
+  // useEffect(() => {
+  //   const fetchAttempts = async () => {
+  //     try {
+  //       const response = await get(USER_ENDPOINTS.GET_ATTEMPTS);
+  //       setAttempts(response.data);
+  //     } catch (error) {
+  //       console.error("Error fetching attempts:", error);
+  //     }
+  //   };
+  //   fetchAttempts();
+  // }, []);
+
+  // Get user data from localStorage and token
+  const userName = getStoredUserName() || "";
+  const token = getStoredToken();
+  const decodedToken = token ? decodeToken(token) : null;
+
+  // Try to get email from token (common claim names)
+  const email = decodedToken
+    ? decodedToken[
+        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
+      ] ||
+      decodedToken.email ||
+      decodedToken.Email ||
+      ""
+    : "";
 
   const handleChangePassword = () => {
     onClose();
-    navigate('/forgot-password', { state: { from: 'profile-edit' } });
+    navigate("/forgot-password", { state: { from: "profile-edit" } });
   };
 
   return (
-    <Stack spacing={4}>
-      <Heading color="brand.500" fontSize={{ base: '2xl', sm: '3xl' }} textAlign="center">
-        Edit Your Profile
-      </Heading>
+    <Stack spacing={6}>
 
-      <FormControl id="avatar" isDisabled>
-        <FormLabel>Profile Picture</FormLabel>
-        <Stack direction={['column', 'row']} spacing={6}>
-          <Center>
-            <Avatar size="xl" icon={<FaUser fontSize="2rem" />} bg="brand.500" color="white">
-              <AvatarBadge
-                as={IconButton}
-                size="sm"
-                rounded="full"
-                top="-10px"
-                colorScheme="red"
-                aria-label="Remove Image"
-                icon={<SmallCloseIcon />}
-                isDisabled
-              />
-            </Avatar>
-          </Center>
-          <Center w="full">
-            <Button w="full" isDisabled>
-              Change Icon
-            </Button>
-          </Center>
-        </Stack>
-      </FormControl>
+      <Flex direction="column" align="center" spacing={4}>
+        <Avatar
+          size="xl"
+          icon={<FaUser fontSize="2rem" />}
+          bg="brand.500"
+          color="white"
+          mb={4}
+        />
+        <VStack spacing={2} align="center">
+          <Text fontSize="xl" fontWeight="bold" color="gray.700">
+            {userName || "User"}
+          </Text>
+          <Text fontSize="md" color="gray.600">
+            {email || "No email available"}
+          </Text>
+        </VStack>
+      </Flex>
 
-      <FormControl id="userName" isRequired isDisabled>
-        <FormLabel>Username</FormLabel>
-        <Input placeholder="John Doe" type="text" />
-      </FormControl>
+      <Box w="full" pt={2}>
+        <Heading fontSize="md" color="gray.700" mb={2} textAlign="center">
+          Service Attempts
+        </Heading>
+        <SimpleGrid columns={2} spacing={2}>
+          <Box
+            p={2}
+            borderWidth="1px"
+            borderRadius="md"
+            borderColor="gray.200"
+            bg="gray.50"
+          >
+            <Text fontSize="xs" color="gray.600" mb={0.5}>
+              CV Evaluation
+            </Text>
+            <Text fontSize="xl" fontWeight="bold" color="brand.500">
+              {attempts.cvEvaluation}
+            </Text>
+          </Box>
+          <Box
+            p={2}
+            borderWidth="1px"
+            borderRadius="md"
+            borderColor="gray.200"
+            bg="gray.50"
+          >
+            <Text fontSize="xs" color="gray.600" mb={0.5}>
+              Cover Letter Evaluation
+            </Text>
+            <Text fontSize="xl" fontWeight="bold" color="brand.500">
+              {attempts.coverLetterEvaluation}
+            </Text>
+          </Box>
+          <Box
+            p={2}
+            borderWidth="1px"
+            borderRadius="md"
+            borderColor="gray.200"
+            bg="gray.50"
+          >
+            <Text fontSize="xs" color="gray.600" mb={0.5}>
+              Mock Interview
+            </Text>
+            <Text fontSize="xl" fontWeight="bold" color="brand.500">
+              {attempts.mockInterview}
+            </Text>
+          </Box>
+          <Box
+            p={2}
+            borderWidth="1px"
+            borderRadius="md"
+            borderColor="gray.200"
+            bg="gray.50"
+          >
+            <Text fontSize="xs" color="gray.600" mb={0.5}>
+              SDS
+            </Text>
+            <Text fontSize="xl" fontWeight="bold" color="brand.500">
+              {attempts.sds}
+            </Text>
+          </Box>
+        </SimpleGrid>
+      </Box>
 
-      <FormControl id="email" isRequired isDisabled>
-        <FormLabel>Email address</FormLabel>
-        <Input placeholder="your-email@example.com" type="email" />
-      </FormControl>
-
-      <FormControl id="password" isRequired isDisabled>
-        <FormLabel>Password</FormLabel>
-        <Input placeholder="Enter new password" type="password" />
-      </FormControl>
-
-      <HStack spacing={4} pt={2}>
+      <HStack spacing={4} pt={4}>
         <Button
           bg="gray.100"
           color="brand.500"
           w="full"
-          _hover={{ bg: 'gray.200' }}
+          _hover={{ bg: "gray.200" }}
           onClick={handleChangePassword}
         >
           Change Password
         </Button>
 
         <Button
-           bg="brand.500"
-           color="white"
-           w="full"
-           _hover={{ bg: 'brand.700' }}
-           onClick={() => {
-            onClose();
-            onLogout();
-          }}
-                  >
-          Logout
-        </Button>
-
-      </HStack>
-
-      <HStack spacing={4} pt={4}>
-        <Button
-          bg="red.400"
-          color="white"
-          w="full"
-          _hover={{ bg: 'red.500' }}
-          isDisabled
-        >
-          Cancel
-        </Button>
-        <Button
           bg="brand.500"
           color="white"
           w="full"
-          _hover={{ bg: 'blue.500' }}
-          isDisabled
+          _hover={{ bg: "brand.700" }}
+          onClick={() => {
+            onClose();
+            onLogout();
+          }}
         >
-          Save Changes
+          Logout
         </Button>
       </HStack>
     </Stack>
