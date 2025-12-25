@@ -12,62 +12,80 @@ import {
   VStack,
   Box,
   SimpleGrid,
+  Spinner,
+  Center,
+  Badge,
 } from "@chakra-ui/react";
+import { CheckCircleIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import { FaUser } from "react-icons/fa";
-import {
-  getStoredToken,
-  getStoredUserName,
-  decodeToken,
-} from "../utils/tokenUtils";
+import { get } from "../utils/httpServices";
+import { getStoredToken } from "../utils/tokenUtils";
+import { USER_ENDPOINTS } from "../services/apiService";
 
 export default function UserProfileEdit({ onClose, onLogout }) {
   const navigate = useNavigate();
-
-  // Dummy data for attempts - will be replaced with API call
-  const [attempts, setAttempts] = useState({
-    cvEvaluation: 2,
-    coverLetterEvaluation: 2,
-    mockInterview: 2,
-    sds: 2,
+  const [loading, setLoading] = useState(true);
+  const [userInfo, setUserInfo] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    role: "",
+    isVerified: false,
+    mockAttempts: 0,
+    coverAttempts: 0,
+    resumeAttempts: 0,
+    sdsAttempts: 0,
   });
 
-  // TODO: Replace with actual API call
-  // useEffect(() => {
-  //   const fetchAttempts = async () => {
-  //     try {
-  //       const response = await get(USER_ENDPOINTS.GET_ATTEMPTS);
-  //       setAttempts(response.data);
-  //     } catch (error) {
-  //       console.error("Error fetching attempts:", error);
-  //     }
-  //   };
-  //   fetchAttempts();
-  // }, []);
+  // Fetch user info from API
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        setLoading(true);
+        const token = getStoredToken();
+        const data = await get(USER_ENDPOINTS.GET_USER_INFO, { token });
 
-  // Get user data from localStorage and token
-  const userName = getStoredUserName() || "";
-  const token = getStoredToken();
-  const decodedToken = token ? decodeToken(token) : null;
+        setUserInfo({
+          firstName: data.firstName || "",
+          lastName: data.lastName || "",
+          email: data.email || "",
+          role: data.role || "",
+          isVerified: data.isVerified || false,
+          mockAttempts: data.mockAttempts ?? 0,
+          coverAttempts: data.coverAttempts ?? 0,
+          resumeAttempts: data.resumeAttempts ?? 0,
+          sdsAttempts: data.sdsAttempts ?? 0,
+        });
+      } catch (error) {
+        console.error("Error fetching user info:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Try to get email from token (common claim names)
-  const email = decodedToken
-    ? decodedToken[
-        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
-      ] ||
-      decodedToken.email ||
-      decodedToken.Email ||
-      ""
-    : "";
+    fetchUserInfo();
+  }, []);
+
+  const userName =
+    `${userInfo.firstName} ${userInfo.lastName}`.trim() || "User";
+  const email = userInfo.email || "No email available";
 
   const handleChangePassword = () => {
     onClose();
     navigate("/forgot-password", { state: { from: "profile-edit" } });
   };
 
+  if (loading) {
+    return (
+      <Center py={8}>
+        <Spinner size="xl" color="brand.500" />
+      </Center>
+    );
+  }
+
   return (
     <Stack spacing={6}>
-
       <Flex direction="column" align="center" spacing={4}>
         <Avatar
           size="xl"
@@ -77,18 +95,32 @@ export default function UserProfileEdit({ onClose, onLogout }) {
           mb={4}
         />
         <VStack spacing={2} align="center">
-          <Text fontSize="xl" fontWeight="bold" color="gray.700">
-            {userName || "User"}
-          </Text>
+          <HStack spacing={2} align="center">
+            <Text fontSize="xl" fontWeight="bold" color="gray.700">
+              {userName || "User"}
+            </Text>
+            {userInfo.isVerified && (
+              <CheckCircleIcon color="green.500" boxSize={5} />
+            )}
+          </HStack>
           <Text fontSize="md" color="gray.600">
             {email || "No email available"}
           </Text>
+          <Badge
+            colorScheme={userInfo.isVerified ? "green" : "gray"}
+            fontSize="xs"
+            px={2}
+            py={1}
+            borderRadius="full"
+          >
+            {userInfo.isVerified ? "Verified" : "Not Verified"}
+          </Badge>
         </VStack>
       </Flex>
 
       <Box w="full" pt={2}>
         <Heading fontSize="md" color="gray.700" mb={2} textAlign="center">
-          Service Attempts
+          Service Attempts (Remaining)
         </Heading>
         <SimpleGrid columns={2} spacing={2}>
           <Box
@@ -99,10 +131,10 @@ export default function UserProfileEdit({ onClose, onLogout }) {
             bg="gray.50"
           >
             <Text fontSize="xs" color="gray.600" mb={0.5}>
-              CV Evaluation
+              Resume Evaluations
             </Text>
             <Text fontSize="xl" fontWeight="bold" color="brand.500">
-              {attempts.cvEvaluation}
+              {loading ? "-" : userInfo.resumeAttempts}
             </Text>
           </Box>
           <Box
@@ -113,10 +145,10 @@ export default function UserProfileEdit({ onClose, onLogout }) {
             bg="gray.50"
           >
             <Text fontSize="xs" color="gray.600" mb={0.5}>
-              Cover Letter Evaluation
+              Cover Letter Evaluations
             </Text>
             <Text fontSize="xl" fontWeight="bold" color="brand.500">
-              {attempts.coverLetterEvaluation}
+              {loading ? "-" : userInfo.coverAttempts}
             </Text>
           </Box>
           <Box
@@ -127,10 +159,10 @@ export default function UserProfileEdit({ onClose, onLogout }) {
             bg="gray.50"
           >
             <Text fontSize="xs" color="gray.600" mb={0.5}>
-              Mock Interview
+              Mock Interviews
             </Text>
             <Text fontSize="xl" fontWeight="bold" color="brand.500">
-              {attempts.mockInterview}
+              {loading ? "-" : userInfo.mockAttempts}
             </Text>
           </Box>
           <Box
@@ -141,10 +173,10 @@ export default function UserProfileEdit({ onClose, onLogout }) {
             bg="gray.50"
           >
             <Text fontSize="xs" color="gray.600" mb={0.5}>
-              SDS
+              Personality Tests
             </Text>
             <Text fontSize="xl" fontWeight="bold" color="brand.500">
-              {attempts.sds}
+              {loading ? "-" : userInfo.sdsAttempts}
             </Text>
           </Box>
         </SimpleGrid>
