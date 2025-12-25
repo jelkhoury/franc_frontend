@@ -113,18 +113,48 @@ const Chatting = () => {
   ]);
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isUserScrolled, setIsUserScrolled] = useState(false);
   const messagesEndRef = useRef();
   const messagesContainerRef = useRef();
   const stopTypingRef = useRef(false);
   const typingTimeoutRef = useRef(null);
 
-  // Auto-scroll to bottom when messages change
+  // Smart auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop =
-        messagesContainerRef.current.scrollHeight;
+    if (messagesContainerRef.current && !isUserScrolled) {
+      // Scroll to bottom only if user hasn't scrolled up manually
+      setTimeout(() => {
+        messagesContainerRef.current.scrollTop =
+          messagesContainerRef.current.scrollHeight;
+      }, 0);
     }
-  }, [messages]);
+  }, [messages, isUserScrolled]);
+
+  // Handle keyboard visibility on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      // When keyboard disappears, scroll back to default
+      if (messagesContainerRef.current && !isUserScrolled) {
+        setTimeout(() => {
+          messagesContainerRef.current.scrollTop =
+            messagesContainerRef.current.scrollHeight;
+        }, 100);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isUserScrolled]);
+
+  // Track manual scroll
+  const handleScroll = () => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } =
+        messagesContainerRef.current;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50; // 50px threshold
+      setIsUserScrolled(!isAtBottom);
+    }
+  };
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -222,6 +252,7 @@ const Chatting = () => {
       bgGradient="linear(to-r, white, #ebf8ff)"
       overflow="hidden"
       position="relative"
+      height="100vh"
     >
       {/* Chat container */}
       <Box
@@ -229,12 +260,12 @@ const Chatting = () => {
         maxW="800px"
         mx="auto"
         bg="white"
-        mt={6}
-        mb={4}
-        p={6}
-        borderRadius="xl"
-        boxShadow="lg"
-        height="calc(100vh - 100px)"
+        mt={{ base: 0, md: 6 }}
+        mb={{ base: 0, md: 4 }}
+        p={{ base: 4, md: 6 }}
+        borderRadius={{ base: 0, md: "xl" }}
+        boxShadow={{ base: "none", md: "lg" }}
+        height={{ base: "calc(100vh - 0px)", md: "calc(100vh - 100px)" }}
         display="flex"
         flexDirection="column"
         overflow="hidden"
@@ -246,6 +277,7 @@ const Chatting = () => {
           overflowY="auto"
           overflowX="hidden"
           pr={2}
+          onScroll={handleScroll}
           sx={{
             "&::-webkit-scrollbar": {
               width: "8px",
@@ -277,7 +309,14 @@ const Chatting = () => {
         </Box>
 
         {/* Input area */}
-        <HStack mt={4} spacing={3} align="flex-end" flexShrink={0}>
+        <HStack 
+          mt={4} 
+          spacing={3} 
+          align="flex-end" 
+          flexShrink={0}
+          position={{ base: "relative", md: "relative" }}
+          pb={{ base: "env(safe-area-inset-bottom)", md: 0 }}
+        >
           <Input
             placeholder="Type your message..."
             value={input}
@@ -290,7 +329,7 @@ const Chatting = () => {
             bg="gray.50"
             borderRadius="full"
             flex="1"
-            h="45px"
+            h={{ base: "40px", md: "45px" }}
             px={4}
             fontSize="md"
             isDisabled={isGenerating}
@@ -301,15 +340,15 @@ const Chatting = () => {
             onClick={isGenerating ? handleStop : handleSend}
             borderRadius="full"
             aria-label={isGenerating ? "Stop" : "Send"}
-            h="50px"
-            minW="50px"
+            h={{ base: "40px", md: "50px" }}
+            minW={{ base: "40px", md: "50px" }}
             isDisabled={!isGenerating && !input.trim()}
           />
         </HStack>
       </Box>
 
       {/* Footer */}
-      <Box flexShrink={0} mt={4}>
+      <Box flexShrink={0} mt={4} display={{ base: "none", md: "block" }}>
         <Footer />
       </Box>
     </Box>
