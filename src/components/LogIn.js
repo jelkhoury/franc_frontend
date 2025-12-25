@@ -1,13 +1,15 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { post } from '../utils/httpServices';
+import { useState } from "react";
+import { post } from "../utils/httpServices";
 import {
   Flex,
   Box,
   FormControl,
   FormLabel,
   Input,
+  InputGroup,
+  InputRightElement,
   Checkbox,
   Stack,
   Button,
@@ -15,118 +17,127 @@ import {
   Text,
   useColorModeValue,
   useToast,
-} from '@chakra-ui/react';
-import { useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../components/AuthContext';
-import { decodeToken, getUserRole, getUserName, getUserId } from '../utils/tokenUtils';
-import { USER_ENDPOINTS } from '../services/apiService';
+} from "@chakra-ui/react";
+import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
+import { useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../components/AuthContext";
+import {
+  decodeToken,
+  getUserRole,
+  getUserName,
+  getUserId,
+} from "../utils/tokenUtils";
+import { USER_ENDPOINTS } from "../services/apiService";
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   const toast = useToast();
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
+    try {
+      // ---- login request ----
+      const data = await post(USER_ENDPOINTS.SIGN_IN, { email, password });
 
-  try {
-    // ---- login request ----
-    const data = await post(USER_ENDPOINTS.SIGN_IN, { email, password });
+      // ---- store and decode token ----
+      const { token } = data;
+      if (!token) throw new Error("No token received from server");
 
-    // ---- store and decode token ----
-    const { token } = data;
-    if (!token) throw new Error("No token received from server");
+      localStorage.setItem("token", token);
 
-    localStorage.setItem("token", token);
+      const decoded = decodeToken(token);
+      if (!decoded) throw new Error("Invalid token received");
 
-    const decoded = decodeToken(token);
-    if (!decoded) throw new Error("Invalid token received");
+      // ---- extract and store user details ----
+      const userRole = getUserRole(token);
+      const userName = getUserName(token);
+      const userId = getUserId(token);
 
-    // ---- extract and store user details ----
-    const userRole = getUserRole(token);
-    const userName = getUserName(token);
-    const userId = getUserId(token);
+      localStorage.setItem("userRole", userRole);
+      localStorage.setItem("userName", userName);
+      localStorage.setItem("userId", userId);
 
-    localStorage.setItem("userRole", userRole);
-    localStorage.setItem("userName", userName);
-    localStorage.setItem("userId", userId);
+      // ---- update context & navigate ----
+      login();
 
-    // ---- update context & navigate ----
-    login();
-
-    toast({
-      title: "Login successful!",
-      description: `Welcome back, ${userName}!`,
-      status: "success",
-      duration: 3000,
-      isClosable: true,
-    });
-
-    navigate(userRole === "Admin" ? "/admin" : "/");
-
-  } catch (err) {
-    console.error("Login error:", err);
-    const errorMessage = err.message || "Invalid credentials";
-    
-    // Check if account is not verified
-    if (errorMessage.toLowerCase().includes("account not verified") || 
-        errorMessage.toLowerCase().includes("not verified")) {
       toast({
-        title: "Account not verified",
-        description: "Please verify your email to continue.",
-        status: "error",
+        title: "Login successful!",
+        description: `Welcome back, ${userName}!`,
+        status: "success",
         duration: 3000,
         isClosable: true,
       });
-      
-      // Wait 2 seconds then navigate to OTP verification page
-      setTimeout(() => {
-        navigate('/otp-verification', {
-          state: { 
-            email: email,
-            shouldSendCode: true 
-          }
+
+      navigate(userRole === "Admin" ? "/admin" : "/");
+    } catch (err) {
+      console.error("Login error:", err);
+      const errorMessage = err.message || "Invalid credentials";
+
+      // Check if account is not verified
+      if (
+        errorMessage.toLowerCase().includes("account not verified") ||
+        errorMessage.toLowerCase().includes("not verified")
+      ) {
+        toast({
+          title: "Account not verified",
+          description: "Please verify your email to continue.",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
         });
-      }, 2000);
-    } else {
-      // Show invalid credentials error
-      toast({
-        title: "Login failed",
-        description: "Invalid credentials",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
+
+        // Wait 2 seconds then navigate to OTP verification page
+        setTimeout(() => {
+          navigate("/otp-verification", {
+            state: {
+              email: email,
+              shouldSendCode: true,
+            },
+          });
+        }, 2000);
+      } else {
+        // Show invalid credentials error
+        toast({
+          title: "Login failed",
+          description: "Invalid credentials",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <Flex
-      minH={'100vh'}
-      align={'center'}
-      justify={'center'}
-      bg={useColorModeValue('gray.50', 'gray.800')}
+      minH={"100vh"}
+      align={"center"}
+      justify={"center"}
+      bg={useColorModeValue("gray.50", "gray.800")}
     >
-      <Stack spacing={8} mx={'auto'} maxW={'lg'} py={12} px={6}>
-        <Stack align={'center'}>
-          <Heading color="brand.500" fontSize={'4xl'}>Log in to your account</Heading>
-          <Text fontSize={'lg'} color={'gray.600'}>
+      <Stack spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
+        <Stack align={"center"}>
+          <Heading color="brand.500" fontSize={"4xl"}>
+            Log in to your account
+          </Heading>
+          <Text fontSize={"lg"} color={"gray.600"}>
             to access all Franc features ✌️
           </Text>
         </Stack>
         <Box
-          rounded={'lg'}
-          bg={useColorModeValue('white', 'gray.700')}
-          boxShadow={'lg'}
+          rounded={"lg"}
+          bg={useColorModeValue("white", "gray.700")}
+          boxShadow={"lg"}
           p={8}
         >
           <Stack spacing={4} as="form" onSubmit={handleSubmit}>
@@ -140,28 +151,40 @@ const handleSubmit = async (e) => {
             </FormControl>
             <FormControl id="password" isRequired>
               <FormLabel>Password</FormLabel>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <InputGroup>
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <InputRightElement h={"full"}>
+                  <Button
+                    variant={"ghost"}
+                    onClick={() =>
+                      setShowPassword((showPassword) => !showPassword)
+                    }
+                  >
+                    {showPassword ? <ViewIcon /> : <ViewOffIcon />}
+                  </Button>
+                </InputRightElement>
+              </InputGroup>
             </FormControl>
             <Stack spacing={6}>
               <Stack
-                direction={{ base: 'column', sm: 'row' }}
-                align={'start'}
-                justify={'space-between'}
+                direction={{ base: "column", sm: "row" }}
+                align={"start"}
+                justify={"space-between"}
               >
-                <Checkbox>Remember me</Checkbox>
+                {/* <Checkbox>Remember me</Checkbox> */}
                 <Link to="/forgot-password">
-                  <Text color={'blue.400'}>Forgot password?</Text>
+                  <Text color={"blue.400"}>Forgot password?</Text>
                 </Link>
               </Stack>
               <Button
-                bg={'brand.500'}
-                color={'white'}
+                bg={"brand.500"}
+                color={"white"}
                 _hover={{
-                  bg: 'blue.500',
+                  bg: "blue.500",
                 }}
                 type="submit"
                 isLoading={loading}
@@ -170,10 +193,10 @@ const handleSubmit = async (e) => {
               </Button>
             </Stack>
             <Stack pt={4}>
-              <Text textAlign={'center'}>
-                Don't have an account?{' '}
+              <Text textAlign={"center"}>
+                Don't have an account?{" "}
                 <Link to="/signup">
-                  <Text as="span" color={'blue.400'} fontWeight="medium">
+                  <Text as="span" color={"blue.400"} fontWeight="medium">
                     Sign up
                   </Text>
                 </Link>

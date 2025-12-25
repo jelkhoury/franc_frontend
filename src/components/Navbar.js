@@ -183,7 +183,7 @@ const Navbar = () => {
       <Modal isOpen={isProfileOpen} onClose={onProfileClose} size="lg">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Edit Profile</ModalHeader>
+          <ModalHeader>View Profile</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <UserProfileEdit onClose={onProfileClose} onLogout={handleLogout} />

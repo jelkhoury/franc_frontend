@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Box,
@@ -9,47 +9,155 @@ import {
   Text,
   Flex,
   useColorModeValue,
-} from '@chakra-ui/react';
-import { useState, useRef, useMemo } from 'react';
-import { ArrowForwardIcon } from '@chakra-ui/icons';
-import Footer from '../../components/Footer';
-import { post } from '../../utils/httpServices';
-import { AI_ENDPOINTS } from '../../services/apiService';
+} from "@chakra-ui/react";
+import { useState, useRef, useEffect } from "react";
+import { ArrowForwardIcon, CloseIcon } from "@chakra-ui/icons";
+import Footer from "../../components/Footer";
+import { post } from "../../utils/httpServices";
+import { AI_ENDPOINTS } from "../../services/apiService";
 
-const ChatBubble = ({ message, isUser }) => (
-  <Flex justify={isUser ? 'flex-end' : 'flex-start'} w="100%">
-    <Box
-      bg={isUser ? 'brand.500' : useColorModeValue('gray.100', 'gray.700')}
-      color={isUser ? 'white' : useColorModeValue('gray.800', 'gray.200')}
-      px={4}
-      py={2}
-      borderRadius="xl"
-      maxW="75%"
-      minW="20%"
-      wordBreak="break-word"
-    >
-      <Text whiteSpace="pre-wrap">{message}</Text> {/* <-- This enables \n line breaks */}
+const TypingIndicator = () => {
+  const dotColor = useColorModeValue("gray.500", "gray.400");
+
+  return (
+    <Flex justify="flex-start" w="100%">
+      <Box
+        bg={useColorModeValue("gray.100", "gray.700")}
+        px={4}
+        py={3}
+        borderRadius="xl"
+        minW="60px"
+        sx={{
+          "@keyframes typingBounce": {
+            "0%, 60%, 100%": {
+              transform: "translateY(0)",
+              opacity: 0.7,
+            },
+            "30%": {
+              transform: "translateY(-10px)",
+              opacity: 1,
+            },
+          },
+        }}
+      >
+        <HStack spacing={1.5}>
+          <Box
+            as="span"
+            w="8px"
+            h="8px"
+            bg={dotColor}
+            borderRadius="full"
+            display="inline-block"
+            sx={{
+              animation: "typingBounce 1.4s ease-in-out infinite",
+              animationDelay: "0s",
+            }}
+          />
+          <Box
+            as="span"
+            w="8px"
+            h="8px"
+            bg={dotColor}
+            borderRadius="full"
+            display="inline-block"
+            sx={{
+              animation: "typingBounce 1.4s ease-in-out infinite",
+              animationDelay: "0.2s",
+            }}
+          />
+          <Box
+            as="span"
+            w="8px"
+            h="8px"
+            bg={dotColor}
+            borderRadius="full"
+            display="inline-block"
+            sx={{
+              animation: "typingBounce 1.4s ease-in-out infinite",
+              animationDelay: "0.4s",
+            }}
+          />
+        </HStack>
       </Box>
-  </Flex>
-);
+    </Flex>
+  );
+};
+
+const ChatBubble = ({ message, isUser, isTyping }) => {
+  if (isTyping) {
+    return <TypingIndicator />;
+  }
+
+  return (
+    <Flex justify={isUser ? "flex-end" : "flex-start"} w="100%">
+      <Box
+        bg={isUser ? "brand.500" : useColorModeValue("gray.100", "gray.700")}
+        color={isUser ? "white" : useColorModeValue("gray.800", "gray.200")}
+        px={4}
+        py={2}
+        borderRadius="xl"
+        maxW="75%"
+        minW="20%"
+        wordBreak="break-word"
+      >
+        <Text whiteSpace="pre-wrap">{message}</Text>{" "}
+        {/* <-- This enables \n line breaks */}
+      </Box>
+    </Flex>
+  );
+};
 
 const Chatting = () => {
   const [messages, setMessages] = useState([
     { text: "Hello! How can I help you today?", sender: "bot" },
   ]);
   const [input, setInput] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
   const messagesEndRef = useRef();
+  const messagesContainerRef = useRef();
+  const stopTypingRef = useRef(false);
+  const typingTimeoutRef = useRef(null);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleStop = () => {
+    stopTypingRef.current = true;
+    setIsGenerating(false);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+  };
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isGenerating) return;
 
     const userMessage = { text: input, sender: "user" };
     setMessages((prev) => [...prev, userMessage]);
 
     setInput("");
+    setIsGenerating(true);
+    stopTypingRef.current = false;
 
     // Show typing indicator
-    setMessages((prev) => [...prev, { text: "...", sender: "bot" }]);
+    setMessages((prev) => [
+      ...prev,
+      { text: "", sender: "bot", isTyping: true },
+    ]);
 
     try {
       // ✅ Using httpService now
@@ -62,12 +170,27 @@ const Chatting = () => {
       const botResponse = data.response || "No response";
 
       // Remove typing indicator and prepare for typing animation
-      setMessages((prev) => [...prev.slice(0, -1), { text: "", sender: "bot" }]);
+      setMessages((prev) => [
+        ...prev.slice(0, -1),
+        { text: "", sender: "bot", isTyping: false },
+      ]);
 
       // Simulate typing effect
       let currentText = "";
       for (let i = 0; i < botResponse.length; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 30)); // typing speed
+        if (stopTypingRef.current) {
+          // If stopped, keep the current text and break
+          break;
+        }
+
+        await new Promise((resolve) => {
+          typingTimeoutRef.current = setTimeout(resolve, 30); // typing speed
+        });
+
+        if (stopTypingRef.current) {
+          break;
+        }
+
         currentText += botResponse[i];
         setMessages((prev) => {
           const updated = [...prev];
@@ -75,12 +198,19 @@ const Chatting = () => {
           return updated;
         });
       }
+
+      setIsGenerating(false);
     } catch (error) {
       console.error("Error fetching response:", error);
       setMessages((prev) => [
         ...prev.slice(0, -1),
-        { text: "Sorry, I couldn't get a response.", sender: "bot" },
+        {
+          text: "Sorry, I couldn't get a response.",
+          sender: "bot",
+          isTyping: false,
+        },
       ]);
+      setIsGenerating(false);
     }
   };
 
@@ -91,6 +221,7 @@ const Chatting = () => {
       flexDirection="column"
       bgGradient="linear(to-r, white, #ebf8ff)"
       overflow="hidden"
+      position="relative"
     >
       {/* Chat container */}
       <Box
@@ -99,51 +230,86 @@ const Chatting = () => {
         mx="auto"
         bg="white"
         mt={6}
+        mb={4}
         p={6}
         borderRadius="xl"
         boxShadow="lg"
-        flexShrink={0}
         height="calc(100vh - 100px)"
         display="flex"
         flexDirection="column"
         overflow="hidden"
       >
         {/* Messages area */}
-        <VStack spacing={3} align="stretch" flex="1" overflowY="auto" pr={2}>
-          {messages.map((msg, idx) => (
-            <ChatBubble key={idx} message={msg.text} isUser={msg.sender === 'user'} />
-          ))}
-          <div ref={messagesEndRef} />
-        </VStack>
+        <Box
+          ref={messagesContainerRef}
+          flex="1"
+          overflowY="auto"
+          overflowX="hidden"
+          pr={2}
+          sx={{
+            "&::-webkit-scrollbar": {
+              width: "8px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: "#f1f1f1",
+              borderRadius: "10px",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: "#888",
+              borderRadius: "10px",
+            },
+            "&::-webkit-scrollbar-thumb:hover": {
+              background: "#555",
+            },
+          }}
+        >
+          <VStack spacing={3} align="stretch" pb={2}>
+            {messages.map((msg, idx) => (
+              <ChatBubble
+                key={idx}
+                message={msg.text}
+                isUser={msg.sender === "user"}
+                isTyping={msg.isTyping || false}
+              />
+            ))}
+            <div ref={messagesEndRef} />
+          </VStack>
+        </Box>
 
         {/* Input area */}
-        <HStack mt={4} spacing={3} align="flex-end">
+        <HStack mt={4} spacing={3} align="flex-end" flexShrink={0}>
           <Input
             placeholder="Type your message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !isGenerating) {
+                handleSend();
+              }
+            }}
             bg="gray.50"
             borderRadius="full"
             flex="1"
             h="45px"
             px={4}
             fontSize="md"
+            isDisabled={isGenerating}
           />
           <IconButton
-            icon={<ArrowForwardIcon />}
+            icon={isGenerating ? <CloseIcon /> : <ArrowForwardIcon />}
             colorScheme="brand"
-            onClick={handleSend}
+            onClick={isGenerating ? handleStop : handleSend}
             borderRadius="full"
-            aria-label="Send"
+            aria-label={isGenerating ? "Stop" : "Send"}
             h="50px"
             minW="50px"
+            isDisabled={!isGenerating && !input.trim()}
           />
         </HStack>
       </Box>
 
       {/* Footer */}
-      <Box flexShrink={0} mt={6}>
+      <Box flexShrink={0} mt={4}>
         <Footer />
       </Box>
     </Box>

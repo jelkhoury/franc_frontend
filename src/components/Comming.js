@@ -10,37 +10,38 @@ import {
   Image,
   useBreakpointValue,
 } from "@chakra-ui/react";
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
 import React from "react";
 import {
   FcAssistant,
   FcCollaboration,
   FcManager,
   FcDonate,
-} from 'react-icons/fc';
+} from "react-icons/fc";
 
 const MotionBox = motion(Box);
 
 const services = [
   {
-    heading: 'Job comparison',
-    description: 'Try the shoes before you choose the path.',
-    gif:"/assets/images/comparison.gif",
+    heading: "Job comparison",
+    description: "Try the shoes before you choose the path.",
+    gif: "/assets/images/comparison.gif",
   },
   {
-    heading: 'Job Matchmaking',
-    description: 'The right key opens the right door.',
-    gif:"/assets/images/job_matching.gif",
+    heading: "Job Matchmaking",
+    description: "The right key opens the right door.",
+    gif: "/assets/images/job_matching.gif",
   },
   {
-    heading: 'Values and Interests',
-    description: 'Choose a job you love and you will never have to work a day in your life.',
-    gif:"/assets/images/values.gif",
+    heading: "Values and Interests",
+    description:
+      "Choose a job you love and you will never have to work a day in your life.",
+    gif: "/assets/images/values.gif",
   },
   {
-    heading: 'Gamification',
-    description: 'Level up your skills, level up your future.',
-    gif:"/assets/images/gamification.gif",
+    heading: "Gamification",
+    description: "Level up your skills, level up your future.",
+    gif: "/assets/images/gamification.gif",
   },
 ];
 
@@ -118,7 +119,9 @@ const ServiceCard = ({ heading, description, icon, gif }) => {
             textAlign="center"
             zIndex={2}
           >
-            <Heading color="brand.500" size="md">{heading}</Heading>
+            <Heading color="brand.500" size="md">
+              {heading}
+            </Heading>
             <Text fontSize="md" color={backText}>
               {description}
             </Text>
@@ -218,7 +221,9 @@ const ServiceCard = ({ heading, description, icon, gif }) => {
             WebkitBackfaceVisibility: "hidden",
           }}
         >
-          <Heading color="brand.500" size="md">{heading}</Heading>
+          <Heading color="brand.500" size="md">
+            {heading}
+          </Heading>
           <Text fontSize="md" color={backText}>
             {description}
           </Text>
@@ -239,7 +244,7 @@ const ComingSoonServices = () => (
         bg="transparent" // ✅ no background
       >
         <Image
-          src="/assets/images/ratatouille.png" // your image path
+          src="/assets/images/Ratatouille_new.png" // your image path
           alt="Cooking Avatar"
           boxSize="200px"
           borderRadius="md"
@@ -248,7 +253,12 @@ const ComingSoonServices = () => (
         />
       </Box>
 
-      <Heading color="brand.500" fontSize={{ base: "2xl", sm: "4xl" }} fontWeight="bold" mt={4}>
+      <Heading
+        color="brand.500"
+        fontSize={{ base: "2xl", sm: "4xl" }}
+        fontWeight="bold"
+        mt={4}
+      >
         Something is Cooking
       </Heading>
 
