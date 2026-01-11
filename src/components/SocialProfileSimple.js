@@ -24,12 +24,12 @@ export default function SocialProfileSimple({
   linkedin,
 }) {
   return (
-    <Center py={4}>
+    <Center py={4} w="100%">
       <Box
-        maxW={"280px"}
-        minW={"220px"}
+        w="100%"
+        maxW={"270px"}
         minH={"180px"}
-        w={"full"}
+        
         bg={useColorModeValue("white", "gray.900")}
         boxShadow={"lg"} // ⬅ lighter shadow
         rounded={"md"} // ⬅ smaller radius
@@ -53,7 +53,14 @@ export default function SocialProfileSimple({
           {name}
         </Heading>
 
-        <Text fontSize="sm" fontWeight={600} color={"gray.600"} mb={1}>
+        <Text 
+          fontSize="sm" 
+          fontWeight={600} 
+          color={"gray.600"} 
+          mb={1}
+          wordBreak="break-word"
+          overflowWrap="break-word"
+        >
           {role}
         </Text>
 

@@ -39,7 +39,7 @@ const teamMembers = [
     name: "Charbel Gemayel",
     role: "Head of Computer Science Department",
     image: "/assets/images/Charbel.jpg",
-    contact: "charbel.gemayel@ua.edu.lb",
+    contact: "charbel.gmayel@ua.edu.lb",
     linkedin: "https://www.linkedin.com/in/charbel-el-gemayel-1105ab203/",
   },
   {
@@ -53,7 +53,7 @@ const teamMembers = [
     name: "Rani Hijazi",
     role: "Lead Software Developer",
     image: "/assets/images/Rani Hijazi.jpg",
-    contact: "rani_hijazy@outlook.com",
+    contact: "rani_hijazi1@outlook.com",
     linkedin: "https://www.linkedin.com/in/rani-hijazi-903181270/",
   },
 ];
@@ -121,14 +121,14 @@ const AboutUsPage = () => {
         </Heading>
 
         <SimpleGrid
-          columns={{ base: 1, sm: 2, md: 6 }}
+          columns={{ base: 1, sm: 2, md: 3, lg: 6 }}
           spacing={6}
           justifyItems="center"
         >
           {teamMembers.map((member, idx) => (
             <MotionBox
               key={idx}
-              flexBasis={{ base: "100%", sm: "48%", md: "22%" }}
+              w="100%"
               maxW="270px"
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
