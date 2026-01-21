@@ -110,6 +110,15 @@ const QuestionField = ({
                     display="inline-flex"
                     alignItems="center"
                     gap={2}
+                    onClick={(e) => {
+                      // Allow deselecting by clicking the same selected option
+                      if (selected) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // Call onChange with the same value to trigger deselection in parent
+                        onChange(String(opt.value));
+                      }
+                    }}
                   >
                     {/* hide the native radio when using chips */}
                     <Radio

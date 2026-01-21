@@ -145,7 +145,7 @@ const SdsTry = () => {
     return sections.every((section) =>
       (section.questions || []).every((q) => {
         const answer = answers[q.id];
-        if (q.type === 5) {
+        if (q.type === 5 || q.type === 6) {
           // Text questions need non-empty text
           return answer && answer.toString().trim().length > 0;
         } else if (q.type === 2) {
@@ -164,7 +164,7 @@ const SdsTry = () => {
   // Check if a specific question is answered
   const isQuestionAnswered = (question) => {
     const answer = answers[question.id];
-    if (question.type === 5) {
+    if (question.type === 5 || question.type === 6) {
       // Text questions need non-empty text
       return answer && answer.toString().trim().length > 0;
     } else if (question.type === 2) {
@@ -707,7 +707,105 @@ const SdsTry = () => {
                                         ? selectedOption.value
                                         : null,
                                     }));
+                                  } else if (q.type === 1) {
+                                    // Radio buttons: allow deselecting by clicking the same option
+                                    const currentValue = answers[q.id];
+                                    const newValue = String(val);
+                                    
+                                    // If clicking the same option, remove the answer
+                                    if (currentValue !== null && currentValue !== undefined && String(currentValue) === newValue) {
+                                      setAnswers((prev) => {
+                                        const updated = { ...prev };
+                                        delete updated[q.id];
+                                        return updated;
+                                      });
+                                      // Clear validation error if exists
+                                      setRiasecValidationErrors((prev) => {
+                                        const updated = { ...prev };
+                                        delete updated[q.id];
+                                        return updated;
+                                      });
+                                    } else {
+                                      // Set the new answer
+                                      // Log faculty question selection
+                                      if (q.id === 364) {
+                                        console.log(
+                                          "Faculty question (ID 364) answered!"
+                                        );
+                                        console.log("Question text:", q.text);
+                                        console.log("Selected value:", val);
+                                        console.log(
+                                          "Available options:",
+                                          q.answerOptions
+                                        );
+
+                                        // Find the selected option details
+                                        const selectedOption =
+                                          q.answerOptions.find(
+                                            (opt) =>
+                                              String(opt.value) === String(val)
+                                          );
+                                        console.log(
+                                          "Selected option details:",
+                                          selectedOption
+                                        );
+                                      }
+
+                                      // Validate RIASEC input for specific question
+                                      const validationError = validateRiasecInput(
+                                        q.text,
+                                        val
+                                      );
+
+                                      // Update validation errors
+                                      setRiasecValidationErrors((prev) => ({
+                                        ...prev,
+                                        [q.id]: validationError,
+                                      }));
+
+                                      setAnswers((prev) => ({
+                                        ...prev,
+                                        [q.id]: val,
+                                      }));
+                                    }
+                                  } else if (q.type === 5 || q.type === 6) {
+                                    // Textboxes and textareas: remove answer if text becomes empty
+                                    const trimmedValue = (val ?? "").toString().trim();
+                                    
+                                    if (trimmedValue.length === 0) {
+                                      // Remove the answer from the object
+                                      setAnswers((prev) => {
+                                        const updated = { ...prev };
+                                        delete updated[q.id];
+                                        return updated;
+                                      });
+                                      // Clear validation error if exists
+                                      setRiasecValidationErrors((prev) => {
+                                        const updated = { ...prev };
+                                        delete updated[q.id];
+                                        return updated;
+                                      });
+                                    } else {
+                                      // Set the new answer
+                                      // Validate RIASEC input for specific question
+                                      const validationError = validateRiasecInput(
+                                        q.text,
+                                        val
+                                      );
+
+                                      // Update validation errors
+                                      setRiasecValidationErrors((prev) => ({
+                                        ...prev,
+                                        [q.id]: validationError,
+                                      }));
+
+                                      setAnswers((prev) => ({
+                                        ...prev,
+                                        [q.id]: val,
+                                      }));
+                                    }
                                   } else {
+                                    // For other types (checkbox, select, etc.)
                                     // Log faculty question selection
                                     if (q.id === 364) {
                                       console.log(
