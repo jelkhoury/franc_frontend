@@ -87,3 +87,12 @@ export const AI_ENDPOINTS = {
   GET_OCCUPATIONS_OR_EDUCATIONS_FOR_CODE:
     "/get-occupations-or-educations-for-code",
 };
+
+// Job Matching endpoints (use base: "ai" when calling)
+export const JOB_MATCHING_ENDPOINTS = {
+  MAJOR_SKILLS: "/jobmatching/major_skills",
+  SEARCH_OPPORTUNITIES: "/jobmatching/search_opportunities",
+};
+
+
+

@@ -34,6 +34,8 @@ import SdsPage from "./pages/services/SdsPage";
 import SdsOnBoarding from "./pages/services/SdsOnBoarding";
 import SdsTry from "./pages/services/SdsTry";
 import SdsResult from "./pages/services/SdsResult";
+import JobMatchingPage from "./pages/services/JobMatchingPage";
+import JobMatchingTryPage from "./pages/services/JobMatchingTryPage";
 
 // ScrollToTop component to reset scroll position on route change
 const ScrollToTop = () => {
@@ -115,6 +117,8 @@ const MainLayout = () => {
         />
         <Route path="/self-directed-search/try" element={<SdsTry />} />
         <Route path="/self-directed-search/result" element={<SdsResult />} />
+        <Route path="/job-matching" element={<JobMatchingPage />} />
+        <Route path="/job-matching/try" element={<JobMatchingTryPage />} />
       </Routes>
     </>
   );

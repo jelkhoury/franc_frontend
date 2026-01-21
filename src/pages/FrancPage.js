@@ -84,7 +84,8 @@ const services = [
     heading: "Job Matchmaking",
     description: "The right key opens the right door.",
     gif: "/assets/images/job_matching.gif",
-    isActive: false,
+    link: "/job-matching",
+    isActive: true,
   },
   {
     heading: "Values and Interests",
