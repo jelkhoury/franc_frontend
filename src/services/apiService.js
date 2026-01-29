@@ -100,3 +100,12 @@ export const JOB_COMPARISON_ENDPOINTS = {
   DELETE_COMPARISON: (id) => `/api/jobcomparison/${id}`,
   EXPORT_EXCEL: (id) => `/api/jobcomparison/${id}/export-excel`,
 };
+
+// Job Matching endpoints (use base: "ai" when calling)
+export const JOB_MATCHING_ENDPOINTS = {
+  MAJOR_SKILLS: "/jobmatching/major_skills",
+  SEARCH_OPPORTUNITIES: "/jobmatching/search_opportunities",
+};
+
+
+

@@ -39,6 +39,8 @@ import JobComparisonSetup from "./pages/services/jobComparison/JobComparisonSetu
 import JobComparisonQuestion from "./pages/services/jobComparison/JobComparisonQuestion";
 import JobComparisonReview from "./pages/services/jobComparison/JobComparisonReview";
 import JobComparisonResults from "./pages/services/jobComparison/JobComparisonResults";
+import JobMatchingPage from "./pages/services/JobMatchingPage";
+import JobMatchingTryPage from "./pages/services/JobMatching/JobMatchingTryPage";
 
 // ScrollToTop component to reset scroll position on route change
 const ScrollToTop = () => {
@@ -131,6 +133,8 @@ const MainLayout = () => {
           path="/job-comparison/results"
           element={<JobComparisonResults />}
         />
+        <Route path="/job-matching" element={<JobMatchingPage />} />
+        <Route path="/job-matching/try" element={<JobMatchingTryPage />} />
       </Routes>
     </>
   );
