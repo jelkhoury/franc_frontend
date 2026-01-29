@@ -22,6 +22,7 @@ export const USER_ENDPOINTS = {
   CAN_USER_PERFORM_ACTION: (userId, action) =>
     `/api/users/CanUserPerformAction?userId=${userId}&action=${action}`,
   GET_USER_INFO: "/api/users/GetUserInfo",
+  GET_CHATS: "/api/users/chats",
 };
 
 // SDS (Self-Discovery System) endpoints
@@ -72,6 +73,7 @@ export const BLOB_STORAGE_ENDPOINTS = {
   GET_FACULTIES: "/api/blob/get-faculties",
   GET_MAJORS: "/api/blob/get-majors",
   UPLOAD_FILE: "/api/blob/upload-file",
+  GET_ADMIN_FILES: "/api/blob/get-admin-files",
   // Admin endpoints (if needed)
   CREATE_QUESTION: "/api/blob/create-question",
   CREATE_QUESTIONS: "/api/blob/create-questions",
@@ -86,4 +88,15 @@ export const AI_ENDPOINTS = {
   SUGGEST_BY_CODE: "/suggest-by-code",
   GET_OCCUPATIONS_OR_EDUCATIONS_FOR_CODE:
     "/get-occupations-or-educations-for-code",
+};
+
+// Job Comparison endpoints
+export const JOB_COMPARISON_ENDPOINTS = {
+  GET_CRITERIA: "/api/jobcomparison/criteria",
+  CHECK_INCOMPLETE: "/api/jobcomparison/check",
+  SAVE_COMPARISON: "/api/jobcomparison/save",
+  GET_COMPARISON: (id) => `/api/jobcomparison/${id}`,
+  GET_ALL_COMPARISONS: "/api/jobcomparison",
+  DELETE_COMPARISON: (id) => `/api/jobcomparison/${id}`,
+  EXPORT_EXCEL: (id) => `/api/jobcomparison/${id}/export-excel`,
 };

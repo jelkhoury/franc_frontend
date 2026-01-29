@@ -34,6 +34,11 @@ import SdsPage from "./pages/services/SdsPage";
 import SdsOnBoarding from "./pages/services/SdsOnBoarding";
 import SdsTry from "./pages/services/SdsTry";
 import SdsResult from "./pages/services/SdsResult";
+import JobComparisonLanding from "./pages/services/jobComparison/JobComparisonLanding";
+import JobComparisonSetup from "./pages/services/jobComparison/JobComparisonSetup";
+import JobComparisonQuestion from "./pages/services/jobComparison/JobComparisonQuestion";
+import JobComparisonReview from "./pages/services/jobComparison/JobComparisonReview";
+import JobComparisonResults from "./pages/services/jobComparison/JobComparisonResults";
 
 // ScrollToTop component to reset scroll position on route change
 const ScrollToTop = () => {
@@ -115,6 +120,17 @@ const MainLayout = () => {
         />
         <Route path="/self-directed-search/try" element={<SdsTry />} />
         <Route path="/self-directed-search/result" element={<SdsResult />} />
+        <Route path="/job-comparison" element={<JobComparisonLanding />} />
+        <Route path="/job-comparison/setup" element={<JobComparisonSetup />} />
+        <Route
+          path="/job-comparison/question/:criterionId"
+          element={<JobComparisonQuestion />}
+        />
+        <Route path="/job-comparison/review" element={<JobComparisonReview />} />
+        <Route
+          path="/job-comparison/results"
+          element={<JobComparisonResults />}
+        />
       </Routes>
     </>
   );

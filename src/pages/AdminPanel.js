@@ -37,10 +37,13 @@ import ManageMockInterviews from "../components/Admin/ManageMockInterviews";
 import ManageSelfTests from "../components/Admin/ManageSelfTests";
 import ManagePersonalityTestQuestions from "../components/Admin/ManagePersonalityTestQuestions";
 import ManageMockInterviewQuestions from "../components/Admin/ManageMockInterviewQuestions";
+import ManageFiles from "../components/Admin/ManageFiles";
+import ManageChatbot from "../components/Admin/ManageChatbot";
+import ManageJobComparisons from "../components/Admin/ManageJobComparisons";
 import { AuthContext } from "../components/AuthContext";
 import UserProfileEdit from "../components/UserProfileEdit"; // Adjust path if necessary
-import { FaUser } from "react-icons/fa";
-import { getStoredUserRole, getUserRole, getStoredToken } from "../utils/tokenUtils";
+import { FaUser, FaHome } from "react-icons/fa";
+import { getStoredToken, getUserRole, getStoredUserRole } from "../utils/tokenUtils";
 
 const AdminPanel = () => {
   const [selectedTab, setSelectedTab] = useState("users");
@@ -220,7 +223,55 @@ const AdminPanel = () => {
           >
             <Text>Manage Personality Test Questions</Text>
           </ListItem>
+          <ListItem
+            cursor="pointer"
+            _hover={{ color: "blue.500" }}
+            onClick={() => handleTabChange("files")}
+            fontWeight={selectedTab === "files" ? "bold" : "normal"}
+            p={2}
+            borderRadius="md"
+            bg={selectedTab === "files" ? "blue.50" : "transparent"}
+          >
+            <Text>Manage Files</Text>
+          </ListItem>
+          <ListItem
+            cursor="pointer"
+            _hover={{ color: "blue.500" }}
+            onClick={() => handleTabChange("chatbot")}
+            fontWeight={selectedTab === "chatbot" ? "bold" : "normal"}
+            p={2}
+            borderRadius="md"
+            bg={selectedTab === "chatbot" ? "blue.50" : "transparent"}
+          >
+            <Text>Manage Chatbot</Text>
+          </ListItem>
+          <ListItem
+            cursor="pointer"
+            _hover={{ color: "blue.500" }}
+            onClick={() => handleTabChange("jobComparisons")}
+            fontWeight={selectedTab === "jobComparisons" ? "bold" : "normal"}
+            p={2}
+            borderRadius="md"
+            bg={selectedTab === "jobComparisons" ? "blue.50" : "transparent"}
+          >
+            <Text>Manage Job Comparisons</Text>
+          </ListItem>
         </List>
+        <Divider my={4} />
+        <Box
+          as={Link}
+          to="/franc"
+          cursor="pointer"
+          _hover={{ color: "blue.500", bg: "blue.50" }}
+          p={2}
+          borderRadius="md"
+          display="flex"
+          alignItems="center"
+          gap={2}
+        >
+          <FaHome />
+          <Text>Go to Franc</Text>
+        </Box>
       </div>
 
       <Box mt={4}>
@@ -344,6 +395,9 @@ const AdminPanel = () => {
         {selectedTab === "mockInterviewQuestions" && <ManageMockInterviewQuestions />}
         {selectedTab === "selfTests" && <ManageSelfTests />}
         {selectedTab === "personalityQuestions" && <ManagePersonalityTestQuestions />}
+        {selectedTab === "files" && <ManageFiles />}
+        {selectedTab === "chatbot" && <ManageChatbot />}
+        {selectedTab === "jobComparisons" && <ManageJobComparisons />}
       </Box>
     </Flex>
   );

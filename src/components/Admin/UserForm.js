@@ -1,6 +1,7 @@
 import React from "react";
 import {
   VStack,
+  HStack,
   FormControl,
   FormLabel,
   Input,
@@ -81,21 +82,77 @@ const UserForm = ({ formData, setFormData, isEdit = false }) => {
         />
       </FormControl>
 
-      <FormControl>
-        <FormLabel>Mock Attempts</FormLabel>
-        <NumberInput
-          value={formData.mockAttempts}
-          onChange={(valueString) =>
-            setFormData({
-              ...formData,
-              mockAttempts: parseInt(valueString) || 0,
-            })
-          }
-          min={0}
-        >
-          <NumberInputField />
-        </NumberInput>
-      </FormControl>
+      <HStack spacing={4} align="stretch">
+        <FormControl flex={1} display="flex" alignItems="center">
+          <FormLabel mb={0} minW="120px">Mock Attempts</FormLabel>
+          <NumberInput
+            flex={1}
+            value={formData.mockAttempts}
+            onChange={(valueString) =>
+              setFormData({
+                ...formData,
+                mockAttempts: parseInt(valueString) || 0,
+              })
+            }
+            min={0}
+          >
+            <NumberInputField />
+          </NumberInput>
+        </FormControl>
+
+        <FormControl flex={1} display="flex" alignItems="center">
+          <FormLabel mb={0} minW="120px">SDS Attempts</FormLabel>
+          <NumberInput
+            flex={1}
+            value={formData.sdsAttempts}
+            onChange={(valueString) =>
+              setFormData({
+                ...formData,
+                sdsAttempts: parseInt(valueString) || 0,
+              })
+            }
+            min={0}
+          >
+            <NumberInputField />
+          </NumberInput>
+        </FormControl>
+      </HStack>
+
+      <HStack spacing={4} align="stretch">
+        <FormControl flex={1} display="flex" alignItems="center">
+          <FormLabel mb={0} minW="120px">Cover Attempts</FormLabel>
+          <NumberInput
+            flex={1}
+            value={formData.coverAttempts}
+            onChange={(valueString) =>
+              setFormData({
+                ...formData,
+                coverAttempts: parseInt(valueString) || 0,
+              })
+            }
+            min={0}
+          >
+            <NumberInputField />
+          </NumberInput>
+        </FormControl>
+
+        <FormControl flex={1} display="flex" alignItems="center">
+          <FormLabel mb={0} minW="120px">Resume Attempts</FormLabel>
+          <NumberInput
+            flex={1}
+            value={formData.resumeAttempts}
+            onChange={(valueString) =>
+              setFormData({
+                ...formData,
+                resumeAttempts: parseInt(valueString) || 0,
+              })
+            }
+            min={0}
+          >
+            <NumberInputField />
+          </NumberInput>
+        </FormControl>
+      </HStack>
     </VStack>
   );
 };

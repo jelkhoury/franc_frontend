@@ -70,6 +70,9 @@ const ManageUsers = () => {
     role: "User",
     canDoMockInterview: true,
     mockAttempts: 0,
+    sdsAttempts: 0,
+    coverAttempts: 0,
+    resumeAttempts: 0,
   });
 
   // Fetch users from API
@@ -109,6 +112,9 @@ const ManageUsers = () => {
       role: "User",
       canDoMockInterview: true,
       mockAttempts: 0,
+      sdsAttempts: 0,
+      coverAttempts: 0,
+      resumeAttempts: 0,
     });
     onAddOpen();
   };
@@ -128,6 +134,9 @@ const ManageUsers = () => {
       role: user.role,
       canDoMockInterview: user.canDoMockInterview,
       mockAttempts: user.mockAttempts || 0,
+      sdsAttempts: user.sdsAttempts || 0,
+      coverAttempts: user.coverAttempts || 0,
+      resumeAttempts: user.resumeAttempts || 0,
     });
     onEditOpen();
   };
