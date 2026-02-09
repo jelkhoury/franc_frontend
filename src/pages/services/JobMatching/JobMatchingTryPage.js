@@ -45,7 +45,9 @@ const JobMatchingTryPage = () => {
     major: '',
     level: '',
     country: '',
-    city: '', // Add city field
+    countryId: '',
+    stateId: '',
+    city: '',
   });
   const [selectedSkills, setSelectedSkills] = useState([]);
   
@@ -90,6 +92,9 @@ const JobMatchingTryPage = () => {
     setFormData((prev) => {
       if (field === 'faculty') {
         return { ...prev, faculty: value, major: '' };
+      }
+      if (typeof field === 'object' && field !== null) {
+        return { ...prev, ...field };
       }
       return { ...prev, [field]: value };
     });
@@ -302,7 +307,7 @@ const JobMatchingTryPage = () => {
 
   const handleReset = () => {
     setStep(1);
-    setFormData({ faculty: '', major: '', level: '', country: '', city: '' });
+    setFormData({ faculty: '', major: '', level: '', country: '', countryId: '', stateId: '', city: '' });
     setSelectedSkills([]);
     setSkills([]);
     setJobs([]);
