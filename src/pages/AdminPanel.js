@@ -4,10 +4,9 @@ import {
   Button,
   Heading,
   Divider,
-  List,
-  ListItem,
   Text,
   Flex,
+  VStack,
   Avatar,
   Modal,
   ModalOverlay,
@@ -29,6 +28,7 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { Link, useNavigate } from "react-router-dom";
 import { HamburgerIcon } from "@chakra-ui/icons";
@@ -42,7 +42,18 @@ import ManageChatbot from "../components/Admin/ManageChatbot";
 import ManageJobComparisons from "../components/Admin/ManageJobComparisons";
 import { AuthContext } from "../components/AuthContext";
 import UserProfileEdit from "../components/UserProfileEdit"; // Adjust path if necessary
-import { FaUser, FaHome } from "react-icons/fa";
+import {
+  FaUser,
+  FaHome,
+  FaUsers,
+  FaVideo,
+  FaListOl,
+  FaClipboardList,
+  FaTasks,
+  FaFolder,
+  FaRobot,
+  FaBalanceScale,
+} from "react-icons/fa";
 import { getStoredToken, getUserRole, getStoredUserRole } from "../utils/tokenUtils";
 
 const AdminPanel = () => {
@@ -160,121 +171,100 @@ const AdminPanel = () => {
     );
   }
 
+  const menuItemBg = useColorModeValue("white", "gray.700");
+  const menuItemBgActive = useColorModeValue("blue.50", "blue.900");
+  const menuItemHover = useColorModeValue("gray.50", "gray.600");
+  const sidebarBorder = useColorModeValue("gray.200", "gray.600");
+  const userSectionBg = useColorModeValue("gray.50", "gray.800");
+
+  const menuItems = [
+    { id: "users", icon: FaUsers, label: "Manage Users" },
+    { id: "mockInterviews", icon: FaVideo, label: "Manage Mock Interviews" },
+    { id: "mockInterviewQuestions", icon: FaListOl, label: "Mock Interview Questions" },
+    { id: "selfTests", icon: FaClipboardList, label: "Personality Test" },
+    { id: "personalityQuestions", icon: FaTasks, label: "Personality Test Questions" },
+    { id: "files", icon: FaFolder, label: "Manage Files" },
+    { id: "chatbot", icon: FaRobot, label: "Manage Chatbot" },
+    { id: "jobComparisons", icon: FaBalanceScale, label: "Job Comparisons" },
+  ];
+
   const SidebarContent = () => (
-    <>
-      <div>
-        <Heading color="brand.500" size="md" mb={4}>
-          Admin Menu
-        </Heading>
-        <Divider mb={4} />
-        <List spacing={3}>
-          <ListItem
-            cursor="pointer"
-            _hover={{ color: "blue.500" }}
-            onClick={() => handleTabChange("users")}
-            fontWeight={selectedTab === "users" ? "bold" : "normal"}
+    <Flex direction="column" flex="1" minH="0">
+      <Box flex="1" overflowY="auto" minH="0">
+        <Flex align="center" gap={2} mb={4} px={1}>
+          <Box
             p={2}
-            borderRadius="md"
-            bg={selectedTab === "users" ? "blue.50" : "transparent"}
+            borderRadius="lg"
+            bg="brand.500"
+            color="white"
+            fontSize="lg"
+            lineHeight={0}
           >
-            <Text>Manage Users</Text>
-          </ListItem>
-          <ListItem
-            cursor="pointer"
-            _hover={{ color: "blue.500" }}
-            onClick={() => handleTabChange("mockInterviews")}
-            fontWeight={selectedTab === "mockInterviews" ? "bold" : "normal"}
-            p={2}
-            borderRadius="md"
-            bg={selectedTab === "mockInterviews" ? "blue.50" : "transparent"}
-          >
-            <Text>Manage Mock Interviews</Text>
-          </ListItem>
-          <ListItem
-            cursor="pointer"
-            _hover={{ color: "blue.500" }}
-            onClick={() => handleTabChange("mockInterviewQuestions")}
-            fontWeight={selectedTab === "mockInterviewQuestions" ? "bold" : "normal"}
-            p={2}
-            borderRadius="md"
-            bg={selectedTab === "mockInterviewQuestions" ? "blue.50" : "transparent"}
-          >
-            <Text>Manage Mock Interview Questions</Text>
-          </ListItem>
-          <ListItem
-            cursor="pointer"
-            _hover={{ color: "blue.500" }}
-            onClick={() => handleTabChange("selfTests")}
-            fontWeight={selectedTab === "selfTests" ? "bold" : "normal"}
-            p={2}
-            borderRadius="md"
-            bg={selectedTab === "selfTests" ? "blue.50" : "transparent"}
-          >
-            <Text>Manage Personality Test</Text>
-          </ListItem>
-          <ListItem
-            cursor="pointer"
-            _hover={{ color: "blue.500" }}
-            onClick={() => handleTabChange("personalityQuestions")}
-            fontWeight={selectedTab === "personalityQuestions" ? "bold" : "normal"}
-            p={2}
-            borderRadius="md"
-            bg={selectedTab === "personalityQuestions" ? "blue.50" : "transparent"}
-          >
-            <Text>Manage Personality Test Questions</Text>
-          </ListItem>
-          <ListItem
-            cursor="pointer"
-            _hover={{ color: "blue.500" }}
-            onClick={() => handleTabChange("files")}
-            fontWeight={selectedTab === "files" ? "bold" : "normal"}
-            p={2}
-            borderRadius="md"
-            bg={selectedTab === "files" ? "blue.50" : "transparent"}
-          >
-            <Text>Manage Files</Text>
-          </ListItem>
-          <ListItem
-            cursor="pointer"
-            _hover={{ color: "blue.500" }}
-            onClick={() => handleTabChange("chatbot")}
-            fontWeight={selectedTab === "chatbot" ? "bold" : "normal"}
-            p={2}
-            borderRadius="md"
-            bg={selectedTab === "chatbot" ? "blue.50" : "transparent"}
-          >
-            <Text>Manage Chatbot</Text>
-          </ListItem>
-          <ListItem
-            cursor="pointer"
-            _hover={{ color: "blue.500" }}
-            onClick={() => handleTabChange("jobComparisons")}
-            fontWeight={selectedTab === "jobComparisons" ? "bold" : "normal"}
-            p={2}
-            borderRadius="md"
-            bg={selectedTab === "jobComparisons" ? "blue.50" : "transparent"}
-          >
-            <Text>Manage Job Comparisons</Text>
-          </ListItem>
-        </List>
-        <Divider my={4} />
-        <Box
+            <FaUsers />
+          </Box>
+          <Heading color="brand.500" size="sm" fontWeight="semibold" letterSpacing="tight">
+            Admin Menu
+          </Heading>
+        </Flex>
+        <Divider borderColor={sidebarBorder} mb={4} />
+        <VStack spacing={1} align="stretch">
+          {menuItems.map(({ id, icon: Icon, label }) => {
+            const isActive = selectedTab === id;
+            return (
+              <Flex
+                key={id}
+                align="flex-start"
+                gap={3}
+                py={2.5}
+                px={3}
+                borderRadius="lg"
+                cursor="pointer"
+                bg={isActive ? menuItemBgActive : "transparent"}
+                color={isActive ? "blue.600" : "gray.700"}
+                fontWeight={isActive ? "semibold" : "medium"}
+                borderLeft="3px solid"
+                borderLeftColor={isActive ? "brand.500" : "transparent"}
+                _hover={{
+                  bg: isActive ? menuItemBgActive : menuItemHover,
+                }}
+                transition="all 0.2s"
+                onClick={() => handleTabChange(id)}
+              >
+                <Box color={isActive ? "brand.500" : "gray.500"} fontSize="md" flexShrink={0} pt={0.5}>
+                  <Icon />
+                </Box>
+                <Text fontSize="sm" flex={1} minW={0} lineHeight="tall">
+                  {label}
+                </Text>
+              </Flex>
+            );
+          })}
+        </VStack>
+        <Divider borderColor={sidebarBorder} my={4} />
+        <Button
           as={Link}
           to="/franc"
-          cursor="pointer"
-          _hover={{ color: "blue.500", bg: "blue.50" }}
-          p={2}
-          borderRadius="md"
-          display="flex"
-          alignItems="center"
-          gap={2}
+          leftIcon={<FaHome />}
+          variant="outline"
+          colorScheme="blue"
+          size="sm"
+          width="100%"
+          borderRadius="lg"
+          _hover={{ bg: "blue.50" }}
         >
-          <FaHome />
-          <Text>Go to Franc</Text>
-        </Box>
-      </div>
+          Go to Franc
+        </Button>
+      </Box>
 
-      <Box mt={4}>
+      <Box
+        mt="auto"
+        pt={4}
+        borderTopWidth="1px"
+        borderColor={sidebarBorder}
+        bg={userSectionBg}
+        borderRadius="lg"
+        p={3}
+      >
         {!isLoggedIn ? (
           <Button
             as={Link}
@@ -282,24 +272,33 @@ const AdminPanel = () => {
             colorScheme="blue"
             size="sm"
             width="100%"
+            borderRadius="lg"
           >
             Login
           </Button>
         ) : (
-          <>
-            <Flex align="center" gap={2} mb={2}>
-              <Avatar
-                size="sm"
-                icon={<FaUser fontSize="0.85rem" />}
-                bg="brand.500"
-                color="white"
-                cursor="pointer"
-                onClick={onProfileOpen}
-              />
-              <Text fontSize="sm" fontWeight="medium" flex="1">
+          <VStack spacing={2} align="stretch">
+            <Button
+              variant="ghost"
+              size="sm"
+              width="100%"
+              borderRadius="lg"
+              justifyContent="flex-start"
+              leftIcon={
+                <Avatar
+                  size="xs"
+                  icon={<FaUser fontSize="0.6rem" />}
+                  bg="brand.500"
+                  color="white"
+                />
+              }
+              onClick={onProfileOpen}
+              _hover={{ bg: menuItemHover }}
+            >
+              <Text fontSize="sm" fontWeight="medium" noOfLines={1} flex="1" textAlign="left">
                 {localStorage.getItem("userName") || "Admin"}
               </Text>
-            </Flex>
+            </Button>
             <Modal
               isOpen={isProfileOpen}
               onClose={onProfileClose}
@@ -319,23 +318,26 @@ const AdminPanel = () => {
             </Modal>
             <Button
               colorScheme="red"
+              variant="outline"
               size="sm"
               width="100%"
+              borderRadius="lg"
               onClick={handleLogout}
             >
               Logout
             </Button>
-          </>
+          </VStack>
         )}
       </Box>
-    </>
+    </Flex>
   );
 
   return (
     <Flex direction={{ base: "column", md: "row" }} minH="100vh">
       {/* Desktop Sidebar */}
       <Box
-        width={{ base: "100%", md: "250px" }}
+        width={{ base: "100%", md: "280px" }}
+        minW={{ md: "280px" }}
         bg="gray.100"
         p={{ base: 4, md: 6 }}
         height={{ base: "auto", md: "100vh" }}

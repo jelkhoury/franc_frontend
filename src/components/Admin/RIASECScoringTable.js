@@ -38,8 +38,7 @@ const RIASECScoringTable = ({ hollandPoints, loading, error }) => {
     "Activities",
     "Competencies",
     "Occupations",
-    "Self-Estimates Part 1",
-    "Self-Estimates Part 2",
+    "Self-Estimates",
     "Summary scores",
   ];
   const letters = ["R", "I", "A", "S", "E", "C"];
@@ -74,7 +73,7 @@ const RIASECScoringTable = ({ hollandPoints, loading, error }) => {
         E: 0,
         C: 0,
       },
-      "Self-Estimates Part 1": hollandPoints["Self-Estimates"] || {
+      "Self-Estimates": hollandPoints["Self-Estimates"] || {
         R: 0,
         I: 0,
         A: 0,
@@ -82,7 +81,6 @@ const RIASECScoringTable = ({ hollandPoints, loading, error }) => {
         E: 0,
         C: 0,
       },
-      "Self-Estimates Part 2": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
       "Summary scores": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
     };
 
@@ -92,8 +90,7 @@ const RIASECScoringTable = ({ hollandPoints, loading, error }) => {
         scoreData["Activities"][letter] +
         scoreData["Competencies"][letter] +
         scoreData["Occupations"][letter] +
-        scoreData["Self-Estimates Part 1"][letter] +
-        scoreData["Self-Estimates Part 2"][letter];
+        scoreData["Self-Estimates"][letter];
     });
 
     return scoreData;
@@ -207,7 +204,7 @@ const RIASECScoringTable = ({ hollandPoints, loading, error }) => {
             </Table>
 
             <Text fontSize="xs" color="gray.500" textAlign="center" mt={2}>
-              (Add the five R scores, the five I scores, the five A scores,
+              (Add the four R scores, the four I scores, the four A scores,
               etc.)
             </Text>
           </TableContainer>

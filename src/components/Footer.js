@@ -119,9 +119,7 @@ export default function Footer() {
             <SocialButton label={'LinkedIn'} href="https://www.linkedin.com/school/uantonine/">
               <FaLinkedin />
             </SocialButton>
-            <SocialButton label={'GitHub'} href="https://github.com/wadihissa1">
-              <FaGithub />
-            </SocialButton>
+            
             <SocialButton label={'Instagram'} href="https://www.instagram.com/ua_ccd/">
               <FaInstagram />
             </SocialButton>

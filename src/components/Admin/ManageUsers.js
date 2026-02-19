@@ -37,7 +37,7 @@ const ManageUsers = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 7;
   const [editingUser, setEditingUser] = useState(null);
   const [deleteUser, setDeleteUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

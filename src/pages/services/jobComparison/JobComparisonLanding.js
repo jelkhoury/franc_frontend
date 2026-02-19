@@ -93,11 +93,16 @@ const JobComparisonLanding = () => {
       ? rawAnswers.reduce((acc, a) => {
           const id = a.criterionId ?? a.CriterionId ?? a.criterion_id;
           if (id == null) return acc;
+          const oldNA = !!(a.notApplicable ?? a.NotApplicable ?? a.not_applicable);
+          const naA = a.notApplicableA ?? a.NotApplicableA ?? oldNA;
+          const naB = a.notApplicableB ?? a.NotApplicableB ?? oldNA;
           acc[id] = {
             weight: a.weight ?? a.Weight ?? 0,
             scoreA: a.scoreA ?? a.ScoreA ?? a.score_a ?? 0,
             scoreB: a.scoreB ?? a.ScoreB ?? a.score_b ?? 0,
-            notApplicable: !!(a.notApplicable ?? a.NotApplicable ?? a.not_applicable),
+            notApplicable: naA && naB,
+            notApplicableA: !!naA,
+            notApplicableB: !!naB,
           };
           return acc;
         }, {})
@@ -172,9 +177,7 @@ const JobComparisonLanding = () => {
           </Heading>
 
           <Text fontSize="lg" mb={6}>
-            Compare two job opportunities side-by-side using a structured
-            evaluation framework. Rate each job across multiple criteria to get
-            an objective comparison score.
+            Compare two job opportunities using a structured evaluation framework. Rate each job across multiple criteria to take objective decision about your future career.
           </Text>
 
           {/* Icons Row */}
@@ -226,10 +229,10 @@ const JobComparisonLanding = () => {
         </AlertDialogOverlay>
       </AlertDialog>
 
-      {/* How It Works Section */}
+      {/* Instructions Section */}
       <Box py={16} px={{ base: 6, md: 16 }} textAlign="center" bg="white">
         <Heading color="brand.500" size="lg" mb={10}>
-          How It Works
+          Instructions
         </Heading>
 
         <HStack spacing={10} justify="center" flexWrap="wrap">
@@ -244,11 +247,11 @@ const JobComparisonLanding = () => {
               alignItems="center"
               justifyContent="center"
             >
-              <Icon as={QuestionOutlineIcon} boxSize={6} />
+              <Icon as={ViewIcon} boxSize={6} />
             </Box>
-            <Text fontWeight="bold">Enter Job Details</Text>
-            <Text fontSize="sm" color="gray.600" maxW="150px">
-              Provide names for the two jobs you want to compare.
+            <Text fontWeight="bold">Weight Criteria</Text>
+            <Text fontSize="sm" color="gray.600" maxW="200px">
+              Choose the importance of each criterion on a scale from 1 to 5.
             </Text>
           </VStack>
 
@@ -274,8 +277,8 @@ const JobComparisonLanding = () => {
               <Icon as={ViewIcon} boxSize={6} />
             </Box>
             <Text fontWeight="bold">Rate Criteria</Text>
-            <Text fontSize="sm" color="gray.600" maxW="150px">
-              Evaluate each criterion with importance weight and job scores.
+            <Text fontSize="sm" color="gray.600" maxW="200px">
+              Rate each criterion for both jobs on a scale from 1 to 5.
             </Text>
           </VStack>
 

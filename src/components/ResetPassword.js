@@ -7,12 +7,15 @@ import {
   FormLabel,
   Heading,
   Input,
+  InputGroup,
+  InputRightElement,
   Stack,
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
+import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { post } from '../utils/httpServices';
 import { USER_ENDPOINTS } from '../services/apiService';
 
@@ -25,13 +28,31 @@ const ResetPassword = () => {
 
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (!email) {
+      navigate('/forgot-password', { replace: true });
+    }
+  }, [email, navigate]);
+
   const handleSubmit = async () => {
-    if (!email || !otp || !newPassword) {
+    if (!email || !otp || !newPassword || !confirmPassword) {
       toast({
         title: 'Missing Fields',
         description: 'Please fill in all fields.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: 'Passwords do not match',
+        description: 'New password and confirm password must match.',
         status: 'warning',
         duration: 3000,
         isClosable: true,
@@ -102,10 +123,31 @@ const ResetPassword = () => {
 
         <FormControl id="newPassword" isRequired>
           <FormLabel>New Password</FormLabel>
+          <InputGroup>
+            <Input
+              type={showPassword ? 'text' : 'password'}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+            <InputRightElement h="full">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <ViewOffIcon /> : <ViewIcon />}
+              </Button>
+            </InputRightElement>
+          </InputGroup>
+        </FormControl>
+
+        <FormControl id="confirmPassword" isRequired>
+          <FormLabel>Confirm Password</FormLabel>
           <Input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Re-enter your new password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
           />
         </FormControl>
 

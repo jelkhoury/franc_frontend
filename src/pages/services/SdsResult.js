@@ -312,8 +312,7 @@ function calculateRIASECScores(responses, questionsData) {
     Activities: { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
     Competencies: { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
     Occupations: { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
-    "Self-Estimates Part 1": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
-    "Self-Estimates Part 2": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
+    "Self-Estimates": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
     "Summary scores": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
   };
 
@@ -326,7 +325,7 @@ function calculateRIASECScores(responses, questionsData) {
 
     // Map section names to our scoring keys
     if (sectionName === "Self-Estimates") {
-      sectionKey = "Self-Estimates Part 1"; // We'll handle both parts
+      sectionKey = "Self-Estimates";
     }
 
     section.questions.forEach((question) => {
@@ -375,8 +374,7 @@ function calculateRIASECScores(responses, questionsData) {
       scores["Activities"][letter] +
       scores["Competencies"][letter] +
       scores["Occupations"][letter] +
-      scores["Self-Estimates Part 1"][letter] +
-      scores["Self-Estimates Part 2"][letter];
+      scores["Self-Estimates"][letter];
   });
 
   return scores;
@@ -502,7 +500,7 @@ const RIASECScoringTable = ({ scores, loading, error }) => {
             </Table>
 
             <Text fontSize="xs" color="gray.500" textAlign="center" mt={2}>
-              (Add the five R scores, the five I scores, the five A scores,
+              (Add the four R scores, the four I scores, the four A scores,
               etc.)
             </Text>
           </TableContainer>
@@ -791,7 +789,7 @@ const SdsResult = () => {
         E: 0,
         C: 0,
       },
-      "Self-Estimates Part 1": hollandPoints["Self-Estimates"] || {
+      "Self-Estimates": hollandPoints["Self-Estimates"] || {
         R: 0,
         I: 0,
         A: 0,
@@ -799,7 +797,6 @@ const SdsResult = () => {
         E: 0,
         C: 0,
       },
-      "Self-Estimates Part 2": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 }, // Not provided in API yet
       "Summary scores": { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 },
     };
 
@@ -809,8 +806,7 @@ const SdsResult = () => {
         scores["Activities"][letter] +
         scores["Competencies"][letter] +
         scores["Occupations"][letter] +
-        scores["Self-Estimates Part 1"][letter] +
-        scores["Self-Estimates Part 2"][letter];
+        scores["Self-Estimates"][letter];
     });
 
     return scores;

@@ -1,6 +1,16 @@
 import React from "react";
 import { Box, VStack, HStack, Text, useColorModeValue } from "@chakra-ui/react";
 
+// Helper function to clean criterion names
+const cleanCriterionName = (str) => {
+  if (!str) return str;
+  // Remove ", if any" or "if any" phrase (case insensitive)
+  let cleaned = str.replace(/,\s*if any\b/gi, '').replace(/\bif any\b/gi, '').trim();
+  // Clean up extra spaces and trailing commas
+  cleaned = cleaned.replace(/\s+/g, ' ').replace(/,\s*$/, '').trim();
+  return cleaned;
+};
+
 const RadarChart = ({ criteria, answers, jobAName, jobBName, category = "all" }) => {
   const cardBg = useColorModeValue("white", "gray.800");
   const jobAColor = "#3182CE"; // blue.500
@@ -19,14 +29,17 @@ const RadarChart = ({ criteria, answers, jobAName, jobBName, category = "all" })
       if (!answer || answer.notApplicable) return null;
       
       const { weight, scoreA, scoreB } = answer;
-      // Skip if not fully answered
-      if (weight <= 0 || scoreA <= 0 || scoreB <= 0) return null;
+      // Skip if not fully answered (weight must be > 0, scores must be defined and >= 0)
+      // Note: scoreA=0 or scoreB=0 are valid ratings and should be included
+      if (weight <= 0 || 
+          scoreA === null || scoreA === undefined || scoreA < 0 || 
+          scoreB === null || scoreB === undefined || scoreB < 0) return null;
       
       // weight is 1-5 (O.I.W), scoreA/scoreB are 1-5 (D.F.S)
       // Normalize to 0-10 scale: (weight * score) / 2.5
       // Max: (5 * 5) / 2.5 = 10
       return {
-        name: criterion.name,
+        name: cleanCriterionName(criterion.name),
         valueA: (weight * scoreA) / 2.5, // Normalized weighted score (0-10 scale)
         valueB: (weight * scoreB) / 2.5,
       };
