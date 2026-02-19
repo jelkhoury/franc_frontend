@@ -63,7 +63,7 @@ const ManagePersonalityTestQuestions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSection, setFilterSection] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 7;
   const [deleteQuestion, setDeleteQuestion] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);

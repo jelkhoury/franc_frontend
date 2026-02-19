@@ -19,12 +19,23 @@ import {
 import { FaBan, FaBrain, FaHeart, FaTrophy, FaListUl, FaWeightHanging, FaChartLine } from "react-icons/fa";
 import CategoryBadge from "./CategoryBadge";
 
+// Helper function to clean criterion names
+const cleanCriterionName = (str) => {
+  if (!str) return str;
+  // Remove ", if any" or "if any" phrase (case insensitive)
+  let cleaned = str.replace(/,\s*if any\b/gi, '').replace(/\bif any\b/gi, '').trim();
+  // Clean up extra spaces and trailing commas
+  cleaned = cleaned.replace(/\s+/g, ' ').replace(/,\s*$/, '').trim();
+  return cleaned;
+};
+
 const CriterionBreakdownTable = ({
   criteria,
   answers,
   jobAName,
   jobBName,
   category = "all",
+  fairMode = false,
 }) => {
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
@@ -49,33 +60,54 @@ const CriterionBreakdownTable = ({
       const answer = answers[criterion.id];
       if (!answer) return null;
 
-      if (answer.notApplicable) {
+      const naA = answer.notApplicableA ?? answer.notApplicable;
+      const naB = answer.notApplicableB ?? answer.notApplicable;
+      const bothNA = (naA && naB) || answer.notApplicable;
+      const onlyOneNA = (naA && !naB) || (!naA && naB);
+
+      // In fair mode: if only one job is N/A, show the row as both N/A (display only, not calculated)
+      if (fairMode && onlyOneNA) {
         return {
-          criterion: criterion.name,
+          criterion: cleanCriterionName(criterion.name),
+          category: criterion.category || "—",
+          notApplicable: true,
+          fairModeExcluded: true, // shown but not in totals
+        };
+      }
+
+      if (bothNA) {
+        return {
+          criterion: cleanCriterionName(criterion.name),
           category: criterion.category || "—",
           notApplicable: true,
         };
       }
 
       const { weight, scoreA, scoreB } = answer;
-      if (weight <= 0 || scoreA <= 0 || scoreB <= 0) return null;
+      if (weight <= 0) return null;
+      // Allow scoreA=0 or scoreB=0 (e.g. not applicable for one job only)
+      const sA = Number(scoreA) || 0;
+      const sB = Number(scoreB) || 0;
+      if (sA <= 0 && sB <= 0) return null;
 
-      const weightedA = weight * scoreA;
-      const weightedB = weight * scoreB;
+      const weightedA = weight * sA;
+      const weightedB = weight * sB;
       return {
-        criterion: criterion.name,
+        criterion: cleanCriterionName(criterion.name),
         category: criterion.category || "—",
         weight,
-        scoreA,
-        scoreB,
+        scoreA: sA,
+        scoreB: sB,
         weightedA,
         weightedB,
         notApplicable: false,
+        notApplicableA: answer.notApplicableA,
+        notApplicableB: answer.notApplicableB,
       };
     };
 
     return list.map(getRowData).filter((row) => row !== null);
-  }, [criteria, category, answers]);
+  }, [criteria, category, answers, fairMode]);
 
   // Totals: match backend Excel calculation exactly - iterate answers ordered by CriterionId, treat N/A as 0,0,0
   const { totalWeightedA, totalWeightedB } = useMemo(() => {
@@ -102,18 +134,30 @@ const CriterionBreakdownTable = ({
       .sort((a, b) => a.criterionId - b.criterionId); // OrderBy CriterionId like backend
     
     answerEntries.forEach(({ answer }) => {
-      // Backend reads: a.Weight, a.ScoreA, a.ScoreB, a.NotApplicable
-      // Use Number() to ensure we get actual numbers, not strings
+      const naA = answer.notApplicableA ?? answer.notApplicable;
+      const naB = answer.notApplicableB ?? answer.notApplicable;
+      const bothNA = (naA && naB) || answer.notApplicable;
+      
+      // In fair mode: exclude criteria where only one job is N/A
+      if (fairMode) {
+        const onlyOneNA = (naA && !naB) || (!naA && naB);
+        if (onlyOneNA) {
+          return; // Skip this criterion - it's not fair
+        }
+      }
+      
+      // Backend reads: a.Weight, a.ScoreA, a.ScoreB, a.NotApplicableA, a.NotApplicableB
       let weight = Number(answer.weight) || 0;
       let scoreA = Number(answer.scoreA) || 0;
       let scoreB = Number(answer.scoreB) || 0;
       
-      // Backend logic: if NotApplicable, force zeros (contributes 0 to totals)
-      // Backend code: if (a.NotApplicable) { weight=0; scoreA=0; scoreB=0; }
-      if (answer.notApplicable) {
+      if (bothNA) {
         weight = 0;
         scoreA = 0;
         scoreB = 0;
+      } else {
+        if (naA) scoreA = 0;
+        if (naB) scoreB = 0;
       }
       
       // Backend writes to Excel: B=weight, C=scoreA, E=scoreB
@@ -131,7 +175,7 @@ const CriterionBreakdownTable = ({
       totalWeightedA: sumA,
       totalWeightedB: sumB,
     };
-  }, [criteria, category, answers]);
+  }, [criteria, category, answers, fairMode]);
 
   return (
     <Box bg={cardBg} rounded="xl" shadow="md" p={6}>
@@ -250,10 +294,10 @@ const CriterionBreakdownTable = ({
                         </Badge>
                       </Td>
                       <Td borderColor={borderColor} isNumeric fontWeight="medium" py={2} px={1}>
-                        {row.scoreA}
+                        {row.notApplicableA ? "N/A" : row.scoreA}
                       </Td>
                       <Td borderColor={borderColor} isNumeric fontWeight="medium" py={2} px={1}>
-                        {row.scoreB}
+                        {row.notApplicableB ? "N/A" : row.scoreB}
                       </Td>
                       <Td borderColor={borderColor} isNumeric fontWeight="semibold" color={weightedScoreColor} py={2} px={1}>
                         {typeof row.weightedA === "number"

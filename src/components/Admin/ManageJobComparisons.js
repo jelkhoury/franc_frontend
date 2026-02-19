@@ -31,6 +31,8 @@ const ManageJobComparisons = () => {
   const [comparisons, setComparisons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 7;
   const toast = useToast();
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
@@ -38,6 +40,11 @@ const ManageJobComparisons = () => {
   useEffect(() => {
     fetchComparisons();
   }, []);
+
+  // Reset to page 1 when comparisons change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [comparisons.length]);
 
   const fetchComparisons = async () => {
     try {
@@ -123,6 +130,16 @@ const ManageJobComparisons = () => {
     }
   };
 
+  // Pagination calculations
+  const totalPages = Math.ceil(comparisons.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentComparisons = comparisons.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minH="400px">
@@ -188,7 +205,7 @@ const ManageJobComparisons = () => {
               </Tr>
             </Thead>
             <Tbody>
-              {comparisons.map((comparison) => (
+              {currentComparisons.map((comparison) => (
                 <Tr key={comparison.id || comparison.Id}>
                   <Td borderColor={borderColor} fontWeight="medium">
                     {comparison.id || comparison.Id}
@@ -264,10 +281,65 @@ const ManageJobComparisons = () => {
         </TableContainer>
       )}
 
-      <Text mt={4} fontSize="sm" color="gray.500">
-        Total: {comparisons.length} job comparison
-        {comparisons.length !== 1 ? "s" : ""}
-      </Text>
+      <Flex justify="space-between" align="center" mt={4} flexWrap="wrap" gap={4}>
+        <Text fontSize="sm" color="gray.500">
+          Showing {startIndex + 1}-{Math.min(endIndex, comparisons.length)} of {comparisons.length} job comparison
+          {comparisons.length !== 1 ? "s" : ""}
+        </Text>
+        
+        {totalPages > 1 && (
+          <HStack spacing={2}>
+            <Button
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              isDisabled={currentPage === 1}
+              variant="outline"
+            >
+              Previous
+            </Button>
+            
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+              // Show first page, last page, current page, and pages around current
+              if (
+                page === 1 ||
+                page === totalPages ||
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <Button
+                    key={page}
+                    size="sm"
+                    onClick={() => handlePageChange(page)}
+                    colorScheme={currentPage === page ? "blue" : "gray"}
+                    variant={currentPage === page ? "solid" : "outline"}
+                  >
+                    {page}
+                  </Button>
+                );
+              } else if (
+                page === currentPage - 2 ||
+                page === currentPage + 2
+              ) {
+                return (
+                  <Text key={page} px={2} color="gray.500">
+                    ...
+                  </Text>
+                );
+              }
+              return null;
+            })}
+            
+            <Button
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              isDisabled={currentPage === totalPages}
+              variant="outline"
+            >
+              Next
+            </Button>
+          </HStack>
+        )}
+      </Flex>
     </Box>
   );
 };

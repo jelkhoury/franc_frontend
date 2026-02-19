@@ -318,11 +318,6 @@ const SdsTry = () => {
     await performSubmission();
   };
 
-  const handleTestSubmit = async () => {
-    // Skip validation for testing purposes
-    await performSubmission();
-  };
-
   const performSubmission = async () => {
     // Get user ID from token
     const token = localStorage.getItem("token");
@@ -891,19 +886,6 @@ const SdsTry = () => {
                 disabled={submitting}
               >
                 Submit
-              </Button>
-
-              {/* Test Submit Button - for testing purposes */}
-              <Button
-                colorScheme="orange"
-                size="md"
-                variant="outline"
-                onClick={handleTestSubmit}
-                isLoading={submitting}
-                loadingText="Submitting..."
-                disabled={submitting}
-              >
-                Submit Test (Skip Validation)
               </Button>
             </VStack>
           </Box>

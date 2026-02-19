@@ -51,7 +51,7 @@ const ForgotPassword = () => {
         duration: 3000,
         isClosable: true,
       });
-      navigate('/forgot-password', { state: { from: 'profile-edit' } });
+      navigate('/reset-password', { state: { email, from: from || null } });
     } catch (err) {
       console.error('Forgot password error:', err);
       toast({

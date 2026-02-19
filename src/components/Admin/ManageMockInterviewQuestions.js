@@ -57,7 +57,7 @@ const ManageMockInterviewQuestions = () => {
   const [filterMajor, setFilterMajor] = useState("");
   const [majorsLoaded, setMajorsLoaded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 7;
   const [deleteQuestion, setDeleteQuestion] = useState(null);
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

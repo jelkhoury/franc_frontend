@@ -109,8 +109,7 @@ const JobComparisonSetup = () => {
           </Heading>
 
           <Text color="gray.600" mb={6} textAlign="center">
-            Enter the names of the two jobs you want to compare. You'll then
-            rate each job across multiple criteria.
+          Enter the job title and company name for each job you want to compare.
           </Text>
 
           <VStack spacing={6} align="stretch">
