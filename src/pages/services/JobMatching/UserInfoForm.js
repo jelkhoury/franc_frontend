@@ -65,8 +65,11 @@ const UserInfoForm = ({
       </Text>
 
       {loading ? (
-        <Flex justify="center" align="center" minH="400px">
+        <Flex direction="column" justify="center" align="center" minH="400px" gap={4}>
           <Spinner size="xl" color="brand.500" />
+          <Text color="gray.600" textAlign="center">
+            Loading faculties and majors…
+          </Text>
         </Flex>
       ) : (
         <Box
@@ -210,18 +213,25 @@ const UserInfoForm = ({
               )}
             </FormControl>
 
-            <HStack spacing={4} w="100%" justify="flex-end">
-              <Button variant="ghost" onClick={handleBackToLanding}>
-                Cancel
-              </Button>
-              <Button
-                colorScheme="brand"
-                onClick={handleNext}
-                isLoading={isLoadingSkills}
-              >
-                Next: Select Skills
-              </Button>
-            </HStack>
+            <VStack spacing={3} w="100%" align="stretch">
+              {isLoadingSkills && (
+                <Text fontSize="sm" color="gray.600" textAlign="center">
+                  Analyzing your profile and matching skills to your major…
+                </Text>
+              )}
+              <HStack spacing={4} w="100%" justify="flex-end">
+                <Button variant="ghost" onClick={handleBackToLanding}>
+                  Cancel
+                </Button>
+                <Button
+                  colorScheme="brand"
+                  onClick={handleNext}
+                  isLoading={isLoadingSkills}
+                >
+                  Next: Select Skills
+                </Button>
+              </HStack>
+            </VStack>
           </VStack>
         </Box>
       )}

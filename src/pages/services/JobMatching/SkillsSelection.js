@@ -17,12 +17,7 @@ import {
   AccordionButton,
   AccordionPanel,
   AccordionIcon,
-  List,
-  ListItem,
-  ListIcon,
 } from '@chakra-ui/react';
-import { InfoIcon, CheckCircleIcon } from '@chakra-ui/icons';
-
 const SkillsSelection = ({
   majorSkillsResponse,
   selectedSkills,
@@ -37,13 +32,24 @@ const SkillsSelection = ({
       <Heading color="brand.500" size="xl" mb={4} textAlign="center">
         Career Analysis & Skills Mapping
       </Heading>
-      <Text color="gray.600" mb={8} textAlign="center">
+      <Text color="gray.600" mb={4} textAlign="center">
         Review the analysis below and select the skills you have to find matching opportunities.
       </Text>
+      <Box bg="blue.50" borderLeft="4px solid" borderColor="brand.500" p={4} mb={8} borderRadius="md" maxW="700px" mx="auto">
+        <Text fontSize="sm" color="gray.700" mb={2}>
+          <strong>Tip:</strong> Select skills based on priority for a better match—choose the ones most important to you first.
+        </Text>
+        <Text fontSize="sm" color="gray.600">
+          You can match based on <strong>technical skills</strong> (e.g. tools, languages) or based on <strong>role</strong> (job title); both help us find the right positions.
+        </Text>
+      </Box>
 
       {loadingSkills ? (
-        <Flex justify="center" align="center" minH="400px">
+        <Flex direction="column" justify="center" align="center" minH="400px" gap={4}>
           <Spinner size="xl" color="brand.500" />
+          <Text color="gray.600" textAlign="center" maxW="320px">
+            Checking positions you can work… Matching skills to your profile…
+          </Text>
         </Flex>
       ) : !majorSkillsResponse ? (
         <Box textAlign="center" py={8}>
@@ -72,54 +78,75 @@ const SkillsSelection = ({
                       </Text>
                     </Box>
                   )}
-                  {majorSkillsResponse.domain_profile.scoring_weights && (
-                    <Box>
-                      <Text fontWeight="bold" mb={2}>Scoring Weights:</Text>
-                      <HStack spacing={4} flexWrap="wrap">
-                        <Badge colorScheme="green">
-                          Skills: {(majorSkillsResponse.domain_profile.scoring_weights.skills * 100).toFixed(0)}%
-                        </Badge>
-                        <Badge colorScheme="blue">
-                          Role: {(majorSkillsResponse.domain_profile.scoring_weights.role * 100).toFixed(0)}%
-                        </Badge>
-                        <Badge colorScheme="purple">
-                          Location/Remote: {(majorSkillsResponse.domain_profile.scoring_weights.location_remote * 100).toFixed(0)}%
-                        </Badge>
-                      </HStack>
-                    </Box>
-                  )}
                 </VStack>
               </CardBody>
             </Card>
           )}
 
-          {/* Job Titles & Career Opportunities */}
-          {majorSkillsResponse.roles && majorSkillsResponse.roles.length > 0 && (
-            <Card boxShadow="md">
-              <CardBody>
-                <Heading size="md" color="brand.500" mb={3}>
-                  Job Titles & Career Opportunities
-                </Heading>
-                <Text fontSize="sm" color="gray.600" mb={4}>
-                  Directly related roles for internships, entry-level, and full-time positions
-                </Text>
-                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={3}>
-                  {majorSkillsResponse.roles.map((role, index) => (
-                    <Badge
-                      key={index}
-                      colorScheme="blue"
-                      fontSize="md"
-                      px={4}
-                      py={2}
-                      borderRadius="full"
-                    >
-                      {typeof role === 'string' ? role : role.name || role.title}
-                    </Badge>
-                  ))}
-                </SimpleGrid>
-              </CardBody>
-            </Card>
-          )}
+          {/* Job Titles: selectable when no technical skills, otherwise display only */}
+          {majorSkillsResponse.roles && majorSkillsResponse.roles.length > 0 && (() => {
+            const hasTechnicalSkills = majorSkillsResponse.technical_skill_groups?.some(
+              (g) => g.skills && Array.isArray(g.skills) && g.skills.length > 0
+            );
+            const showRolesAsSelectable = !hasTechnicalSkills;
+
+            return (
+              <Card boxShadow="md">
+                <CardBody>
+                  <Heading size="md" color="brand.500" mb={3}>
+                    {showRolesAsSelectable ? 'Select your target job titles' : 'Job Titles & Career Opportunities'}
+                  </Heading>
+                  <Text fontSize="sm" color="gray.600" mb={4}>
+                    {showRolesAsSelectable
+                      ? 'No technical skills list for this major—select job titles to find matching positions. You can match by role or by technical skills when available.'
+                      : 'Directly related roles for internships, entry-level, and full-time positions'}
+                  </Text>
+                  {showRolesAsSelectable ? (
+                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={3}>
+                      {majorSkillsResponse.roles.map((role, index) => {
+                        const roleName = typeof role === 'string' ? role : role.name || role.title;
+                        const isSelected = selectedSkills.includes(roleName);
+                        return (
+                          <Box
+                            key={index}
+                            p={3}
+                            border="1px solid"
+                            borderColor={isSelected ? 'brand.500' : 'gray.200'}
+                            borderRadius="md"
+                            bg={isSelected ? 'brand.50' : 'white'}
+                          >
+                            <Checkbox
+                              value={roleName}
+                              isChecked={isSelected}
+                              onChange={() => onSkillToggle(roleName)}
+                              colorScheme="brand"
+                            >
+                              <Text fontWeight="semibold" ml={2}>{roleName}</Text>
+                            </Checkbox>
+                          </Box>
+                        );
+                      })}
+                    </SimpleGrid>
+                  ) : (
+                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={3}>
+                      {majorSkillsResponse.roles.map((role, index) => (
+                        <Badge
+                          key={index}
+                          colorScheme="blue"
+                          fontSize="md"
+                          px={4}
+                          py={2}
+                          borderRadius="full"
+                        >
+                          {typeof role === 'string' ? role : role.name || role.title}
+                        </Badge>
+                      ))}
+                    </SimpleGrid>
+                  )}
+                </CardBody>
+              </Card>
+            );
+          })()}
 
           {/* Technical Skills - Grouped */}
           {majorSkillsResponse.technical_skill_groups && majorSkillsResponse.technical_skill_groups.length > 0 && (
@@ -280,21 +307,15 @@ const SkillsSelection = ({
                 )}
                 {majorSkillsResponse.market_keywords.skills && majorSkillsResponse.market_keywords.skills.length > 0 && (
                   <Box>
-                    <Text fontWeight="semibold" mb={2}>Market Skills (with aliases):</Text>
+                    <Text fontWeight="semibold" mb={2}>Market Skills:</Text>
                     <SimpleGrid columns={{ base: 1, md: 2 }} spacing={2}>
                       {majorSkillsResponse.market_keywords.skills.map((skill, index) => {
                         const skillName = typeof skill === 'string' ? skill : skill.name;
-                        const aliases = skill.aliases || [];
                         const whyItMatters = skill.why_it_matters || '';
                         
                         return (
                           <Box key={index} p={2} bg="gray.50" borderRadius="md">
                             <Text fontWeight="semibold">{skillName}</Text>
-                            {aliases.length > 0 && (
-                              <Text fontSize="xs" color="gray.600" mt={1}>
-                                Aliases: {aliases.join(', ')}
-                              </Text>
-                            )}
                             {whyItMatters && (
                               <Text fontSize="xs" color="gray.500" mt={1} fontStyle="italic">
                                 {whyItMatters}
@@ -306,28 +327,6 @@ const SkillsSelection = ({
                     </SimpleGrid>
                   </Box>
                 )}
-              </CardBody>
-            </Card>
-          )}
-
-          {/* Notes */}
-          {majorSkillsResponse.notes && majorSkillsResponse.notes.length > 0 && (
-            <Card boxShadow="md" bg="yellow.50">
-              <CardBody>
-                <HStack mb={2}>
-                  <InfoIcon color="yellow.600" />
-                  <Heading size="sm" color="yellow.700">
-                    Notes
-                  </Heading>
-                </HStack>
-                <List spacing={2}>
-                  {majorSkillsResponse.notes.map((note, index) => (
-                    <ListItem key={index}>
-                      <ListIcon as={CheckCircleIcon} color="yellow.600" />
-                      {note}
-                    </ListItem>
-                  ))}
-                </List>
               </CardBody>
             </Card>
           )}
@@ -355,20 +354,27 @@ const SkillsSelection = ({
                     </HStack>
                   )}
                 </VStack>
-                <HStack spacing={4}>
-                  <Button variant="ghost" onClick={onBack}>
-                    Back
-                  </Button>
-                  <Button
-                    colorScheme="brand"
-                    onClick={onSearchJobs}
-                    isLoading={loadingJobs}
-                    isDisabled={selectedSkills.length === 0}
-                    size="lg"
-                  >
-                    Find Matching Jobs ({selectedSkills.length})
-                  </Button>
-                </HStack>
+                <VStack spacing={3} align="stretch">
+                  {loadingJobs && (
+                    <Text fontSize="sm" color="gray.600" textAlign="center">
+                      Searching for positions you can work… Matching your skills to open roles…
+                    </Text>
+                  )}
+                  <HStack spacing={4}>
+                    <Button variant="ghost" onClick={onBack}>
+                      Back
+                    </Button>
+                    <Button
+                      colorScheme="brand"
+                      onClick={onSearchJobs}
+                      isLoading={loadingJobs}
+                      isDisabled={selectedSkills.length === 0}
+                      size="lg"
+                    >
+                      Find Matching Jobs ({selectedSkills.length})
+                    </Button>
+                  </HStack>
+                </VStack>
               </HStack>
             </CardBody>
           </Card>

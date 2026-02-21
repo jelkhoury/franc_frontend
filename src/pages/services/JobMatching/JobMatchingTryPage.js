@@ -116,21 +116,11 @@ const JobMatchingTryPage = () => {
     try {
       const selectedFaculty = faculties.find((f) => f.id === parseInt(formData.faculty));
       const selectedMajor = majors.find((m) => m.id === parseInt(formData.major));
-      
-      // Normalize level to API format (undergrad, grad, postgrad, professional)
-      let normalizedLevel = formData.level.toLowerCase();
-      if (normalizedLevel === 'undergraduate') {
-        normalizedLevel = 'undergrad';
-      } else if (normalizedLevel === 'graduate') {
-        normalizedLevel = 'grad';
-      } else if (normalizedLevel === 'postgraduate') {
-        normalizedLevel = 'postgrad';
-      }
-      
+
       const requestBody = {
         faculty: selectedFaculty?.name || formData.faculty,
         major: selectedMajor?.name || formData.major,
-        level: normalizedLevel,
+        level: formData.level, // API expects: Undergraduate, Graduate, Postgraduate, Professional
         country: formData.country,
       };
 
@@ -173,8 +163,11 @@ const JobMatchingTryPage = () => {
           });
         }
         
-        // Remove duplicates
-        const uniqueSkills = [...new Set(allSkills)];
+        // Remove duplicates; if no skills at all, use job titles (roles) so user can still select and search
+        let uniqueSkills = [...new Set(allSkills)];
+        if (uniqueSkills.length === 0 && response.roles && Array.isArray(response.roles)) {
+          uniqueSkills = response.roles.map((r) => (typeof r === 'string' ? r : r.name || r.title)).filter(Boolean);
+        }
         setSkills(uniqueSkills);
         setStep(2);
       } else {
@@ -208,6 +201,16 @@ const JobMatchingTryPage = () => {
     );
   };
 
+  // Map form level to API experience_level values
+  const getExperienceLevel = () => {
+    const level = (formData.level || '').toLowerCase();
+    if (level === 'undergraduate') return ['entry'];
+    if (level === 'graduate') return ['entry', 'associate'];
+    if (level === 'postgraduate') return ['associate', 'mid'];
+    if (level === 'professional') return ['associate', 'mid', 'senior'];
+    return ['entry', 'associate'];
+  };
+
   const handleSearchJobs = async () => {
     if (selectedSkills.length === 0) {
       toast({
@@ -222,52 +225,20 @@ const JobMatchingTryPage = () => {
 
     setLoadingJobs(true);
     try {
-      // Ensure selectedSkills is an array (safety check)
       const skillsArray = Array.isArray(selectedSkills) ? selectedSkills : [];
+      const roles = majorSkillsResponse?.roles && Array.isArray(majorSkillsResponse.roles)
+        ? majorSkillsResponse.roles.map((r) => (typeof r === 'string' ? r : r.name || r.title))
+        : [];
 
-      // Build request body - enhanced with Phase 1 data if available
       const requestBody = {
-        selected_skills: skillsArray, // Must be named selected_skills, not skills
         country: formData.country,
-        city: formData.city || undefined, // Optional
-        remote: false, // Default to false, can be made configurable later
+        city: formData.city || '',
+        roles,
+        selected_skills: skillsArray,
+        experience_level: getExperienceLevel(),
         limit: 20,
+        remote: false,
       };
-
-      // Add roles from Phase 1 response if available
-      if (majorSkillsResponse?.roles && Array.isArray(majorSkillsResponse.roles)) {
-        requestBody.roles = majorSkillsResponse.roles.map((role) => 
-          typeof role === 'string' ? role : role.name || role.title
-        );
-      }
-
-      // Add enhanced data from Phase 1 if available
-      if (majorSkillsResponse) {
-        // Add market_skills (from market_keywords.skills)
-        if (majorSkillsResponse.market_keywords?.skills && Array.isArray(majorSkillsResponse.market_keywords.skills)) {
-          requestBody.market_skills = majorSkillsResponse.market_keywords.skills.map((skill) => {
-            if (typeof skill === 'string') {
-              return { name: skill, aliases: [] };
-            }
-            return {
-              name: skill.name || skill,
-              aliases: skill.aliases || [],
-            };
-          });
-        }
-
-        // Add market_search_terms
-        if (majorSkillsResponse.market_keywords?.search_terms && Array.isArray(majorSkillsResponse.market_keywords.search_terms)) {
-          requestBody.market_search_terms = majorSkillsResponse.market_keywords.search_terms;
-        }
-
-        // Add domain_profile with scoring_weights
-        if (majorSkillsResponse.domain_profile?.scoring_weights) {
-          requestBody.domain_profile = {
-            scoring_weights: majorSkillsResponse.domain_profile.scoring_weights,
-          };
-        }
-      }
 
       const response = await post(
         JOB_MATCHING_ENDPOINTS.SEARCH_OPPORTUNITIES,
@@ -318,6 +289,13 @@ const JobMatchingTryPage = () => {
     navigate('/job-matching');
   };
 
+  const handleBackToDetails = () => {
+    setSelectedSkills([]);
+    setSkills([]);
+    setMajorSkillsResponse(null);
+    setStep(1);
+  };
+
   // Don't render anything if not logged in (will redirect)
   if (!isLoggedIn) {
     return null;
@@ -361,7 +339,7 @@ const JobMatchingTryPage = () => {
             selectedSkills={selectedSkills}
             loadingSkills={loadingSkills}
             onSkillToggle={handleSkillToggle}
-            onBack={() => setStep(1)}
+            onBack={handleBackToDetails}
             onSearchJobs={handleSearchJobs}
             loadingJobs={loadingJobs}
           />
@@ -372,6 +350,9 @@ const JobMatchingTryPage = () => {
           <JobsDisplay
             jobs={jobs}
             loadingJobs={loadingJobs}
+            selectedSkills={selectedSkills}
+            country={formData.country}
+            city={formData.city}
             onBack={() => setStep(2)}
             onStartOver={handleReset}
           />
