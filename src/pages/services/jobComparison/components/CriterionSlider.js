@@ -20,14 +20,29 @@ const CriterionSlider = ({
   max = 10,
   leftLabel,
   rightLabel,
+  valueLabels,
 }) => {
   const getEmoji = (val) => {
+    // For 0-5 scale, assign unique emoji to each value
+    if (min === 0 && max === 5) {
+      const emojiMap = {
+        0: "😞",
+        1: "😐",
+        2: "🙂",
+        3: "😊",
+        4: "😄",
+        5: "🤩"
+      };
+      return emojiMap[val] || "😐";
+    }
+    // For other scales, use ratio-based approach
     const ratio = (val - min) / (max - min);
-    if (ratio < 0.2) return "😞";
-    if (ratio < 0.4) return "😐";
-    if (ratio < 0.6) return "🙂";
-    if (ratio < 0.8) return "😊";
-    return "😄";
+    if (ratio <= 0.16) return "😞";
+    if (ratio <= 0.33) return "😐";
+    if (ratio <= 0.5) return "🙂";
+    if (ratio <= 0.66) return "😊";
+    if (ratio <= 0.83) return "😄";
+    return "🤩";
   };
 
   const getColor = (val) => {
@@ -42,6 +57,8 @@ const CriterionSlider = ({
   for (let i = min; i <= max; i += 1) {
     marks.push(i);
   }
+
+  const useWeightScale = valueLabels && Object.keys(valueLabels).length > 0;
 
   return (
     <Box>
@@ -81,44 +98,83 @@ const CriterionSlider = ({
             </SliderThumb>
           </Slider>
 
-          {/* Number marks */}
-          <Box position="relative" mt={4}>
-            <Box position="relative" height="20px">
-              {marks.map((mark) => (
-                <Box
-                  key={mark}
-                  position="absolute"
-                  left={`${((mark - min) / (max - min)) * 100}%`}
-                  transform="translateX(-50%)"
-                  textAlign="center"
-                >
-                  <Text
-                    fontSize="sm"
-                    color="gray.600"
-                    fontWeight="medium"
-                    opacity={value === mark ? 1 : 0.7}
-                    transform={value === mark ? "scale(1.1)" : "scale(1)"}
-                    transition="all 0.2s"
+          {useWeightScale ? (
+            <>
+              {/* Numbers only under slider, aligned with thumb; no labels under numbers */}
+              <Box position="relative" mt={4} height="20px">
+                {marks.map((mark) => (
+                  <Box
+                    key={mark}
+                    position="absolute"
+                    left={`${((mark - min) / (max - min)) * 100}%`}
+                    transform="translateX(-50%)"
+                    textAlign="center"
                   >
-                    {mark}
-                  </Text>
+                    <Text
+                      fontSize="sm"
+                      color="gray.600"
+                      fontWeight="medium"
+                      opacity={value === mark ? 1 : 0.7}
+                      transform={value === mark ? "scale(1.1)" : "scale(1)"}
+                      transition="all 0.2s"
+                    >
+                      {mark}
+                    </Text>
+                  </Box>
+                ))}
+              </Box>
+              {/* Not Important / Extremely Important at ends only, not under numbers */}
+              <HStack justify="space-between" mt={2}>
+                <Text fontSize="xs" color="gray.600">
+                  {leftLabel || "Not Important"}
+                </Text>
+                <Text fontSize="xs" color="gray.600">
+                  {rightLabel || "Extremely Important"}
+                </Text>
+              </HStack>
+            </>
+          ) : (
+            <>
+              {/* Number marks */}
+              <Box position="relative" mt={4}>
+                <Box position="relative" height="20px">
+                  {marks.map((mark) => (
+                    <Box
+                      key={mark}
+                      position="absolute"
+                      left={`${((mark - min) / (max - min)) * 100}%`}
+                      transform="translateX(-50%)"
+                      textAlign="center"
+                    >
+                      <Text
+                        fontSize="sm"
+                        color="gray.600"
+                        fontWeight="medium"
+                        opacity={value === mark ? 1 : 0.7}
+                        transform={value === mark ? "scale(1.1)" : "scale(1)"}
+                        transition="all 0.2s"
+                      >
+                        {mark}
+                      </Text>
+                    </Box>
+                  ))}
                 </Box>
-              ))}
-            </Box>
-          </Box>
+              </Box>
 
-          {/* Value Display */}
-          <HStack justify="space-between" mt={2}>
-            <Text fontSize="xs" color="gray.600">
-              {leftLabel || min}
-            </Text>
-            <Text fontSize="lg" fontWeight="bold" color={getColor(value)}>
-              {value}
-            </Text>
-            <Text fontSize="xs" color="gray.600">
-              {rightLabel || max}
-            </Text>
-          </HStack>
+              {/* Value Display */}
+              <HStack justify="space-between" mt={2}>
+                <Text fontSize="xs" color="gray.600">
+                  {leftLabel || min}
+                </Text>
+                <Text fontSize="lg" fontWeight="bold" color={getColor(value)}>
+                  {value}
+                </Text>
+                <Text fontSize="xs" color="gray.600">
+                  {rightLabel || max}
+                </Text>
+              </HStack>
+            </>
+          )}
         </Box>
       </VStack>
     </Box>

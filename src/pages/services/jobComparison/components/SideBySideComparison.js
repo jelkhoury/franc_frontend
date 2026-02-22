@@ -9,8 +9,9 @@ import {
   useColorModeValue,
   SimpleGrid,
   Icon,
+  Tooltip,
 } from "@chakra-ui/react";
-import { FaStar, FaStarHalfAlt, FaStar as FaStarEmpty, FaTrophy, FaBalanceScale } from "react-icons/fa";
+import { FaTrophy, FaBalanceScale, FaBan } from "react-icons/fa";
 import CriterionSlider from "./CriterionSlider";
 
 const SideBySideComparison = ({
@@ -20,14 +21,33 @@ const SideBySideComparison = ({
   weight,
   scoreA,
   scoreB,
+  notApplicableA = false,
+  notApplicableB = false,
   onWeightChange,
   onScoreAChange,
   onScoreBChange,
+  onNotApplicableAChange,
+  onNotApplicableBChange,
 }) => {
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const jobAColor = useColorModeValue("blue.500", "blue.300");
   const jobBColor = useColorModeValue("red.500", "red.300");
+
+  // Helper function to capitalize words and remove "if any" (e.g., "Starting salary, if any" -> "Starting Salary")
+  const capitalizeWords = (str) => {
+    if (!str) return str;
+    // Remove ", if any" or "if any" phrase (case insensitive)
+    let cleaned = str.replace(/,\s*if any\b/gi, '').replace(/\bif any\b/gi, '').trim();
+    // Clean up extra spaces and trailing commas
+    cleaned = cleaned.replace(/\s+/g, ' ').replace(/,\s*$/, '').trim();
+    return cleaned
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  const criterionName = capitalizeWords(criterion?.name || '');
 
   const getScoreColor = (score) => {
     // For 1-5 scale
@@ -64,7 +84,7 @@ const SideBySideComparison = ({
             <HStack spacing={2}>
               <Icon as={FaBalanceScale} color="blue.500" boxSize={5} />
               <Text fontWeight="bold" fontSize="lg" color="gray.800">
-                How important is this to you?
+                How important is "{criterionName || 'this criterion'}" to you?
               </Text>
             </HStack>
             <Badge
@@ -73,7 +93,7 @@ const SideBySideComparison = ({
               px={3}
               py={1}
             >
-              {weight >= 4 ? "Very Important" : weight >= 3 ? "Moderate" : "Less Important"}
+              {weight === 5 ? "Extremely Important" : weight === 4 ? "Very Important" : weight === 3 ? "Important" : weight === 2 ? "Slightly Important" : "Not Important"}
             </Badge>
           </HStack>
           <CriterionSlider
@@ -82,8 +102,9 @@ const SideBySideComparison = ({
             onChange={onWeightChange}
             min={1}
             max={5}
+            valueLabels={{ 1: "", 2: "", 3: "", 4: "", 5: "" }}
             leftLabel="Not Important"
-            rightLabel="Very Important"
+            rightLabel="Extremely Important"
           />
         </VStack>
       </Box>
@@ -97,51 +118,97 @@ const SideBySideComparison = ({
           shadow="md"
           p={6}
           border="2px"
-          borderColor={jobAColor}
+          borderColor={notApplicableA ? "orange.400" : jobAColor}
           position="relative"
         >
           <VStack spacing={4} align="stretch">
-            <HStack justify="space-between" mb={2}>
+            <HStack justify="space-between" align="center" flexWrap="wrap" gap={2}>
               <HStack spacing={2}>
                 <Icon as={FaTrophy} color={jobAColor} boxSize={5} />
                 <Text fontWeight="bold" fontSize="lg" color={jobAColor}>
                   {jobAName}
                 </Text>
               </HStack>
-              <Badge
-                bg={getScoreColor(scoreA)}
-                color="white"
-                fontSize="lg"
-                px={3}
-                py={1}
-                borderRadius="full"
-              >
-                <HStack spacing={1}>
-                  <Icon as={FaStar} boxSize={3} />
-                  <Text>{scoreA}/5</Text>
-                </HStack>
-              </Badge>
+              <HStack spacing={2} align="center">
+                <Tooltip
+                  label={notApplicableA ? "Click to rate this job instead. Your score will be used in the comparison." : "Mark this job as not applicable for this criterion. This job will get a score of 0 for this criterion and won't be compared on it."}
+                  hasArrow
+                  placement="top"
+                  openDelay={300}
+                >
+                  <HStack
+                    as="button"
+                    spacing={1.5}
+                    align="center"
+                    onClick={() => onNotApplicableAChange?.(!notApplicableA)}
+                    role="button"
+                    aria-label={notApplicableA ? "Answer / rate this job" : "Mark as not applicable"}
+                    px={3}
+                    py={1.5}
+                    borderRadius="md"
+                    bg={notApplicableA ? "orange.100" : "gray.100"}
+                    borderWidth="1px"
+                    borderColor={notApplicableA ? "orange.300" : "gray.300"}
+                    _hover={{ bg: notApplicableA ? "orange.200" : "gray.200" }}
+                  >
+                    <Icon as={FaBan} boxSize={3.5} color={notApplicableA ? "orange.600" : "gray.500"} />
+                    <Text fontSize="sm" fontWeight="medium" color={notApplicableA ? "orange.700" : "gray.600"}>
+                      {notApplicableA ? "Answer" : "Not applicable"}
+                    </Text>
+                  </HStack>
+                </Tooltip>
+                {!notApplicableA && (
+                  <Badge
+                    bg={getScoreColor(scoreA)}
+                    color="white"
+                    fontSize="lg"
+                    px={3}
+                    py={1}
+                    borderRadius="full"
+                  >
+                    <Text>{scoreA}/5</Text>
+                  </Badge>
+                )}
+              </HStack>
             </HStack>
-            <Divider />
-            <CriterionSlider
-              label={`Rate this job for ${criterion.name}`}
-              value={scoreA}
-              onChange={onScoreAChange}
-              min={0}
-              max={5}
-              leftLabel="Poor"
-              rightLabel="Excellent"
-            />
-            {/* Visual Score Indicator */}
-            <Box mt={2}>
+            {notApplicableA ? (
               <Box
-                h="8px"
-                bg={getScoreColor(scoreA)}
-                borderRadius="full"
-                width={`${(scoreA / 5) * 100}%`}
-                transition="all 0.3s"
-              />
-            </Box>
+                flex={1}
+                py={5}
+                px={4}
+                bg="orange.50"
+                borderRadius="lg"
+                borderWidth="1px"
+                borderColor="orange.200"
+                display="flex"
+                flexDirection="column"
+                justifyContent="center"
+                alignItems="center"
+                textAlign="center"
+                minH="100px"
+              >
+                <Text fontSize="sm" color="orange.700" lineHeight="tall">
+                  I don&apos;t have enough information about this criterion for <strong>{jobAName}</strong>. Score is 0 for this job. Click &quot;Answer&quot; above to rate this job instead.
+                </Text>
+              </Box>
+            ) : (
+              <>
+                <Divider />
+                <CriterionSlider
+                  label={`Rate this job for ${criterionName}`}
+                  value={scoreA}
+                  onChange={onScoreAChange}
+                  min={0}
+                  max={5}
+                  valueLabels={{ 0: "", 1: "", 2: "", 3: "", 4: "", 5: "" }}
+                  leftLabel="Less"
+                  rightLabel="High Satisfaction"
+                />
+                <Box mt={2} textAlign="center">
+                  <Text fontSize="lg" fontWeight="bold" color={jobAColor}>{weight * scoreA}</Text>
+                </Box>
+              </>
+            )}
           </VStack>
         </Box>
 
@@ -152,62 +219,108 @@ const SideBySideComparison = ({
           shadow="md"
           p={6}
           border="2px"
-          borderColor={jobBColor}
+          borderColor={notApplicableB ? "orange.400" : jobBColor}
           position="relative"
         >
           <VStack spacing={4} align="stretch">
-            <HStack justify="space-between" mb={2}>
+            <HStack justify="space-between" align="center" flexWrap="wrap" gap={2}>
               <HStack spacing={2}>
                 <Icon as={FaTrophy} color={jobBColor} boxSize={5} />
                 <Text fontWeight="bold" fontSize="lg" color={jobBColor}>
                   {jobBName}
                 </Text>
               </HStack>
-              <Badge
-                bg={getScoreColor(scoreB)}
-                color="white"
-                fontSize="lg"
-                px={3}
-                py={1}
-                borderRadius="full"
-              >
-                <HStack spacing={1}>
-                  <Icon as={FaStar} boxSize={3} />
-                  <Text>{scoreB}/5</Text>
-                </HStack>
-              </Badge>
+              <HStack spacing={2} align="center">
+                <Tooltip
+                  label={notApplicableB ? "Click to rate this job instead. Your score will be used in the comparison." : "Mark this job as not applicable for this criterion. This job will get a score of 0 for this criterion and won't be compared on it."}
+                  hasArrow
+                  placement="top"
+                  openDelay={300}
+                >
+                  <HStack
+                    as="button"
+                    spacing={1.5}
+                    align="center"
+                    onClick={() => onNotApplicableBChange?.(!notApplicableB)}
+                    role="button"
+                    aria-label={notApplicableB ? "Answer / rate this job" : "Mark as not applicable"}
+                    px={3}
+                    py={1.5}
+                    borderRadius="md"
+                    bg={notApplicableB ? "orange.100" : "gray.100"}
+                    borderWidth="1px"
+                    borderColor={notApplicableB ? "orange.300" : "gray.300"}
+                    _hover={{ bg: notApplicableB ? "orange.200" : "gray.200" }}
+                  >
+                    <Icon as={FaBan} boxSize={3.5} color={notApplicableB ? "orange.600" : "gray.500"} />
+                    <Text fontSize="sm" fontWeight="medium" color={notApplicableB ? "orange.700" : "gray.600"}>
+                      {notApplicableB ? "Answer" : "Not applicable"}
+                    </Text>
+                  </HStack>
+                </Tooltip>
+                {!notApplicableB && (
+                  <Badge
+                    bg={getScoreColor(scoreB)}
+                    color="white"
+                    fontSize="lg"
+                    px={3}
+                    py={1}
+                    borderRadius="full"
+                  >
+                    <Text>{scoreB}/5</Text>
+                  </Badge>
+                )}
+              </HStack>
             </HStack>
-            <Divider />
-            <CriterionSlider
-              label={`Rate this job for ${criterion.name}`}
-              value={scoreB}
-              onChange={onScoreBChange}
-              min={0}
-              max={5}
-              leftLabel="Poor"
-              rightLabel="Excellent"
-            />
-            {/* Visual Score Indicator */}
-            <Box mt={2}>
+            {notApplicableB ? (
               <Box
-                h="8px"
-                bg={getScoreColor(scoreB)}
-                borderRadius="full"
-                width={`${(scoreB / 5) * 100}%`}
-                transition="all 0.3s"
-              />
-            </Box>
+                flex={1}
+                py={5}
+                px={4}
+                bg="orange.50"
+                borderRadius="lg"
+                borderWidth="1px"
+                borderColor="orange.200"
+                display="flex"
+                flexDirection="column"
+                justifyContent="center"
+                alignItems="center"
+                textAlign="center"
+                minH="100px"
+              >
+                <Text fontSize="sm" color="orange.700" lineHeight="tall">
+                  I don&apos;t have enough information about this criterion for <strong>{jobBName}</strong>. Score is 0 for this job. Click &quot;Answer&quot; above to rate this job instead.
+                </Text>
+              </Box>
+            ) : (
+              <>
+                <Divider />
+                <CriterionSlider
+                  label={`Rate this job for ${criterionName}`}
+                  value={scoreB}
+                  onChange={onScoreBChange}
+                  min={0}
+                  max={5}
+                  valueLabels={{ 0: "", 1: "", 2: "", 3: "", 4: "", 5: "" }}
+                  leftLabel="Less"
+                  rightLabel="High Satisfaction"
+                />
+                <Box mt={2} textAlign="center">
+                  <Text fontSize="lg" fontWeight="bold" color={jobBColor}>{weight * scoreB}</Text>
+                </Box>
+              </>
+            )}
           </VStack>
         </Box>
       </SimpleGrid>
 
       {/* Quick Comparison Indicator */}
-      {(scoreA >= 0 && scoreB >= 0) && (
+      {!notApplicableA && !notApplicableB && (scoreA >= 0 && scoreB >= 0) && (
         <Box mt={4} textAlign="center">
           <Text fontSize="sm" color="gray.600">
             Difference:{" "}
             <Text as="span" fontWeight="bold" color="gray.800">
-              {Math.abs(scoreA - scoreB)} points
+              {Math.abs(weight * (scoreA - scoreB))} points
             </Text>
             {scoreA > scoreB ? (
               <Text as="span" color={jobAColor} ml={2}>

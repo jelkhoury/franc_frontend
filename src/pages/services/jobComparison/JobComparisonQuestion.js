@@ -20,14 +20,19 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   useDisclosure,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
 } from "@chakra-ui/react";
-import { FaBan, FaExclamationTriangle, FaInfoCircle, FaArrowLeft, FaArrowRight, FaCheckCircle, FaDollarSign, FaGift, FaBuilding, FaBriefcase, FaClock, FaEllipsisH, FaTimesCircle, FaQuestionCircle } from "react-icons/fa";
+import { FaExclamationTriangle, FaInfoCircle, FaArrowLeft, FaArrowRight, FaCheckCircle, FaDollarSign, FaGift, FaBuilding, FaBriefcase, FaClock, FaEllipsisH, FaTimesCircle, FaBan, FaListUl } from "react-icons/fa";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { get, post } from "../../../utils/httpServices";
 import { JOB_COMPARISON_ENDPOINTS } from "../../../services/apiService";
 import ProgressBar from "./components/ProgressBar";
 import SideBySideComparison from "./components/SideBySideComparison";
-import QuickSummaryCard from "./components/QuickSummaryCard";
 
 const JobComparisonQuestion = () => {
   const { criterionId } = useParams();
@@ -43,6 +48,7 @@ const JobComparisonQuestion = () => {
   const answersRef = useRef({});
   const lastSavedAnswersRef = useRef(null); // snapshot of what we last sent / what backend has
   const { isOpen: isLeaveModalOpen, onOpen: openLeaveModal, onClose: closeLeaveModal } = useDisclosure();
+  const { isOpen: isCriteriaModalOpen, onOpen: openCriteriaModal, onClose: closeCriteriaModal } = useDisclosure();
   const leaveModalCancelRef = useRef(null);
   const isLeavingRef = useRef(false);
 
@@ -62,6 +68,19 @@ const JobComparisonQuestion = () => {
   // Get all sections
   const sections = [...new Set(criteria.map((c) => c.section).filter(Boolean))];
   const currentSectionIndex = sections.indexOf(currentSection);
+  
+  // Helper function to capitalize words and remove "if any" (e.g., "Starting salary, if any" -> "Starting Salary")
+  const capitalizeWords = (str) => {
+    if (!str) return str;
+    // Remove ", if any" or "if any" phrase (case insensitive)
+    let cleaned = str.replace(/,\s*if any\b/gi, '').replace(/\bif any\b/gi, '').trim();
+    // Clean up extra spaces and trailing commas
+    cleaned = cleaned.replace(/\s+/g, ' ').replace(/,\s*$/, '').trim();
+    return cleaned
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
 
   // Section icons mapping
   const getSectionIcon = (sectionName) => {
@@ -79,7 +98,8 @@ const JobComparisonQuestion = () => {
   const [weight, setWeight] = useState(1); // Weight is 1-5 (cannot be 0)
   const [scoreA, setScoreA] = useState(0);
   const [scoreB, setScoreB] = useState(0);
-  const [notApplicable, setNotApplicable] = useState(false);
+  const [notApplicableA, setNotApplicableA] = useState(false);
+  const [notApplicableB, setNotApplicableB] = useState(false);
 
   const cardBg = useColorModeValue("white", "gray.800");
 
@@ -96,7 +116,10 @@ const JobComparisonQuestion = () => {
         answersRef.current = init;
         lastSavedAnswersRef.current = Object.keys(init).reduce((acc, id) => {
           const a = init[id];
-          acc[id] = { weight: a?.weight ?? 0, scoreA: a?.scoreA ?? 0, scoreB: a?.scoreB ?? 0, notApplicable: !!a?.notApplicable };
+          const na = !!a?.notApplicable;
+          const naA = a?.notApplicableA ?? na;
+          const naB = a?.notApplicableB ?? na;
+          acc[id] = { weight: a?.weight ?? 0, scoreA: a?.scoreA ?? 0, scoreB: a?.scoreB ?? 0, notApplicable: naA && naB, notApplicableA: naA, notApplicableB: naB };
           return acc;
         }, {});
       } else {
@@ -141,6 +164,8 @@ const JobComparisonQuestion = () => {
                 scoreA: a.scoreA ?? a.ScoreA ?? a.score_a ?? 0,
                 scoreB: a.scoreB ?? a.ScoreB ?? a.score_b ?? 0,
                 notApplicable: !!(a.notApplicable ?? a.NotApplicable ?? a.not_applicable),
+                notApplicableA: a.notApplicableA ?? !!(a.notApplicable ?? a.NotApplicable ?? a.not_applicable),
+                notApplicableB: a.notApplicableB ?? !!(a.notApplicable ?? a.NotApplicable ?? a.not_applicable),
               };
               return acc;
             }, {})
@@ -170,10 +195,13 @@ const JobComparisonQuestion = () => {
         answersRef.current = answersMap;
         lastSavedAnswersRef.current = Object.keys(answersMap).reduce((acc, id) => {
           const a = answersMap[id];
-          acc[id] = { weight: a?.weight ?? 0, scoreA: a?.scoreA ?? 0, scoreB: a?.scoreB ?? 0, notApplicable: !!a?.notApplicable };
+          const na = !!a?.notApplicable;
+          const naA = a?.notApplicableA ?? na;
+          const naB = a?.notApplicableB ?? na;
+          acc[id] = { weight: a?.weight ?? 0, scoreA: a?.scoreA ?? 0, scoreB: a?.scoreB ?? 0, notApplicable: naA && naB, notApplicableA: naA, notApplicableB: naB };
           return acc;
         }, {});
-        setJobComparisonId(stateForNav.jobComparisonId);
+      setJobComparisonId(stateForNav.jobComparisonId);
       } catch (e) {
         if (!cancelled) {
           console.warn("Restore question from API failed:", e);
@@ -190,11 +218,15 @@ const JobComparisonQuestion = () => {
   // Update local state when criterionId changes
   useEffect(() => {
     if (criterion && criterion.id) {
-      const answer = answersRef.current[criterion.id] || { weight: 1, scoreA: 0, scoreB: 0, notApplicable: false };
+      const answer = answersRef.current[criterion.id] || { weight: 1, scoreA: 0, scoreB: 0, notApplicable: false, notApplicableA: false, notApplicableB: false };
+      const na = !!answer.notApplicable;
+      const naA = answer.notApplicableA ?? na;
+      const naB = answer.notApplicableB ?? na;
       setWeight(typeof answer.weight === "number" && answer.weight >= 1 ? answer.weight : 1);
       setScoreA(typeof answer.scoreA === "number" ? answer.scoreA : 0);
       setScoreB(typeof answer.scoreB === "number" ? answer.scoreB : 0);
-      setNotApplicable(!!answer.notApplicable);
+      setNotApplicableA(!!naA);
+      setNotApplicableB(!!naB);
     }
   }, [criterionId, criterion?.id]); // Only depend on criterionId
 
@@ -202,67 +234,106 @@ const JobComparisonQuestion = () => {
   useEffect(() => {
     if (!criterion || !criterion.id) return;
     const currentAnswer = answersRef.current[criterion.id];
-    const next = notApplicable
-      ? { weight: 0, scoreA: 0, scoreB: 0, notApplicable: true }
-      : { weight, scoreA, scoreB, notApplicable: false };
+    const next = {
+      weight,
+      scoreA: notApplicableA ? 0 : scoreA,
+      scoreB: notApplicableB ? 0 : scoreB,
+      notApplicable: notApplicableA && notApplicableB,
+      notApplicableA,
+      notApplicableB,
+    };
     if (
       !currentAnswer ||
       currentAnswer.weight !== next.weight ||
       currentAnswer.scoreA !== next.scoreA ||
       currentAnswer.scoreB !== next.scoreB ||
-      currentAnswer.notApplicable !== next.notApplicable
+      currentAnswer.notApplicableA !== next.notApplicableA ||
+      currentAnswer.notApplicableB !== next.notApplicableB
     ) {
       const newAnswers = { ...answersRef.current, [criterion.id]: next };
       answersRef.current = newAnswers;
       setAnswers(newAnswers);
     }
-  }, [weight, scoreA, scoreB, notApplicable, criterion?.id]);
+  }, [weight, scoreA, scoreB, notApplicableA, notApplicableB, criterion?.id]);
 
-  // Handle Not Applicable checkbox change
-  const handleNotApplicableChange = (e) => {
-    const checked = e.target.checked;
-    setNotApplicable(checked);
-    if (checked) {
-      // When checked, disable sliders by resetting values
-      setWeight(0);
-      setScoreA(0);
-      setScoreB(0);
-    } else {
-      const answer = answersRef.current[criterion?.id];
-      if (answer && !answer.notApplicable) {
-        setWeight(typeof answer.weight === "number" && answer.weight >= 1 ? answer.weight : 1);
-        setScoreA(typeof answer.scoreA === "number" ? answer.scoreA : 0);
-        setScoreB(typeof answer.scoreB === "number" ? answer.scoreB : 0);
-      } else {
-        setWeight(1);
-        setScoreA(0);
-        setScoreB(0);
-      }
-    }
-  };
+  // Count and percentage of criteria answered (for progress bar: bar reflects how many answered, not which step)
+  const { answeredCount } = useMemo(() => {
+    const fromCheck = lastSavedAnswersRef.current || {};
+    let answered = 0;
+    criteria.forEach((c) => {
+      const answer = answersRef.current[c.id] ?? fromCheck[c.id];
+      const fromSaved = !!fromCheck[c.id];
+      const naA = answer?.notApplicableA ?? answer?.notApplicable;
+      const naB = answer?.notApplicableB ?? answer?.notApplicable;
+      const bothNA = naA && naB;
+      const sideAAnswered = naA || (fromSaved ? typeof answer?.scoreA === "number" : (answer && (answer.scoreA ?? 0) > 0));
+      const sideBAnswered = naB || (fromSaved ? typeof answer?.scoreB === "number" : (answer && (answer.scoreB ?? 0) > 0));
+      const hasScores = answer && answer.weight > 0 && sideAAnswered && sideBAnswered;
+      if (bothNA || hasScores) answered++;
+    });
+    return { answeredCount: answered };
+  }, [criteria, answers]);
 
-  // Calculate percentage of Not Applicable answers
+  // Criteria list with status for "View All Criteria" modal: only show complete if we have an answer from check/API or real user input
+  // From API: score 0 counts as answered. In-memory only: require score > 0 or N/A so default 0,0 doesn't show as complete
+  const criteriaWithStatus = useMemo(() => {
+    const fromCheck = lastSavedAnswersRef.current || {};
+    return criteria.map((c) => {
+      const answer = answersRef.current[c.id] ?? fromCheck[c.id];
+      const fromSaved = !!fromCheck[c.id];
+      const naA = answer?.notApplicableA ?? answer?.notApplicable;
+      const naB = answer?.notApplicableB ?? answer?.notApplicable;
+      const bothNA = naA && naB;
+      const sideAAnswered = naA || (fromSaved ? typeof answer?.scoreA === "number" : (answer && (answer.scoreA ?? 0) > 0));
+      const sideBAnswered = naB || (fromSaved ? typeof answer?.scoreB === "number" : (answer && (answer.scoreB ?? 0) > 0));
+      const hasScores =
+        answer &&
+        answer.weight > 0 &&
+        sideAAnswered &&
+        sideBAnswered;
+      const isComplete = bothNA || !!hasScores;
+      const hasNA = naA || naB;
+      return {
+        criterion: c,
+        isComplete,
+        hasNA,
+        naA: !!naA,
+        naB: !!naB,
+      };
+    });
+  }, [criteria, answers]);
+
+  // Calculate percentage of Not Applicable (either job or both) answers — for >30% warning
   const notApplicableStats = useMemo(() => {
     let notApplicableCount = 0;
     criteria.forEach((c) => {
       const answer = answersRef.current[c.id];
-      if (answer && answer.notApplicable) {
-        notApplicableCount++;
-      }
+      // Count if EITHER job A OR job B (or both) is marked as not applicable
+      const hasNA = answer?.notApplicableA || answer?.notApplicableB || answer?.notApplicable;
+      if (answer && hasNA) notApplicableCount++;
     });
     const percentage = criteria.length > 0 ? (notApplicableCount / criteria.length) * 100 : 0;
     return { count: notApplicableCount, percentage, total: criteria.length };
   }, [criteria, answers]);
 
-  const allAnswered = notApplicable || (weight > 0 && (scoreA > 0 || scoreB > 0));
+  const allAnswered =
+    (notApplicableA && notApplicableB) ||
+    (weight > 0 && ((scoreA >= 0 || notApplicableA) && (scoreB >= 0 || notApplicableB)));
 
   const isAnswerEqual = (a, b) => {
     if (!a && !b) return true;
     if (!a || !b) return false;
-    return a.notApplicable === b.notApplicable &&
+    const naA = a.notApplicableA ?? a.notApplicable;
+    const naB = a.notApplicableB ?? a.notApplicable;
+    const nbA = b.notApplicableA ?? b.notApplicable;
+    const nbB = b.notApplicableB ?? b.notApplicable;
+    return (
+      naA === nbA &&
+      naB === nbB &&
       (a.weight ?? 0) === (b.weight ?? 0) &&
       (a.scoreA ?? 0) === (b.scoreA ?? 0) &&
-      (a.scoreB ?? 0) === (b.scoreB ?? 0);
+      (a.scoreB ?? 0) === (b.scoreB ?? 0)
+    );
   };
 
   // Save progress — send only new or changed answers compared to last saved
@@ -285,12 +356,16 @@ const JobComparisonQuestion = () => {
       setSaving(true);
       const answersArray = idsToSend.map((id) => {
         const answer = answersToSave[id];
+        const naA = !!answer.notApplicableA;
+        const naB = !!answer.notApplicableB;
+        const bothNA = naA && naB;
         return {
           criterionId: id,
-          weight: answer.notApplicable ? 0 : (answer.weight ?? 0),
-          scoreA: answer.notApplicable ? 0 : (answer.scoreA ?? 0),
-          scoreB: answer.notApplicable ? 0 : (answer.scoreB ?? 0),
-          notApplicable: !!answer.notApplicable,
+          weight: bothNA ? 0 : (answer.weight ?? 0),
+          scoreA: naA ? 0 : (answer.scoreA ?? 0),
+          scoreB: naB ? 0 : (answer.scoreB ?? 0),
+          notApplicableA: naA,
+          notApplicableB: naB,
         };
       });
 
@@ -307,11 +382,14 @@ const JobComparisonQuestion = () => {
       const nextLastSaved = { ...lastSaved };
       idsToSend.forEach((id) => {
         const a = answersToSave[id];
+        const bothNA = a.notApplicableA && a.notApplicableB;
         nextLastSaved[id] = {
-          weight: a.notApplicable ? 0 : (a.weight ?? 0),
-          scoreA: a.notApplicable ? 0 : (a.scoreA ?? 0),
-          scoreB: a.notApplicable ? 0 : (a.scoreB ?? 0),
-          notApplicable: !!a.notApplicable,
+          weight: bothNA ? 0 : (a.weight ?? 0),
+          scoreA: a.notApplicableA ? 0 : (a.scoreA ?? 0),
+          scoreB: a.notApplicableB ? 0 : (a.scoreB ?? 0),
+          notApplicable: !!bothNA,
+          notApplicableA: !!a.notApplicableA,
+          notApplicableB: !!a.notApplicableB,
         };
       });
       lastSavedAnswersRef.current = nextLastSaved;
@@ -332,7 +410,17 @@ const JobComparisonQuestion = () => {
   // Flush current criterion into answers before saving (so Next/Previous/Review send it).
   const flushCurrentAndSave = async () => {
     if (criterion?.id != null) {
-      const next = { ...answersRef.current, [criterion.id]: { weight, scoreA, scoreB, notApplicable } };
+      const next = {
+        ...answersRef.current,
+        [criterion.id]: {
+          weight,
+          scoreA: notApplicableA ? 0 : scoreA,
+          scoreB: notApplicableB ? 0 : scoreB,
+          notApplicable: notApplicableA && notApplicableB,
+          notApplicableA,
+          notApplicableB,
+        },
+      };
       answersRef.current = next;
       setAnswers(next);
     }
@@ -383,6 +471,25 @@ const JobComparisonQuestion = () => {
         answers: answersRef.current,
         jobComparisonId: updatedId,
       },
+    });
+  };
+
+  const handleCriteriaClick = (criterionId) => {
+    if (criterionId === currentCriterionId) {
+      closeCriteriaModal();
+      return;
+    }
+    closeCriteriaModal();
+    flushCurrentAndSave().then((updatedId) => {
+      navigate(`/job-comparison/question/${criterionId}`, {
+        state: {
+          jobAName,
+          jobBName,
+          criteria,
+          answers: answersRef.current,
+          jobComparisonId: updatedId,
+        },
+      });
     });
   };
 
@@ -467,299 +574,168 @@ const JobComparisonQuestion = () => {
         </AlertDialogOverlay>
       </AlertDialog>
       <Box maxW="1400px" mx="auto" px={6}>
-        {/* Progress Bar */}
-        <ProgressBar current={currentIndex + 1} total={criteria.length} />
+        {/* Progress: percentage left, step right + View All Criteria */}
+        <Box mb={4}>
+          <ProgressBar current={currentIndex + 1} total={criteria.length} answeredCount={answeredCount} />
+          <HStack mt={2} justify="flex-end" align="center">
+            <Button
+              size="sm"
+              variant="outline"
+              leftIcon={<Icon as={FaListUl} />}
+              onClick={openCriteriaModal}
+              colorScheme="blue"
+            >
+              View All Criteria
+            </Button>
+          </HStack>
+        </Box>
 
-        {/* Quick Summary Card */}
-        <QuickSummaryCard
-          criteria={criteria}
-          answers={answers}
-          jobAName={jobAName}
-          jobBName={jobBName}
-        />
-
-        {/* Warning if >30% Not Applicable - Informational only, doesn't block navigation */}
-        {notApplicableStats.percentage > 30 && (
-          <Alert 
-            status="warning" 
-            borderRadius="xl" 
-            mb={4}
-            bg="orange.50"
-            border="2px"
-            borderColor="orange.300"
-          >
-            <Box display="flex" alignItems="start" w="100%">
-              <Icon as={FaExclamationTriangle} mr={4} color="orange.500" boxSize={6} mt={1} />
-              <Box flex={1}>
-                <Text fontWeight="bold" fontSize="md" color="orange.700" mb={2}>
-                  ⚠️ Results Calculation Will Be Blocked
-                </Text>
-                <VStack align="start" spacing={2}>
-                  <Text fontSize="sm" color="orange.700">
-                    {`You've marked ${notApplicableStats.count} out of ${notApplicableStats.total} questions (${notApplicableStats.percentage.toFixed(1)}%) as "Not Applicable".`}
-                  </Text>
-                  <Box
-                    bg="orange.100"
-                    p={2}
-                    borderRadius="md"
-                    w="100%"
-                  >
-                    <Text fontSize="sm" fontWeight="medium" color="orange.800">
-                      💡 You can continue answering questions, but results cannot be calculated until at least 70% ({Math.ceil(notApplicableStats.total * 0.7)} questions) are answered.
-                    </Text>
-                  </Box>
-                  <Text fontSize="xs" color="orange.600" fontStyle="italic">
-                    You can uncheck "Not Applicable" on some questions to provide ratings instead.
-                  </Text>
-                </VStack>
-              </Box>
-            </Box>
-          </Alert>
-        )}
-
-        {/* Section Header */}
-        {currentSection && (
-          <Box
-            bg="blue.50"
-            borderLeft="4px"
-            borderColor="blue.500"
-            p={4}
-            borderRadius="md"
-            mb={4}
-          >
-            <HStack justify="space-between">
-              <HStack spacing={3}>
-                <Icon as={getSectionIcon(currentSection)} color="blue.600" boxSize={6} />
-                <Box>
-                  <Text fontSize="xs" color="blue.600" fontWeight="bold" textTransform="uppercase" letterSpacing="wide">
-                    Section {currentSectionIndex + 1} of {sections.length}
-                  </Text>
-                  <Heading size="md" color="blue.700" mt={1}>
-                    {currentSection}
-                  </Heading>
-                </Box>
-              </HStack>
+        {/* View All Criteria modal */}
+        <Modal isOpen={isCriteriaModalOpen} onClose={closeCriteriaModal} size="md" scrollBehavior="inside">
+          <ModalOverlay />
+          <ModalContent maxH="85vh">
+            <ModalHeader>
               <HStack spacing={2}>
-                <Icon as={FaInfoCircle} color="blue.500" boxSize={4} />
-                <Text fontSize="sm" color="blue.600" fontWeight="medium">
-                  Question {sectionIndex + 1} of {sectionCriteria.length}
-                </Text>
+                <Icon as={FaListUl} color="blue.500" />
+                <span>All Criteria</span>
               </HStack>
-            </HStack>
+            </ModalHeader>
+            <ModalCloseButton />
+            <ModalBody pb={6}>
+              <VStack align="stretch" spacing={1}>
+                {criteriaWithStatus.map(({ criterion, isComplete, hasNA, naA, naB }) => {
+                  const isCurrent = criterion.id === currentCriterionId;
+                  const sectionIcon = getSectionIcon(criterion.section);
+                  return (
+                    <HStack
+                      key={criterion.id}
+                      p={2}
+                      borderRadius="md"
+                      bg={isCurrent ? "blue.50" : undefined}
+                      borderWidth={isCurrent ? "1px" : 0}
+                      borderColor="blue.300"
+                      justify="space-between"
+                      align="center"
+                      spacing={3}
+                      cursor="pointer"
+                      _hover={{ bg: "gray.50" }}
+                      onClick={() => handleCriteriaClick(criterion.id)}
+                    >
+                      <HStack spacing={2} flex={1} minW={0}>
+                        {isComplete ? (
+                          <Icon as={FaCheckCircle} color="green.500" boxSize={4} flexShrink={0} title="Complete" />
+                        ) : (
+                          <Icon as={FaTimesCircle} color="red.500" boxSize={4} flexShrink={0} title="Not completed" />
+                        )}
+                        <Icon as={sectionIcon} color="blue.500" boxSize={3.5} opacity={0.8} flexShrink={0} />
+                        <Text fontSize="sm" noOfLines={1} title={capitalizeWords(criterion.name)}>
+                          {capitalizeWords(criterion.name)}
+                        </Text>
+                        {isCurrent && (
+                          <Badge colorScheme="blue" size="sm">
+                            Current
+                          </Badge>
+                        )}
+                      </HStack>
+                      {hasNA && (
+                        <Badge colorScheme="orange" fontSize="xs" flexShrink={0} title={naA && naB ? "Both jobs N/A" : naA ? `${jobAName} N/A` : `${jobBName} N/A`}>
+                          <HStack spacing={1}>
+                            <Icon as={FaBan} boxSize={2.5} />
+                            <span>N/A</span>
+                          </HStack>
+                        </Badge>
+                      )}
+                    </HStack>
+                  );
+                })}
+              </VStack>
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+
+        {/* Small note if >30% N/A: may affect fairness, but user can still calculate normally */}
+        {notApplicableStats.percentage > 30 && (
+          <Box mb={4} px={3} py={2} bg="orange.50" borderRadius="md" borderLeft="4px" borderColor="orange.400" w="100%">
+            <Text fontSize="sm" color="orange.800">
+              <strong>Note:</strong> {notApplicableStats.count} of {notApplicableStats.total} questions ({notApplicableStats.percentage.toFixed(0)}%) are &quot;Not applicable&quot;. This may affect the calculation and make it less fair; you can still complete and calculate normally.
+            </Text>
           </Box>
         )}
 
-        {/* Question Card */}
-        <Box bg={cardBg} rounded="xl" shadow="lg" p={8} mt={6}>
-          <VStack spacing={6} align="stretch">
-            {/* Question Title - Clear and Separate */}
-            <Box mb={4}>
-              <Heading size="xl" color="gray.800" mb={4}>
-                {criterion.name}
-              </Heading>
-            </Box>
-
-            {/* Question Explanation/Description - Clearly Separated */}
-            {criterion.description && (
+        {/* Combined Section Header and Question Card */}
+        <Box 
+          bg={cardBg} 
+          rounded="md"
+          shadow="sm"
+          mt={6}
+          mb={4}
+          border="1px solid"
+          borderColor="gray.200"
+          overflow="hidden"
+        >
+          <VStack spacing={0} align="stretch">
+            {/* Section Header - styled like accordion button but always expanded */}
+            {currentSection && (
               <Box
                 bg="blue.50"
-                p={4}
-                borderRadius="lg"
                 borderLeft="4px"
-                borderColor="blue.400"
-                mb={2}
+                borderColor="blue.500"
+                py={5}
+                px={6}
+                borderTopRadius="md"
               >
-                <HStack spacing={3} align="start">
-                  <Icon as={FaInfoCircle} color="blue.500" boxSize={5} mt={0.5} flexShrink={0} />
-                  <Box>
-                    <Text fontSize="xs" color="blue.600" fontWeight="bold" textTransform="uppercase" letterSpacing="wide" mb={1}>
-                      What this means:
-                    </Text>
-                    <Text color="gray.700" fontSize="sm" lineHeight="tall">
-                      {criterion.description}
-                    </Text>
-                  </Box>
-                </HStack>
+                <Heading size="lg" color="blue.700" fontWeight="semibold">
+                  Section {currentSectionIndex + 1} of {sections.length} – {currentSection}
+                </Heading>
               </Box>
             )}
 
-            {/* Not Applicable Feature - More User Friendly */}
-            <Box
-              as="button"
-              onClick={() => handleNotApplicableChange({ target: { checked: !notApplicable } })}
-              p={5}
-              border="2px"
-              borderStyle="dashed"
-              borderColor={notApplicable ? "orange.400" : "gray.300"}
-              borderRadius="xl"
-              bg={notApplicable ? "orange.50" : "gray.50"}
-              _hover={{
-                bg: notApplicable ? "orange.100" : "gray.100",
-                borderColor: notApplicable ? "orange.500" : "gray.400",
-              }}
-              transition="all 0.2s"
-              cursor="pointer"
-              w="100%"
-            >
-              <VStack spacing={3} align="stretch">
-                <HStack spacing={3} justify="space-between">
-                  <HStack spacing={3}>
-                    <Box
-                      w="24px"
-                      h="24px"
-                      borderRadius="full"
-                      border="2px"
-                      borderColor={notApplicable ? "orange.500" : "gray.400"}
-                      bg={notApplicable ? "orange.500" : "transparent"}
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      transition="all 0.2s"
-                    >
-                      {notApplicable && (
-                        <Icon as={FaCheckCircle} color="white" boxSize={4} />
+            {/* Content area */}
+            <Box bg="white" p={8} borderBottomRadius="md">
+              <VStack spacing={6} align="stretch">
+                {/* Criterion number, name, and definition on one row */}
+                <Box mb={4}>
+                  <HStack spacing={2} align="baseline" flexWrap="wrap" justify="space-between">
+                    <HStack spacing={2} align="baseline" flexWrap="wrap">
+                      <Heading size="md" color="gray.800">
+                        {capitalizeWords(criterion.name)}
+                      </Heading>
+                      {criterion.description && (
+                        <Text fontSize="sm" color="gray.500">
+                          — {criterion.description}
+                        </Text>
                       )}
-                    </Box>
-                    <VStack align="start" spacing={0}>
-                      <HStack spacing={2}>
-                        <Icon 
-                          as={notApplicable ? FaBan : FaQuestionCircle} 
-                          color={notApplicable ? "orange.600" : "gray.600"} 
-                          boxSize={5} 
-                        />
-                        <Text fontWeight="bold" fontSize="md" color={notApplicable ? "orange.700" : "gray.700"}>
-                          This doesn't apply to either job
-                        </Text>
-                      </HStack>
-                      <Text fontSize="xs" color="gray.500" mt={1}>
-                        Click to mark this criterion as not applicable
-                      </Text>
-                    </VStack>
-                  </HStack>
-                  {notApplicable && (
-                    <Badge colorScheme="orange" fontSize="sm" px={3} py={1}>
-                      N/A
-                    </Badge>
-                  )}
-                </HStack>
-                
-                {notApplicable && (
-                  <Box
-                    mt={2}
-                    p={3}
-                    bg="orange.100"
-                    borderRadius="md"
-                    borderLeft="3px"
-                    borderColor="orange.500"
-                  >
-                    <HStack spacing={2} align="start">
-                      <Icon as={FaInfoCircle} color="orange.600" boxSize={4} mt={0.5} />
-                      <VStack align="start" spacing={1}>
-                        <Text fontSize="sm" fontWeight="medium" color="orange.800">
-                          Both jobs will be excluded from scoring for this criterion
-                        </Text>
-                        <Text fontSize="xs" color="orange.700">
-                          You can uncheck this box anytime to provide ratings instead
-                        </Text>
-                      </VStack>
                     </HStack>
-                  </Box>
-                )}
+                    <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                      Criterion {sectionIndex + 1} of {sectionCriteria.length}
+                    </Text>
+                  </HStack>
+                </Box>
+
+                {/* Side-by-Side Comparison — per-job Not applicable inside each job container */}
+                <SideBySideComparison
+                  criterion={criterion}
+                  jobAName={jobAName}
+                  jobBName={jobBName}
+                  weight={weight}
+                  scoreA={scoreA}
+                  scoreB={scoreB}
+                  notApplicableA={notApplicableA}
+                  notApplicableB={notApplicableB}
+                  onWeightChange={setWeight}
+                  onScoreAChange={setScoreA}
+                  onScoreBChange={setScoreB}
+                  onNotApplicableAChange={(checked) => {
+                    setNotApplicableA(!!checked);
+                    if (checked) setScoreA(0);
+                  }}
+                  onNotApplicableBChange={(checked) => {
+                    setNotApplicableB(!!checked);
+                    if (checked) setScoreB(0);
+                  }}
+                />
               </VStack>
             </Box>
-
-            {/* Side-by-Side Comparison */}
-            {!notApplicable && (
-              <SideBySideComparison
-                criterion={criterion}
-                jobAName={jobAName}
-                jobBName={jobBName}
-                weight={weight}
-                scoreA={scoreA}
-                scoreB={scoreB}
-                onWeightChange={setWeight}
-                onScoreAChange={setScoreA}
-                onScoreBChange={setScoreB}
-              />
-            )}
-
-            {notApplicable && (
-              <Box
-                p={8}
-                pt={12}
-                bg="gradient-to-br"
-                bgGradient="linear(to-br, orange.50, yellow.50)"
-                borderRadius="xl"
-                textAlign="center"
-                border="2px dashed"
-                borderColor="orange.300"
-                position="relative"
-              >
-                <Badge
-                  position="absolute"
-                  top={4}
-                  right={4}
-                  bg="orange.500"
-                  color="white"
-                  px={4}
-                  py={2}
-                  borderRadius="md"
-                  fontSize="xs"
-                  fontWeight="bold"
-                  textTransform="uppercase"
-                  letterSpacing="wide"
-                  boxShadow="md"
-                >
-                  NOT APPLICABLE
-                </Badge>
-                
-                <VStack spacing={4}>
-                  <Box
-                    bg="white"
-                    borderRadius="full"
-                    p={4}
-                    boxShadow="md"
-                  >
-                    <Icon as={FaBan} boxSize={10} color="orange.500" />
-                  </Box>
-                  
-                  <VStack spacing={2}>
-                    <Text color="orange.800" fontWeight="bold" fontSize="lg">
-                      This Criterion is Not Applicable
-                    </Text>
-                    <Text fontSize="sm" color="orange.700" maxW="400px">
-                      {`Both ${jobAName} and ${jobBName} will be marked as "Not Applicable" for this criterion and excluded from the comparison score.`}
-                    </Text>
-                  </VStack>
-                  
-                  <Box
-                    mt={2}
-                    p={3}
-                    bg="white"
-                    borderRadius="md"
-                    border="1px"
-                    borderColor="orange.200"
-                    maxW="300px"
-                  >
-                    <HStack spacing={4} justify="center">
-                      <VStack spacing={1}>
-                        <Text fontSize="xs" color="gray.600">Job A</Text>
-                        <Badge colorScheme="orange" fontSize="sm">N/A</Badge>
-                      </VStack>
-                      <Text fontSize="sm" color="gray.400">vs</Text>
-                      <VStack spacing={1}>
-                        <Text fontSize="xs" color="gray.600">Job B</Text>
-                        <Badge colorScheme="orange" fontSize="sm">N/A</Badge>
-                      </VStack>
-                    </HStack>
-                  </Box>
-                  
-                  <Text fontSize="xs" color="orange.600" fontStyle="italic" mt={2}>
-                    Click the box above to uncheck and provide ratings instead
-                  </Text>
-                </VStack>
-              </Box>
-            )}
           </VStack>
         </Box>
 

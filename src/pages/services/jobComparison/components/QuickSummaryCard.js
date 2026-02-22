@@ -26,8 +26,11 @@ const QuickSummaryCard = ({ criteria, answers, jobAName, jobBName }) => {
       const answer = answers[criterion.id];
       if (answer && answer.notApplicable) {
         notApplicableCount++;
-      } else if (answer && answer.weight > 0 && ((answer.scoreA ?? 0) > 0 || (answer.scoreB ?? 0) > 0)) {
-        const { weight, scoreA, scoreB } = answer;
+      } else if (answer && answer.weight > 0 && 
+                 (answer.scoreA !== null && answer.scoreA !== undefined) && 
+                 (answer.scoreB !== null && answer.scoreB !== undefined)) {
+        // Include criteria where both scores are answered, even if scoreA=0 or scoreB=0
+        const { weight, scoreA = 0, scoreB = 0 } = answer;
         totalWeightA += weight * scoreA;
         totalWeightB += weight * scoreB;
         totalWeight += weight;

@@ -20,7 +20,7 @@ import { CheckCircleIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import { FaUser } from "react-icons/fa";
 import { get } from "../utils/httpServices";
-import { getStoredToken } from "../utils/tokenUtils";
+import { getStoredToken, getUserRole, getStoredUserRole } from "../utils/tokenUtils";
 import { USER_ENDPOINTS } from "../services/apiService";
 
 export default function UserProfileEdit({ onClose, onLogout }) {
@@ -70,6 +70,16 @@ export default function UserProfileEdit({ onClose, onLogout }) {
   const userName =
     `${userInfo.firstName} ${userInfo.lastName}`.trim() || "User";
   const email = userInfo.email || "No email available";
+
+  const token = getStoredToken();
+  const roleFromToken = token ? getUserRole(token) : null;
+  const roleFromStorage = getStoredUserRole();
+  const isAdmin = roleFromToken === "Admin" || roleFromStorage === "Admin";
+
+  const handleReturnToAdmin = () => {
+    onClose?.();
+    navigate("/admin");
+  };
 
   const handleChangePassword = () => {
     onClose();
@@ -182,7 +192,18 @@ export default function UserProfileEdit({ onClose, onLogout }) {
         </SimpleGrid>
       </Box>
 
-      <HStack spacing={4} pt={4}>
+      <HStack spacing={4} pt={4} flexWrap="wrap">
+        {isAdmin && (
+          <Button
+            bg="blue.50"
+            color="brand.500"
+            w="full"
+            _hover={{ bg: "blue.100" }}
+            onClick={handleReturnToAdmin}
+          >
+            Return to Admin Panel
+          </Button>
+        )}
         <Button
           bg="gray.100"
           color="brand.500"
@@ -199,8 +220,8 @@ export default function UserProfileEdit({ onClose, onLogout }) {
           w="full"
           _hover={{ bg: "brand.700" }}
           onClick={() => {
-            onClose();
-            onLogout();
+            onClose?.();
+            onLogout?.();
           }}
         >
           Logout
