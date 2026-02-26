@@ -15,6 +15,7 @@ const ScoreComparisonChart = ({
   labelA,
   labelB,
   title,
+  description,
 }) => {
   const cardBg = useColorModeValue("white", "gray.800");
   // Scores are normalized to 0-100 scale (weighted average calculation)
@@ -25,9 +26,16 @@ const ScoreComparisonChart = ({
 
   return (
     <Box bg={cardBg} rounded="xl" shadow="md" p={6}>
-      <Text fontSize="xl" fontWeight="bold" mb={6} color="gray.800">
-        {title}
-      </Text>
+      <HStack align="flex-start" spacing={3} mb={6} flexWrap="wrap">
+        <Text fontSize="xl" fontWeight="bold" color="gray.800" flexShrink={0}>
+          {title}
+        </Text>
+        {description && (
+          <Text fontSize="sm" color="gray.600" fontStyle="italic" lineHeight="tall" pt={0.5}>
+            {description}
+          </Text>
+        )}
+      </HStack>
 
       <VStack spacing={6} align="stretch">
         {/* Job A */}

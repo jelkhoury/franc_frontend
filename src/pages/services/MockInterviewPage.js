@@ -124,7 +124,7 @@ const MockInterviewPage = () => {
               <Alert status="warning">
                 <AlertIcon />
                 <Text fontSize="sm">
-                  You cannot start another interview right now. Please try again later.
+                  You dont have enough attempts to start another interview. Please try again later.
                 </Text>
               </Alert>
               <Button
@@ -198,7 +198,7 @@ const MockInterviewPage = () => {
                   <Text fontWeight="bold">Action Restricted</Text>
                 </Alert>
                 <Text>
-                  You cannot do another interview right now. Please try again later.
+                  You dont have enough attempts to do another interview. Please try again later.
                 </Text>
               </>
             )}

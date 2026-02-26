@@ -77,7 +77,7 @@ const services = [
   },
   {
     heading: "Job comparison",
-    description: "Try the shoes before you choose the path.",
+    description: "Compare first, celebrate later — avoid “what if” forever.",
     gif: "/assets/images/comparison.gif",
     isActive: true,
     link: "/job-comparison",

@@ -123,7 +123,7 @@ const SdsPage = () => {
               <Alert status="warning">
                 <AlertIcon />
                 <Text fontSize="sm">
-                  You cannot start the SDS test right now. Please try again later.
+                  You dont have enough attempts to start the SDS test. Please try again later.
                 </Text>
               </Alert>
               <Button onClick={handleTryNowClick} colorScheme="brand" size="md" isDisabled>

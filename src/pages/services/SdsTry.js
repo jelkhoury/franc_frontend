@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useContext } from "react";
+import React, { useEffect, useMemo, useState, useContext, useRef, useCallback } from "react";
 import {
   Badge,
   Box,
@@ -27,6 +27,8 @@ import {
   ModalCloseButton,
   ModalBody,
   ModalFooter,
+  List,
+  ListItem,
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { WarningIcon } from "@chakra-ui/icons";
@@ -36,8 +38,79 @@ import confetti from "canvas-confetti";
 import QuestionField from "../../components/QuestionField";
 import { AuthContext } from "../../components/AuthContext";
 import { getStoredUserId } from "../../utils/tokenUtils";
-import { get, post } from "../../utils/httpServices";
+import { get, post, del } from "../../utils/httpServices";
 import { SDS_ENDPOINTS } from "../../services/apiService";
+
+const SDS_DRAFT_STORAGE_KEY = "sds_draft_answers";
+
+const DEBOUNCE_TEXT_MS = 350;
+
+/**
+ * Wrapper for text/textarea that keeps local state so typing/deleting is instant;
+ * syncs to parent after debounce or on blur. Avoids overwriting local state when
+ * parent re-renders with stale value (e.g. from another question's update).
+ */
+/**
+ * Stable per-question onChange so parent re-renders don't force this field to re-render.
+ */
+const DebouncedTextQuestionField = React.memo(function DebouncedTextQuestionField({
+  value,
+  question,
+  onTextAnswerChange,
+  ...rest
+}) {
+  const [localValue, setLocalValue] = useState(() => value ?? "");
+  const debounceRef = useRef(null);
+  const lastFlushedRef = useRef(value ?? "");
+
+  const onChange = useCallback(
+    (val) => onTextAnswerChange(question.id, question.text, val),
+    [question.id, question.text, onTextAnswerChange]
+  );
+
+  useEffect(() => {
+    const propVal = value ?? "";
+    if (propVal === lastFlushedRef.current) return;
+    lastFlushedRef.current = propVal;
+    setLocalValue(propVal);
+  }, [value]);
+
+  const flushToParent = useCallback((val) => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    const trimmed = (val ?? "").toString().trim();
+    const toSend = trimmed.length === 0 ? null : val;
+    lastFlushedRef.current = val ?? "";
+    onChange(toSend);
+  }, [onChange]);
+
+  const handleChange = useCallback((val) => {
+    const next = val ?? "";
+    setLocalValue(next);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => flushToParent(next), DEBOUNCE_TEXT_MS);
+  }, [flushToParent]);
+
+  const handleBlur = useCallback(() => {
+    flushToParent(localValue);
+  }, [localValue, flushToParent]);
+
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+  }, []);
+
+  return (
+    <QuestionField
+      {...rest}
+      type={question.type}
+      value={localValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+    />
+  );
+});
 
 /**
  * SDS Try page
@@ -115,23 +188,178 @@ const SdsTry = () => {
   const [error, setError] = useState(null);
   const [sections, setSections] = useState([]);
   const [answers, setAnswers] = useState({});
-  const [showExitWarning, setShowExitWarning] = useState(false);
+  const [showResumeModal, setShowResumeModal] = useState(false);
+  const [pendingExistingAnswers, setPendingExistingAnswers] = useState(null);
+  const [initialAnswersSnapshot, setInitialAnswersSnapshot] = useState({});
+  const [checkingExistingAnswers, setCheckingExistingAnswers] = useState(true);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
   const [riasecValidationErrors, setRiasecValidationErrors] = useState({});
+  const [savingDraft, setSavingDraft] = useState(false);
 
   const toast = useToast();
 
   const cardBg = useColorModeValue("white", "gray.800");
   const cardBorder = useColorModeValue("gray.200", "gray.700");
 
-  // Browser back button warning handlers
-  const handleExitConfirm = () => {
-    setShowExitWarning(false);
-    navigate("/self-directed-search");
+  const getUserIdFromToken = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    try {
+      const tokenData = JSON.parse(atob(token.split(".")[1]));
+      const userId = tokenData["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+      const id = parseInt(userId, 10);
+      return isNaN(id) ? null : id;
+    } catch {
+      return null;
+    }
   };
 
-  const handleExitCancel = () => {
-    setShowExitWarning(false);
+  const normalizeAnswerForCompare = (val) => {
+    if (val == null) return "";
+    if (Array.isArray(val)) return [...val].sort().join(",");
+    return String(val).trim();
+  };
+
+  const buildResponsesPayload = (answersObj, typeMap) => {
+    return Object.entries(answersObj).map(([qid, val]) => {
+      const questionId = Number(qid);
+      const qType = typeMap[questionId];
+      let selectedValue = null;
+      let customAnswer = null;
+      if (qType === 5) {
+        const text = (val ?? "").toString().trim();
+        customAnswer = text.length ? text : null;
+      } else if (Array.isArray(val)) {
+        selectedValue = val.join(",");
+      } else {
+        selectedValue = val != null ? String(val) : null;
+      }
+      return { questionId, selectedValue, customAnswer };
+    });
+  };
+
+  const handleSaveAndReturnLater = async () => {
+    const userId = getUserIdFromToken();
+    if (!userId) {
+      saveAnswersToStorage(answers);
+      toast({
+        title: "Saved locally",
+        description: "Log in to sync your progress to the server. Your answers are saved in this browser.",
+        status: "info",
+        duration: 4000,
+        isClosable: true,
+      });
+      navigate("/self-directed-search");
+      return;
+    }
+
+    const typeMap = {};
+    sections.forEach((s) => {
+      (s.questions || []).forEach((q) => {
+        typeMap[q.id] = q.type;
+      });
+    });
+
+    const changedOrNew = Object.keys(answers).filter((qid) => {
+      const current = normalizeAnswerForCompare(answers[qid]);
+      const initial = normalizeAnswerForCompare(initialAnswersSnapshot[qid]);
+      return current !== initial;
+    });
+
+    const responses = buildResponsesPayload(
+      Object.fromEntries(changedOrNew.map((qid) => [qid, answers[qid]])),
+      typeMap
+    );
+
+    if (responses.length === 0) {
+      saveAnswersToStorage(answers);
+      toast({
+        title: "No changes to save",
+        description: "Your progress is already saved. You can leave and continue later.",
+        status: "info",
+        duration: 3000,
+        isClosable: true,
+      });
+      navigate("/self-directed-search");
+      return;
+    }
+
+    setSavingDraft(true);
+    try {
+      await post(SDS_ENDPOINTS.SUBMIT_RESPONSES, {
+        userId: Number(userId),
+        isCompleted: false,
+        responses,
+      });
+      saveAnswersToStorage(answers);
+      setInitialAnswersSnapshot({ ...answers });
+      toast({
+        title: "Progress saved",
+        description: "Your answers have been saved. You can continue later.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      navigate("/self-directed-search");
+    } catch (err) {
+      toast({
+        title: "Save failed",
+        description: err.message || "Could not save draft. Your answers are still in this browser.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  const handleResumeContinue = () => {
+    if (pendingExistingAnswers && Object.keys(pendingExistingAnswers).length > 0) {
+      setAnswers(pendingExistingAnswers);
+      setInitialAnswersSnapshot({ ...pendingExistingAnswers });
+      saveAnswersToStorage(pendingExistingAnswers);
+    }
+    setPendingExistingAnswers(null);
+    setShowResumeModal(false);
+  };
+
+  const handleResumeRestart = async () => {
+    try {
+      localStorage.removeItem(SDS_DRAFT_STORAGE_KEY);
+    } catch (_) {}
+    setAnswers({});
+    setInitialAnswersSnapshot({});
+    setPendingExistingAnswers(null);
+    setShowResumeModal(false);
+
+    const userId = getUserIdFromToken();
+    if (userId) {
+      try {
+        await del(SDS_ENDPOINTS.DELETE_LAST_INCOMPLETE(userId));
+      } catch (err) {
+        console.warn("Could not delete incomplete attempt on server:", err);
+        toast({
+          title: "Draft cleared locally",
+          description: "Server draft could not be removed. You can start over anyway.",
+          status: "warning",
+          duration: 4000,
+          isClosable: true,
+        });
+      }
+    }
+  };
+
+  const saveAnswersToStorage = (answersObj) => {
+    try {
+      if (answersObj && Object.keys(answersObj).length > 0) {
+        localStorage.setItem(SDS_DRAFT_STORAGE_KEY, JSON.stringify(answersObj));
+      } else {
+        localStorage.removeItem(SDS_DRAFT_STORAGE_KEY);
+      }
+    } catch (e) {
+      console.warn("Could not save draft to localStorage", e);
+    }
   };
 
   const totalQs = sections.reduce(
@@ -187,8 +415,8 @@ const SdsTry = () => {
 
   const progressPct = totalQs > 0 ? Math.round((answered / totalQs) * 100) : 0;
 
-  // Validation function for RIASEC personality traits question
-  const validateRiasecInput = (questionText, inputValue) => {
+  // Validation function for RIASEC personality traits question (stable ref for callbacks)
+  const validateRiasecInput = useCallback((questionText, inputValue) => {
     const riasecQuestionText =
       "From the RIASEC videos, list your top three personality traits ranked from most dominant to least";
 
@@ -199,38 +427,48 @@ const SdsTry = () => {
 
       const trimmedValue = inputValue.trim().toUpperCase();
 
-      // Check if exactly 3 characters
       if (trimmedValue.length !== 3) {
         return "Please enter exactly 3 letters (e.g., RIA, SEC, AIR)";
       }
 
-      // Check if all characters are valid RIASEC letters
       const validLetters = ["R", "I", "A", "S", "E", "C"];
       const invalidChars = [];
-
       for (let i = 0; i < trimmedValue.length; i++) {
         if (!validLetters.includes(trimmedValue[i])) {
           invalidChars.push(trimmedValue[i]);
         }
       }
-
       if (invalidChars.length > 0) {
-        return `Invalid characters: ${invalidChars.join(
-          ", "
-        )}. Only use letters: R, I, A, S, E, C`;
+        return `Invalid characters: ${invalidChars.join(", ")}. Only use letters: R, I, A, S, E, C`;
       }
 
-      // Check for duplicates
       const uniqueChars = [...new Set(trimmedValue.split(""))];
       if (uniqueChars.length !== 3) {
         return "Each letter should appear only once. Use 3 different RIASEC letters: R, I, A, S, E, C";
       }
-
-      return null; // Valid input
+      return null;
     }
+    return null;
+  }, []);
 
-    return null; // Not a RIASEC question, no validation needed
-  };
+  const handleTextAnswerChange = useCallback((questionId, questionText, val) => {
+    if (val === null || (val ?? "").toString().trim().length === 0) {
+      setAnswers((prev) => {
+        const updated = { ...prev };
+        delete updated[questionId];
+        return updated;
+      });
+      setRiasecValidationErrors((prev) => {
+        const updated = { ...prev };
+        delete updated[questionId];
+        return updated;
+      });
+    } else {
+      const validationError = validateRiasecInput(questionText, val);
+      setRiasecValidationErrors((prev) => ({ ...prev, [questionId]: validationError }));
+      setAnswers((prev) => ({ ...prev, [questionId]: val }));
+    }
+  }, [validateRiasecInput]);
 
   const earnedBadges = [];
   if (answered > 0) earnedBadges.push({ label: "Getting Started", icon: "✨" });
@@ -255,35 +493,99 @@ const SdsTry = () => {
     fetchSections();
   }, []);
 
-  // Browser back button and page unload warning
+  // Debounced persist to localStorage so typing in textboxes doesn't lag (avoid save on every keystroke)
+  const persistTimeoutRef = useRef(null);
   useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      e.preventDefault();
-      e.returnValue =
-        "Are you sure you want to leave? Your answers will be lost and the test will be incomplete.";
-      return "Are you sure you want to leave? Your answers will be lost and the test will be incomplete.";
-    };
-
-    const handlePopState = (e) => {
-      e.preventDefault();
-      setShowExitWarning(true);
-      // Push the current state back to prevent navigation
-      window.history.pushState(null, "", window.location.href);
-    };
-
-    // Add event listeners
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("popstate", handlePopState);
-
-    // Push initial state to enable popstate detection
-    window.history.pushState(null, "", window.location.href);
-
-    // Cleanup
+    if (checkingExistingAnswers || showResumeModal) return;
+    if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
+    persistTimeoutRef.current = setTimeout(() => {
+      saveAnswersToStorage(answers);
+      persistTimeoutRef.current = null;
+    }, 400);
     return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("popstate", handlePopState);
+      if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
     };
-  }, []);
+  }, [answers, checkingExistingAnswers, showResumeModal]);
+
+  // Check for existing answers: localStorage first (instant), then API only if nothing local
+  useEffect(() => {
+    if (loading || sections.length === 0) return;
+
+    const getUserIdFromToken = () => {
+      const token = localStorage.getItem("token");
+      if (!token) return null;
+      try {
+        const tokenData = JSON.parse(atob(token.split(".")[1]));
+        const userId = tokenData["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+        const id = parseInt(userId, 10);
+        return isNaN(id) ? null : id;
+      } catch {
+        return null;
+      }
+    };
+
+    const apiResponsesToAnswers = (responses, sectionList) => {
+      const typeMap = {};
+      sectionList.forEach((s) => {
+        (s.questions || []).forEach((q) => {
+          typeMap[q.id] = q.type;
+        });
+      });
+      const result = {};
+      (responses || []).forEach((r) => {
+        const qId = r.questionId;
+        const type = typeMap[qId];
+        if (r.customAnswer != null && r.customAnswer !== "") {
+          result[qId] = r.customAnswer;
+        } else if (r.selectedValue != null && r.selectedValue !== "") {
+          if (type === 2) {
+            result[qId] = r.selectedValue.split(",").map((s) => s.trim()).filter(Boolean);
+          } else {
+            result[qId] = r.selectedValue;
+          }
+        }
+      });
+      return result;
+    };
+
+    const runCheck = async () => {
+      setCheckingExistingAnswers(true);
+      let existing = null;
+
+      // 1. Check localStorage first (instant, no network)
+      try {
+        const stored = localStorage.getItem(SDS_DRAFT_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
+            existing = parsed;
+          }
+        }
+      } catch (_) {}
+
+      // 2. Only if nothing in localStorage, call API
+      if (!existing || Object.keys(existing).length === 0) {
+        const userId = getUserIdFromToken();
+        if (userId) {
+          try {
+            const data = await get(SDS_ENDPOINTS.GET_USER_RESPONSES(userId));
+            const responses = Array.isArray(data) ? data : (data && data.responses) ? data.responses : [];
+            if (responses.length > 0) {
+              existing = apiResponsesToAnswers(responses, sections);
+            }
+          } catch (_) {}
+        }
+      }
+
+      setCheckingExistingAnswers(false);
+      if (existing && Object.keys(existing).length > 0) {
+        setPendingExistingAnswers(existing);
+        setShowResumeModal(true);
+      }
+    };
+
+    runCheck();
+  }, [loading, sections]);
 
   const handleSubmit = async () => {
     // Check for RIASEC validation errors
@@ -415,7 +717,7 @@ const SdsTry = () => {
       return;
     }
 
-    const payload = { userId: Number(userId), responses };
+    const payload = { userId: Number(userId), isCompleted: true, responses };
 
     // Debug logging for faculty question in final payload
     const facultyResponse = responses.find((r) => r.questionId === 364);
@@ -664,193 +966,100 @@ const SdsTry = () => {
                                   <WarningIcon color="red.500" boxSize={4} />
                                 )}
                               </HStack>
-                              <QuestionField
-                                type={q.type}
-                                text=""
-                                value={
-                                  q.type === 4
-                                    ? (() => {
-                                        if (answers[q.id]) {
-                                          const option = q.answerOptions.find(
-                                            (opt) => opt.value === answers[q.id]
-                                          );
-                                          return option
-                                            ? Number(option.text)
-                                            : 1;
-                                        }
-                                        return 1;
-                                      })()
-                                    : answers[q.id]
-                                }
-                                options={(q.answerOptions || []).map((opt) => ({
-                                  id: opt.id,
-                                  text: opt.text,
-                                  value: String(opt.value),
-                                }))}
-                                onChange={(val) => {
-                                  if (q.type === 4) {
-                                    const sliderValue = Math.max(
-                                      1,
-                                      Math.min(7, Math.round(val))
-                                    );
-                                    const selectedOption = q.answerOptions.find(
-                                      (opt) => opt.text === String(sliderValue)
-                                    );
-                                    setAnswers((prev) => ({
-                                      ...prev,
-                                      [q.id]: selectedOption
-                                        ? selectedOption.value
-                                        : null,
-                                    }));
-                                  } else if (q.type === 1) {
-                                    // Radio buttons: allow deselecting by clicking the same option
-                                    const currentValue = answers[q.id];
-                                    const newValue = String(val);
-                                    
-                                    // If clicking the same option, remove the answer
-                                    if (currentValue !== null && currentValue !== undefined && String(currentValue) === newValue) {
-                                      setAnswers((prev) => {
-                                        const updated = { ...prev };
-                                        delete updated[q.id];
-                                        return updated;
-                                      });
-                                      // Clear validation error if exists
-                                      setRiasecValidationErrors((prev) => {
-                                        const updated = { ...prev };
-                                        delete updated[q.id];
-                                        return updated;
-                                      });
-                                    } else {
-                                      // Set the new answer
-                                      // Log faculty question selection
-                                      if (q.id === 364) {
-                                        console.log(
-                                          "Faculty question (ID 364) answered!"
-                                        );
-                                        console.log("Question text:", q.text);
-                                        console.log("Selected value:", val);
-                                        console.log(
-                                          "Available options:",
-                                          q.answerOptions
-                                        );
-
-                                        // Find the selected option details
-                                        const selectedOption =
-                                          q.answerOptions.find(
-                                            (opt) =>
-                                              String(opt.value) === String(val)
-                                          );
-                                        console.log(
-                                          "Selected option details:",
-                                          selectedOption
-                                        );
-                                      }
-
-                                      // Validate RIASEC input for specific question
-                                      const validationError = validateRiasecInput(
-                                        q.text,
-                                        val
-                                      );
-
-                                      // Update validation errors
-                                      setRiasecValidationErrors((prev) => ({
-                                        ...prev,
-                                        [q.id]: validationError,
-                                      }));
-
-                                      setAnswers((prev) => ({
-                                        ...prev,
-                                        [q.id]: val,
-                                      }));
-                                    }
-                                  } else if (q.type === 5 || q.type === 6) {
-                                    // Textboxes and textareas: remove answer if text becomes empty
-                                    const trimmedValue = (val ?? "").toString().trim();
-                                    
-                                    if (trimmedValue.length === 0) {
-                                      // Remove the answer from the object
-                                      setAnswers((prev) => {
-                                        const updated = { ...prev };
-                                        delete updated[q.id];
-                                        return updated;
-                                      });
-                                      // Clear validation error if exists
-                                      setRiasecValidationErrors((prev) => {
-                                        const updated = { ...prev };
-                                        delete updated[q.id];
-                                        return updated;
-                                      });
-                                    } else {
-                                      // Set the new answer
-                                      // Validate RIASEC input for specific question
-                                      const validationError = validateRiasecInput(
-                                        q.text,
-                                        val
-                                      );
-
-                                      // Update validation errors
-                                      setRiasecValidationErrors((prev) => ({
-                                        ...prev,
-                                        [q.id]: validationError,
-                                      }));
-
-                                      setAnswers((prev) => ({
-                                        ...prev,
-                                        [q.id]: val,
-                                      }));
-                                    }
-                                  } else {
-                                    // For other types (checkbox, select, etc.)
-                                    // Log faculty question selection
-                                    if (q.id === 364) {
-                                      console.log(
-                                        "Faculty question (ID 364) answered!"
-                                      );
-                                      console.log("Question text:", q.text);
-                                      console.log("Selected value:", val);
-                                      console.log(
-                                        "Available options:",
-                                        q.answerOptions
-                                      );
-
-                                      // Find the selected option details
-                                      const selectedOption =
-                                        q.answerOptions.find(
-                                          (opt) =>
-                                            String(opt.value) === String(val)
-                                        );
-                                      console.log(
-                                        "Selected option details:",
-                                        selectedOption
-                                      );
-                                    }
-
-                                    // Validate RIASEC input for specific question
-                                    const validationError = validateRiasecInput(
-                                      q.text,
-                                      val
-                                    );
-
-                                    // Update validation errors
-                                    setRiasecValidationErrors((prev) => ({
-                                      ...prev,
-                                      [q.id]: validationError,
-                                    }));
-
-                                    setAnswers((prev) => ({
-                                      ...prev,
-                                      [q.id]: val,
-                                    }));
+                              {(q.type === 5 || q.type === 6) ? (
+                                <DebouncedTextQuestionField
+                                  question={q}
+                                  text=""
+                                  value={answers[q.id]}
+                                  onTextAnswerChange={handleTextAnswerChange}
+                                  options={(q.answerOptions || []).map((opt) => ({
+                                    id: opt.id,
+                                    text: opt.text,
+                                    value: String(opt.value),
+                                  }))}
+                                  sliderProps={{ min: 1, max: 7, step: 1 }}
+                                  highlightColor={theme.color}
+                                  colorScheme={theme.scheme}
+                                />
+                              ) : (
+                                <QuestionField
+                                  type={q.type}
+                                  text=""
+                                  value={
+                                    q.type === 4
+                                      ? (() => {
+                                          if (answers[q.id]) {
+                                            const option = q.answerOptions.find(
+                                              (opt) => opt.value === answers[q.id]
+                                            );
+                                            return option
+                                              ? Number(option.text)
+                                              : 1;
+                                          }
+                                          return 1;
+                                        })()
+                                      : answers[q.id]
                                   }
-                                }}
-                                sliderProps={{
-                                  min: 1,
-                                  max: 7,
-                                  step: 1,
-                                }}
-                                highlightColor={theme.color}
-                                colorScheme={theme.scheme}
-                              />
+                                  options={(q.answerOptions || []).map((opt) => ({
+                                    id: opt.id,
+                                    text: opt.text,
+                                    value: String(opt.value),
+                                  }))}
+                                  onChange={(val) => {
+                                    if (q.type === 4) {
+                                      const sliderValue = Math.max(
+                                        1,
+                                        Math.min(7, Math.round(val))
+                                      );
+                                      const selectedOption = q.answerOptions.find(
+                                        (opt) => opt.text === String(sliderValue)
+                                      );
+                                      setAnswers((prev) => ({
+                                        ...prev,
+                                        [q.id]: selectedOption
+                                          ? selectedOption.value
+                                          : null,
+                                      }));
+                                    } else if (q.type === 1) {
+                                      const currentValue = answers[q.id];
+                                      const newValue = String(val);
+                                      if (currentValue !== null && currentValue !== undefined && String(currentValue) === newValue) {
+                                        setAnswers((prev) => {
+                                          const updated = { ...prev };
+                                          delete updated[q.id];
+                                          return updated;
+                                        });
+                                        setRiasecValidationErrors((prev) => {
+                                          const updated = { ...prev };
+                                          delete updated[q.id];
+                                          return updated;
+                                        });
+                                      } else {
+                                        if (q.id === 364) {
+                                          console.log("Faculty question (ID 364) answered!", q.text, val, q.answerOptions);
+                                        }
+                                        const validationError = validateRiasecInput(q.text, val);
+                                        setRiasecValidationErrors((prev) => ({ ...prev, [q.id]: validationError }));
+                                        setAnswers((prev) => ({ ...prev, [q.id]: val }));
+                                      }
+                                    } else {
+                                      if (q.id === 364) {
+                                        console.log("Faculty question (ID 364) answered!", q.text, val, q.answerOptions);
+                                      }
+                                      const validationError = validateRiasecInput(q.text, val);
+                                      setRiasecValidationErrors((prev) => ({ ...prev, [q.id]: validationError }));
+                                      setAnswers((prev) => ({ ...prev, [q.id]: val }));
+                                    }
+                                  }}
+                                  sliderProps={{
+                                    min: 1,
+                                    max: 7,
+                                    step: 1,
+                                  }}
+                                  highlightColor={theme.color}
+                                  colorScheme={theme.scheme}
+                                />
+                              )}
                               {/* RIASEC Validation Error Display */}
                               {riasecValidationErrors[q.id] && (
                                 <Alert status="error" mt={2} size="sm">
@@ -887,55 +1096,65 @@ const SdsTry = () => {
               >
                 Submit
               </Button>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={handleSaveAndReturnLater}
+                disabled={submitting || savingDraft}
+                isLoading={savingDraft}
+                loadingText="Saving..."
+              >
+                Save changes and return later
+              </Button>
             </VStack>
           </Box>
         )}
 
-        {/* Exit Warning Modal */}
-        <Modal isOpen={showExitWarning} onClose={handleExitCancel} isCentered>
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader color="red.500">⚠️ Warning: Leaving Test</ModalHeader>
+        {/* Resume / Restart modal: existing answers found */}
+        <Modal
+          isOpen={showResumeModal}
+          onClose={handleResumeRestart}
+          isCentered
+          size="lg"
+          closeOnOverlayClick={false}
+        >
+          <ModalOverlay bg="blackAlpha.600" />
+          <ModalContent rounded="xl" shadow="xl">
+            <ModalHeader color="brand.500" fontSize="xl" pt={6}>
+              Welcome back! 👋
+            </ModalHeader>
             <ModalCloseButton />
-            <ModalBody>
-              <Alert status="error" mb={4}>
-                <AlertIcon />
-                <Text fontWeight="bold">Your answers will be lost!</Text>
-              </Alert>
-
+            <ModalBody pb={2}>
+              <Text mb={4} color="gray.600">
+                We found saved answers from a previous session. Choose how you’d like to proceed:
+              </Text>
               <VStack align="stretch" spacing={4}>
-                <Text>You are about to leave the test. If you continue:</Text>
-
-                <VStack align="stretch" spacing={2}>
-                  <Text>
-                    • <strong>All your answers will be deleted</strong>
-                  </Text>
-                  <Text>
-                    • <strong>The test will be marked as incomplete</strong>
-                  </Text>
-                  <Text>
-                    •{" "}
-                    <strong>
-                      You'll need to start over from the beginning
-                    </strong>
-                  </Text>
-                </VStack>
-
-                <Alert status="warning" mt={4}>
+                <List spacing={2}>
+                  <ListItem>
+                    <Text>
+                      <strong>Continue where I left off</strong> — Load your saved answers and keep going. Your progress is saved automatically as you go.
+                    </Text>
+                  </ListItem>
+                  <ListItem>
+                    <Text>
+                      <strong>Start over</strong> — Clear previous answers and take the test from the beginning. Your saved draft will be removed.
+                    </Text>
+                  </ListItem>
+                </List>
+                <Alert status="info" variant="subtle" rounded="md" fontSize="sm">
                   <AlertIcon />
-                  <Text fontSize="sm">
-                    <strong>Progress:</strong> You have answered {answered} out
-                    of {totalQs} questions ({progressPct}% complete).
+                  <Text>
+                    You can leave anytime using &quot;Save changes and return later&quot; — we’ll keep your progress.
                   </Text>
                 </Alert>
               </VStack>
             </ModalBody>
-            <ModalFooter>
-              <Button variant="ghost" mr={3} onClick={handleExitCancel}>
-                Stay and Continue
+            <ModalFooter pt={4} pb={6}>
+              <Button variant="ghost" mr={3} onClick={handleResumeRestart}>
+                Start over
               </Button>
-              <Button colorScheme="red" onClick={handleExitConfirm}>
-                Leave Anyway
+              <Button colorScheme="brand" onClick={handleResumeContinue}>
+                Continue 
               </Button>
             </ModalFooter>
           </ModalContent>
