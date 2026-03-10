@@ -116,10 +116,15 @@ const JobsDisplay = ({
                     {(job.posted_at != null || job.posted_at_days_ago != null || job.remote) && (
                       <Text fontSize="xs" color="gray.500" mb={1}>
                         {[
-                          job.posted_at_days_ago != null && `Posted ${job.posted_at_days_ago} day(s) ago`,
+                          job.posted_at_days_ago != null &&
+                            (job.posted_at_days_ago === 0
+                              ? 'Posted today'
+                              : `Posted ${job.posted_at_days_ago} day(s) ago`),
                           job.posted_at_days_ago == null && job.posted_at && `Posted ${job.posted_at}`,
                           job.remote && 'Remote',
-                        ].filter(Boolean).join(' • ')}
+                        ]
+                          .filter(Boolean)
+                          .join(' • ')}
                       </Text>
                     )}
                     {job.description && (
