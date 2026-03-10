@@ -96,8 +96,8 @@ const JobComparisonQuestion = () => {
   };
 
   const [weight, setWeight] = useState(1); // Weight is 1-5 (cannot be 0)
-  const [scoreA, setScoreA] = useState(0);
-  const [scoreB, setScoreB] = useState(0);
+  const [scoreA, setScoreA] = useState(1);
+  const [scoreB, setScoreB] = useState(1);
   const [notApplicableA, setNotApplicableA] = useState(false);
   const [notApplicableB, setNotApplicableB] = useState(false);
 
@@ -218,13 +218,13 @@ const JobComparisonQuestion = () => {
   // Update local state when criterionId changes
   useEffect(() => {
     if (criterion && criterion.id) {
-      const answer = answersRef.current[criterion.id] || { weight: 1, scoreA: 0, scoreB: 0, notApplicable: false, notApplicableA: false, notApplicableB: false };
+      const answer = answersRef.current[criterion.id] || { weight: 1, scoreA: 1, scoreB: 1, notApplicable: false, notApplicableA: false, notApplicableB: false };
       const na = !!answer.notApplicable;
       const naA = answer.notApplicableA ?? na;
       const naB = answer.notApplicableB ?? na;
       setWeight(typeof answer.weight === "number" && answer.weight >= 1 ? answer.weight : 1);
-      setScoreA(typeof answer.scoreA === "number" ? answer.scoreA : 0);
-      setScoreB(typeof answer.scoreB === "number" ? answer.scoreB : 0);
+      setScoreA(typeof answer.scoreA === "number" ? answer.scoreA : 1);
+      setScoreB(typeof answer.scoreB === "number" ? answer.scoreB : 1);
       setNotApplicableA(!!naA);
       setNotApplicableB(!!naB);
     }
