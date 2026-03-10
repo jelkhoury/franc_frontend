@@ -123,6 +123,7 @@ const JobComparisonSetup = () => {
                 onChange={(e) => setJobAName(e.target.value)}
                 size="lg"
                 isDisabled={loading}
+                _placeholder={{ opacity: 1, color: "gray.600" }}
               />
             </Box>
 
@@ -136,6 +137,7 @@ const JobComparisonSetup = () => {
                 onChange={(e) => setJobBName(e.target.value)}
                 size="lg"
                 isDisabled={loading}
+                _placeholder={{ opacity: 1, color: "gray.600" }}
               />
             </Box>
 

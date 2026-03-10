@@ -258,10 +258,10 @@ const JobComparisonResults = () => {
           <Tabs>
             <TabList>
               <Tab>
-                <Text fontWeight="semibold">Result Not Fair</Text>
+                <Text fontWeight="semibold">Overall</Text>
               </Tab>
               <Tab>
-                <Text fontWeight="semibold">Result Fair</Text>
+                <Text fontWeight="semibold">Head to Head</Text>
               </Tab>
             </TabList>
 
@@ -270,7 +270,10 @@ const JobComparisonResults = () => {
               <TabPanel>
                 <Box mb={4}>
                   <Text fontSize="md" color="blue.500">
-                    The "Not Fair" result includes all criteria in the comparison, even when only one job is marked as Not Applicable (N/A) for a criterion. This calculation may not provide a fair comparison when criteria don't apply equally to both jobs.
+                  Overall result takes into consideration all the criteria scores including
+The ones marked as not applicable.
+This result may not provide an objective comparison between both jobs.
+
                   </Text>
                 </Box>
                 <Tabs>
@@ -319,17 +322,13 @@ const JobComparisonResults = () => {
                     {/* HEAD Tab */}
                     <TabPanel>
                       <VStack spacing={6} align="stretch">
-                        <Box mb={2}>
-                          <Text fontSize="sm" color="gray.600" fontStyle="italic">
-                            Head Comparison: A choice made primarily using logic, reasoning, and objective analysis, with minimal influence from emotions.
-                          </Text>
-                        </Box>
                         <ScoreComparisonChart
                           scoreA={headNotFair.scoreA}
                           scoreB={headNotFair.scoreB}
                           labelA={jobAName}
                           labelB={jobBName}
                           title="HEAD Comparison"
+                          description="A choice made primarily using logic, reasoning, and objective analysis, with minimal influence from emotions."
                         />
                         <CriterionBreakdownTable
                           criteria={criteria}
@@ -344,17 +343,13 @@ const JobComparisonResults = () => {
                     {/* HEART Tab */}
                     <TabPanel>
                       <VStack spacing={6} align="stretch">
-                        <Box mb={2}>
-                          <Text fontSize="sm" color="gray.600" fontStyle="italic">
-                            Heart Comparison: A choice made primarily based on emotions, intuition, personal values, or feelings.
-                          </Text>
-                        </Box>
                         <ScoreComparisonChart
                           scoreA={heartNotFair.scoreA}
                           scoreB={heartNotFair.scoreB}
                           labelA={jobAName}
                           labelB={jobBName}
                           title="HEART Comparison"
+                          description="A choice made primarily based on emotions, intuition, personal values, or feelings."
                         />
                         <CriterionBreakdownTable
                           criteria={criteria}
@@ -373,7 +368,7 @@ const JobComparisonResults = () => {
               <TabPanel>
                 <Box mb={4}>
                   <Text fontSize="md" color="blue.500">
-                    The "Fair" result only includes criteria where both jobs have been answered or both are marked as Not Applicable (N/A). This provides a more equitable comparison by excluding criteria that don't apply equally to both jobs.
+                    The Head to Head result only includes criteria where both jobs have been answered or both are marked as Not Applicable (N/A). This provides a fair comparison by excluding criteria that don't apply equally to both jobs.
                   </Text>
                 </Box>
                 <Tabs>
@@ -407,7 +402,7 @@ const JobComparisonResults = () => {
                           scoreB={overallFair.scoreB}
                           labelA={jobAName}
                           labelB={jobBName}
-                          title="Overall Comparison (Fair)"
+                          title="Overall Comparison"
                         />
                         <CriterionBreakdownTable
                           criteria={criteria}
@@ -423,17 +418,13 @@ const JobComparisonResults = () => {
                     {/* HEAD Tab */}
                     <TabPanel>
                       <VStack spacing={6} align="stretch">
-                        <Box mb={2}>
-                          <Text fontSize="sm" color="gray.600" fontStyle="italic">
-                            Head Comparison: A choice made primarily using logic, reasoning, and objective analysis, with minimal influence from emotions.
-                          </Text>
-                        </Box>
                         <ScoreComparisonChart
                           scoreA={headFair.scoreA}
                           scoreB={headFair.scoreB}
                           labelA={jobAName}
                           labelB={jobBName}
-                          title="HEAD Comparison (Fair)"
+                          title="HEAD Comparison"
+                          description="A choice made primarily using logic, reasoning, and objective analysis, with minimal influence from emotions."
                         />
                         <CriterionBreakdownTable
                           criteria={criteria}
@@ -449,17 +440,13 @@ const JobComparisonResults = () => {
                     {/* HEART Tab */}
                     <TabPanel>
                       <VStack spacing={6} align="stretch">
-                        <Box mb={2}>
-                          <Text fontSize="sm" color="gray.600" fontStyle="italic">
-                            Heart Comparison: A choice made primarily based on emotions, intuition, personal values, or feelings.
-                          </Text>
-                        </Box>
                         <ScoreComparisonChart
                           scoreA={heartFair.scoreA}
                           scoreB={heartFair.scoreB}
                           labelA={jobAName}
                           labelB={jobBName}
-                          title="HEART Comparison (Fair)"
+                          title="HEART Comparison"
+                          description="A choice made primarily based on emotions, intuition, personal values, or feelings."
                         />
                         <CriterionBreakdownTable
                           criteria={criteria}

@@ -11,7 +11,7 @@ import {
   Icon,
   Tooltip,
 } from "@chakra-ui/react";
-import { FaTrophy, FaBalanceScale, FaBan } from "react-icons/fa";
+import { FaBriefcase, FaBalanceScale, FaBan } from "react-icons/fa";
 import CriterionSlider from "./CriterionSlider";
 
 const SideBySideComparison = ({
@@ -28,6 +28,7 @@ const SideBySideComparison = ({
   onScoreBChange,
   onNotApplicableAChange,
   onNotApplicableBChange,
+  noticeAboveJobs,
 }) => {
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
@@ -109,6 +110,8 @@ const SideBySideComparison = ({
         </VStack>
       </Box>
 
+      {noticeAboveJobs}
+
       {/* Side-by-Side Job Comparison */}
       <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
         {/* Job A Card */}
@@ -120,18 +123,21 @@ const SideBySideComparison = ({
           border="2px"
           borderColor={notApplicableA ? "orange.400" : jobAColor}
           position="relative"
+          display="flex"
+          flexDirection="column"
+          minH="280px"
         >
-          <VStack spacing={4} align="stretch">
-            <HStack justify="space-between" align="center" flexWrap="wrap" gap={2}>
+          <VStack spacing={4} align="stretch" flex={1}>
+            <HStack justify="space-between" align="center" flexWrap="wrap" gap={2} flexShrink={0}>
               <HStack spacing={2}>
-                <Icon as={FaTrophy} color={jobAColor} boxSize={5} />
+                <Icon as={FaBriefcase} color={jobAColor} boxSize={5} />
                 <Text fontWeight="bold" fontSize="lg" color={jobAColor}>
                   {jobAName}
                 </Text>
               </HStack>
               <HStack spacing={2} align="center">
                 <Tooltip
-                  label={notApplicableA ? "Click to rate this job instead. Your score will be used in the comparison." : "Mark this job as not applicable for this criterion. This job will get a score of 0 for this criterion and won't be compared on it."}
+                  label={notApplicableA ? "Click Answer to rate this job again" : `I don't have enough information about this criterion for ${jobAName}`}
                   hasArrow
                   placement="top"
                   openDelay={300}
@@ -172,36 +178,32 @@ const SideBySideComparison = ({
               </HStack>
             </HStack>
             {notApplicableA ? (
-              <Box
-                flex={1}
-                py={5}
-                px={4}
-                bg="orange.50"
-                borderRadius="lg"
-                borderWidth="1px"
-                borderColor="orange.200"
-                display="flex"
-                flexDirection="column"
-                justifyContent="center"
-                alignItems="center"
-                textAlign="center"
-                minH="100px"
-              >
-                <Text fontSize="sm" color="orange.700" lineHeight="tall">
-                  I don&apos;t have enough information about this criterion for <strong>{jobAName}</strong>. Score is 0 for this job. Click &quot;Answer&quot; above to rate this job instead.
-                </Text>
+              <Box flex={1} display="flex" alignItems="center" justifyContent="center" minH="120px">
+                <Box
+                  py={5}
+                  px={4}
+                  bg="orange.50"
+                  borderRadius="lg"
+                  borderWidth="1px"
+                  borderColor="orange.200"
+                  textAlign="center"
+                >
+                  <Text fontSize="sm" color="orange.700" lineHeight="tall">
+                    This job will get a score of 0 for this criterion and won&apos;t be compared on it.
+                  </Text>
+                </Box>
               </Box>
             ) : (
               <>
                 <Divider />
                 <CriterionSlider
                   label={`Rate this job for ${criterionName}`}
-                  value={scoreA}
+                  value={scoreA < 1 ? 1 : scoreA}
                   onChange={onScoreAChange}
-                  min={0}
+                  min={1}
                   max={5}
-                  valueLabels={{ 0: "", 1: "", 2: "", 3: "", 4: "", 5: "" }}
-                  leftLabel="Less"
+                  valueLabels={{ 1: "", 2: "", 3: "", 4: "", 5: "" }}
+                  leftLabel="Low Satisfaction"
                   rightLabel="High Satisfaction"
                 />
                 <Box mt={2} textAlign="center">
@@ -221,18 +223,21 @@ const SideBySideComparison = ({
           border="2px"
           borderColor={notApplicableB ? "orange.400" : jobBColor}
           position="relative"
+          display="flex"
+          flexDirection="column"
+          minH="280px"
         >
-          <VStack spacing={4} align="stretch">
-            <HStack justify="space-between" align="center" flexWrap="wrap" gap={2}>
+          <VStack spacing={4} align="stretch" flex={1}>
+            <HStack justify="space-between" align="center" flexWrap="wrap" gap={2} flexShrink={0}>
               <HStack spacing={2}>
-                <Icon as={FaTrophy} color={jobBColor} boxSize={5} />
+                <Icon as={FaBriefcase} color={jobBColor} boxSize={5} />
                 <Text fontWeight="bold" fontSize="lg" color={jobBColor}>
                   {jobBName}
                 </Text>
               </HStack>
               <HStack spacing={2} align="center">
                 <Tooltip
-                  label={notApplicableB ? "Click to rate this job instead. Your score will be used in the comparison." : "Mark this job as not applicable for this criterion. This job will get a score of 0 for this criterion and won't be compared on it."}
+                  label={notApplicableB ? "Click Answer to rate this job again" : `I don't have enough information about this criterion for ${jobBName}`}
                   hasArrow
                   placement="top"
                   openDelay={300}
@@ -273,36 +278,32 @@ const SideBySideComparison = ({
               </HStack>
             </HStack>
             {notApplicableB ? (
-              <Box
-                flex={1}
-                py={5}
-                px={4}
-                bg="orange.50"
-                borderRadius="lg"
-                borderWidth="1px"
-                borderColor="orange.200"
-                display="flex"
-                flexDirection="column"
-                justifyContent="center"
-                alignItems="center"
-                textAlign="center"
-                minH="100px"
-              >
-                <Text fontSize="sm" color="orange.700" lineHeight="tall">
-                  I don&apos;t have enough information about this criterion for <strong>{jobBName}</strong>. Score is 0 for this job. Click &quot;Answer&quot; above to rate this job instead.
-                </Text>
+              <Box flex={1} display="flex" alignItems="center" justifyContent="center" minH="120px">
+                <Box
+                  py={5}
+                  px={4}
+                  bg="orange.50"
+                  borderRadius="lg"
+                  borderWidth="1px"
+                  borderColor="orange.200"
+                  textAlign="center"
+                >
+                  <Text fontSize="sm" color="orange.700" lineHeight="tall">
+                    This job will get a score of 0 for this criterion and won&apos;t be compared on it.
+                  </Text>
+                </Box>
               </Box>
             ) : (
               <>
                 <Divider />
                 <CriterionSlider
                   label={`Rate this job for ${criterionName}`}
-                  value={scoreB}
+                  value={scoreB < 1 ? 1 : scoreB}
                   onChange={onScoreBChange}
-                  min={0}
+                  min={1}
                   max={5}
-                  valueLabels={{ 0: "", 1: "", 2: "", 3: "", 4: "", 5: "" }}
-                  leftLabel="Less"
+                  valueLabels={{ 1: "", 2: "", 3: "", 4: "", 5: "" }}
+                  leftLabel="Low Satisfaction"
                   rightLabel="High Satisfaction"
                 />
                 <Box mt={2} textAlign="center">
@@ -315,7 +316,7 @@ const SideBySideComparison = ({
       </SimpleGrid>
 
       {/* Quick Comparison Indicator */}
-      {!notApplicableA && !notApplicableB && (scoreA >= 0 && scoreB >= 0) && (
+      {!notApplicableA && !notApplicableB && (scoreA >= 1 && scoreB >= 1) && (
         <Box mt={4} textAlign="center">
           <Text fontSize="sm" color="gray.600">
             Difference:{" "}

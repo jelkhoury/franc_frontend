@@ -373,9 +373,11 @@ const JobComparisonReview = () => {
                                   Edit
                                 </Text>
                                 <VStack align="stretch" spacing={3} pt={2}>
-                                  <Heading size="sm" color="gray.800">
-                                    {cleanCriterionName(criterion.name)}
-                                  </Heading>
+                                  <Box minH="2.8em" display="flex" alignItems="flex-start">
+                                    <Heading size="sm" color="gray.800" lineHeight="tall">
+                                      {cleanCriterionName(criterion.name)}
+                                    </Heading>
+                                  </Box>
 
                                   {isComplete ? (
                                     bothNA ? (
@@ -424,7 +426,7 @@ const JobComparisonReview = () => {
                                                 {jobAName}
                                               </Text>
                                               <Text fontSize="md" fontWeight="semibold" color="blue.700">
-                                                {naA ? "N/A" : `${answer.scoreA}/5`}
+                                                {naA ? "Not applicable" : `${answer.scoreA}/5`}
                                               </Text>
                                             </VStack>
                                           </Box>
@@ -444,7 +446,7 @@ const JobComparisonReview = () => {
                                                 {jobBName}
                                               </Text>
                                               <Text fontSize="md" fontWeight="semibold" color="red.700">
-                                                {naB ? "N/A" : `${answer.scoreB}/5`}
+                                                {naB ? "Not applicable" : `${answer.scoreB}/5`}
                                               </Text>
                                             </VStack>
                                           </Box>
@@ -475,7 +477,7 @@ const JobComparisonReview = () => {
             {notApplicableStats.percentage > 30 && (
               <Box px={3} py={2} bg="orange.50" borderRadius="md" borderLeft="4px" borderColor="orange.400" w="100%">
                 <Text fontSize="xs" color="orange.800">
-                  Many N/A may affect fairness of the comparison; you can still calculate normally.
+                  Many Not applicable may affect fairness of the comparison; you can still calculate normally.
                 </Text>
               </Box>
             )}

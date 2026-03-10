@@ -47,6 +47,7 @@ const QuestionField = ({
   // NEW (optional theming)
   highlightColor = "#6366F1", // fallback if parent doesn't pass a section color
   colorScheme = "purple",
+  onBlur,
 }) => {
   // Support numeric type codes: 1=radio, 2=checkbox, 3=select, 4=slider, 5=textbox, 6=textarea
   const resolvedType = (() => {
@@ -302,6 +303,7 @@ const QuestionField = ({
           <Textarea
             value={value ?? ""}
             onChange={(e) => onChange(e.target.value)}
+            onBlur={onBlur}
             _focus={{
               borderColor: highlightColor,
               boxShadow: `0 0 0 1px ${highlightColor}`,
@@ -318,6 +320,7 @@ const QuestionField = ({
           <Input
             value={value ?? ""}
             onChange={(e) => onChange(e.target.value)}
+            onBlur={onBlur}
             _focus={{
               borderColor: highlightColor,
               boxShadow: `0 0 0 1px ${highlightColor}`,

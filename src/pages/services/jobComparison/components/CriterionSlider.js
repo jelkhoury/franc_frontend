@@ -23,7 +23,12 @@ const CriterionSlider = ({
   valueLabels,
 }) => {
   const getEmoji = (val) => {
-    // For 0-5 scale, assign unique emoji to each value
+    // For 1-5 scale (jobs: no 0 except N/A), assign unique emoji to each value
+    if (min === 1 && max === 5) {
+      const emojiMap = { 1: "😞", 2: "😐", 3: "🙂", 4: "😊", 5: "🤩" };
+      return emojiMap[val] || "😐";
+    }
+    // For 0-5 scale (legacy), assign unique emoji to each value
     if (min === 0 && max === 5) {
       const emojiMap = {
         0: "😞",
@@ -107,7 +112,7 @@ const CriterionSlider = ({
                     key={mark}
                     position="absolute"
                     left={`${((mark - min) / (max - min)) * 100}%`}
-                    transform="translateX(-50%)"
+                    transform="translateX(calc(-50% + 10px))"
                     textAlign="center"
                   >
                     <Text
@@ -135,7 +140,7 @@ const CriterionSlider = ({
             </>
           ) : (
             <>
-              {/* Number marks */}
+              {/* Number marks — slight right offset so numbers align under thumb/emoji */}
               <Box position="relative" mt={4}>
                 <Box position="relative" height="20px">
                   {marks.map((mark) => (
@@ -143,7 +148,7 @@ const CriterionSlider = ({
                       key={mark}
                       position="absolute"
                       left={`${((mark - min) / (max - min)) * 100}%`}
-                      transform="translateX(-50%)"
+                      transform="translateX(calc(-50% + 10px))"
                       textAlign="center"
                     >
                       <Text

@@ -54,7 +54,7 @@ export const checkUserActionPermission = async (
       const actionMessages = {
         [USER_ACTION_TYPES.MOCK_INTERVIEW]: {
           title: "Cannot Start Interview",
-          description: "You cannot do another interview right now. Please try again later.",
+          description: "You dont have enough attempts to do another interview. Please try again later.",
         },
         [USER_ACTION_TYPES.SDS]: {
           title: "Cannot Start SDS Test",
@@ -62,11 +62,11 @@ export const checkUserActionPermission = async (
         },
         [USER_ACTION_TYPES.RESUME]: {
           title: "Cannot Evaluate Resume",
-          description: "You cannot evaluate a resume right now. Please try again later.",
+          description: "You dont have enough attempts to evaluate a resume. Please try again later.",
         },
         [USER_ACTION_TYPES.COVER_LETTER]: {
           title: "Cannot Evaluate Cover Letter",
-          description: "You cannot evaluate a cover letter right now. Please try again later.",
+          description: "You dont have enough attempts to evaluate a cover letter. Please try again later.",
         },
       };
       

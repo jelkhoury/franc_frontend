@@ -266,7 +266,7 @@ const CriterionBreakdownTable = ({
                     {row.notApplicable ? (
                       <HStack spacing={2} flexWrap="wrap">
                         <Text>{row.criterion}</Text>
-                        <Badge colorScheme="orange" display="inline-flex" alignItems="center" gap={1.5} px={2} py={0.5}>
+                        <Badge colorScheme="orange" variant="subtle" display="inline-flex" alignItems="center" gap={1.5} px={2} py={0.5} borderRadius="md" fontSize="xs">
                           <Icon as={FaBan} boxSize={2.5} />
                           N/A
                         </Badge>
@@ -283,8 +283,10 @@ const CriterionBreakdownTable = ({
                     )}
                   </Td>
                   {row.notApplicable ? (
-                    <Td colSpan={5} borderColor={borderColor} textAlign="center" color="gray.500" fontStyle="italic" py={2} px={1}>
-                      Not Applicable
+                    <Td colSpan={5} borderColor={borderColor} textAlign="center" py={2} px={1}>
+                      <Badge colorScheme="orange" variant="subtle" fontSize="xs" px={2} py={0.5} borderRadius="md" display="inline-flex">
+                        Not applicable
+                      </Badge>
                     </Td>
                   ) : (
                     <>
@@ -294,10 +296,22 @@ const CriterionBreakdownTable = ({
                         </Badge>
                       </Td>
                       <Td borderColor={borderColor} isNumeric fontWeight="medium" py={2} px={1}>
-                        {row.notApplicableA ? "N/A" : row.scoreA}
+                        {row.notApplicableA ? (
+                          <Badge colorScheme="orange" variant="subtle" fontSize="xs" px={2} py={0.5} borderRadius="md">
+                            N/A
+                          </Badge>
+                        ) : (
+                          row.scoreA
+                        )}
                       </Td>
                       <Td borderColor={borderColor} isNumeric fontWeight="medium" py={2} px={1}>
-                        {row.notApplicableB ? "N/A" : row.scoreB}
+                        {row.notApplicableB ? (
+                          <Badge colorScheme="orange" variant="subtle" fontSize="xs" px={2} py={0.5} borderRadius="md">
+                            N/A
+                          </Badge>
+                        ) : (
+                          row.scoreB
+                        )}
                       </Td>
                       <Td borderColor={borderColor} isNumeric fontWeight="semibold" color={weightedScoreColor} py={2} px={1}>
                         {typeof row.weightedA === "number"

@@ -236,8 +236,8 @@ const JobComparisonQuestion = () => {
     const currentAnswer = answersRef.current[criterion.id];
     const next = {
       weight,
-      scoreA: notApplicableA ? 0 : scoreA,
-      scoreB: notApplicableB ? 0 : scoreB,
+      scoreA: notApplicableA ? 0 : (scoreA < 1 ? 1 : scoreA),
+      scoreB: notApplicableB ? 0 : (scoreB < 1 ? 1 : scoreB),
       notApplicable: notApplicableA && notApplicableB,
       notApplicableA,
       notApplicableB,
@@ -318,7 +318,7 @@ const JobComparisonQuestion = () => {
 
   const allAnswered =
     (notApplicableA && notApplicableB) ||
-    (weight > 0 && ((scoreA >= 0 || notApplicableA) && (scoreB >= 0 || notApplicableB)));
+    (weight > 0 && ((scoreA >= 1 || notApplicableA) && (scoreB >= 1 || notApplicableB)));
 
   const isAnswerEqual = (a, b) => {
     if (!a && !b) return true;
@@ -414,8 +414,8 @@ const JobComparisonQuestion = () => {
         ...answersRef.current,
         [criterion.id]: {
           weight,
-          scoreA: notApplicableA ? 0 : scoreA,
-          scoreB: notApplicableB ? 0 : scoreB,
+          scoreA: notApplicableA ? 0 : (scoreA < 1 ? 1 : scoreA),
+          scoreB: notApplicableB ? 0 : (scoreB < 1 ? 1 : scoreB),
           notApplicable: notApplicableA && notApplicableB,
           notApplicableA,
           notApplicableB,
@@ -653,15 +653,6 @@ const JobComparisonQuestion = () => {
           </ModalContent>
         </Modal>
 
-        {/* Small note if >30% N/A: may affect fairness, but user can still calculate normally */}
-        {notApplicableStats.percentage > 30 && (
-          <Box mb={4} px={3} py={2} bg="orange.50" borderRadius="md" borderLeft="4px" borderColor="orange.400" w="100%">
-            <Text fontSize="sm" color="orange.800">
-              <strong>Note:</strong> {notApplicableStats.count} of {notApplicableStats.total} questions ({notApplicableStats.percentage.toFixed(0)}%) are &quot;Not applicable&quot;. This may affect the calculation and make it less fair; you can still complete and calculate normally.
-            </Text>
-          </Box>
-        )}
-
         {/* Combined Section Header and Question Card */}
         <Box 
           bg={cardBg} 
@@ -733,6 +724,15 @@ const JobComparisonQuestion = () => {
                     setNotApplicableB(!!checked);
                     if (checked) setScoreB(0);
                   }}
+                  noticeAboveJobs={
+                    notApplicableStats.percentage > 30 ? (
+                      <Box mb={4} px={3} py={2} bg="orange.50" borderRadius="md" borderLeft="4px" borderColor="orange.400" w="100%">
+                        <Text fontSize="sm" color="orange.800">
+                          <strong>Note:</strong> {notApplicableStats.count} of {notApplicableStats.total} questions ({notApplicableStats.percentage.toFixed(0)}%) are &quot;Not applicable&quot;. This may affect the objective comparaison between the 2 job; you can still complete and calculate normally.
+                        </Text>
+                      </Box>
+                    ) : null
+                  }
                 />
               </VStack>
             </Box>

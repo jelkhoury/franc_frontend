@@ -164,7 +164,7 @@ const CoverLetterPage = () => {
               <Alert status="warning">
                 <AlertIcon />
                 <Text fontSize="sm">
-                  You cannot evaluate a cover letter right now. Please try again later.
+                  You dont have enough attempts to evaluate a cover letter. Please try again later.
                 </Text>
               </Alert>
               <Button
@@ -303,7 +303,7 @@ const CoverLetterPage = () => {
                   <Text fontWeight="bold">Action Restricted</Text>
                 </Alert>
                 <Text>
-                  You cannot evaluate a cover letter right now. Please try again later.
+                  You dont have enough attempts to evaluate a cover letter. Please try again later.
                 </Text>
               </>
             )}

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import {
   Box,
+  Circle,
   Heading,
   Text,
   Button,
@@ -147,18 +148,30 @@ const JobComparisonLanding = () => {
         p={{ base: 6, md: 16 }}
         gap={10}
       >
-        {/* Right - Image Placeholder */}
+        {/* Right - Video */}
         <Box
-          maxW="400px"
+          maxW={{ base: "100%", md: "480px" }}
           w="100%"
-          h="300px"
-          bg="blue.100"
+          minH={{ base: "280px", md: "280px" }}
           borderRadius="xl"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
+          overflow="hidden"
+          boxShadow="lg"
+          sx={{ aspectRatio: "16/9" }}
         >
-          <Text fontSize="4xl">💼</Text>
+          <video
+            src="/assets/images/job comparison.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              display: "block",
+            }}
+            title="Job comparison"
+          />
         </Box>
 
         {/* Left - Card with Content */}
@@ -235,22 +248,16 @@ const JobComparisonLanding = () => {
           Instructions
         </Heading>
 
-        <HStack spacing={10} justify="center" flexWrap="wrap">
+        <HStack spacing={10} justify="center" flexWrap="wrap" align="flex-start">
           {/* Step 1 */}
-          <VStack spacing={4}>
-            <Box
-              size="60px"
-              bg="blue.100"
-              color="blue.700"
-              borderRadius="full"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-            >
+          <VStack spacing={4} align="center" minW="140px">
+            <Circle size="60px" bg="blue.100" color="blue.700">
               <Icon as={ViewIcon} boxSize={6} />
-            </Box>
-            <Text fontWeight="bold">Weight Criteria</Text>
-            <Text fontSize="sm" color="gray.600" maxW="200px">
+            </Circle>
+            <Text fontWeight="bold" minH="1.5em" textAlign="center">
+              Weight Criteria
+            </Text>
+            <Text fontSize="sm" color="gray.600" maxW="200px" textAlign="center">
               Choose the importance of each criterion on a scale from 1 to 5.
             </Text>
           </VStack>
@@ -261,23 +268,18 @@ const JobComparisonLanding = () => {
             color="gray.400"
             boxSize={6}
             display={{ base: "none", md: "block" }}
+            alignSelf="center"
           />
 
           {/* Step 2 */}
-          <VStack spacing={4}>
-            <Box
-              size="60px"
-              bg="blue.100"
-              color="blue.700"
-              borderRadius="full"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-            >
+          <VStack spacing={4} align="center" minW="140px">
+            <Circle size="60px" bg="blue.100" color="blue.700">
               <Icon as={ViewIcon} boxSize={6} />
-            </Box>
-            <Text fontWeight="bold">Rate Criteria</Text>
-            <Text fontSize="sm" color="gray.600" maxW="200px">
+            </Circle>
+            <Text fontWeight="bold" minH="1.5em" textAlign="center">
+              Rate Criteria
+            </Text>
+            <Text fontSize="sm" color="gray.600" maxW="200px" textAlign="center">
               Rate each criterion for both jobs on a scale from 1 to 5.
             </Text>
           </VStack>
@@ -288,23 +290,18 @@ const JobComparisonLanding = () => {
             color="gray.400"
             boxSize={6}
             display={{ base: "none", md: "block" }}
+            alignSelf="center"
           />
 
           {/* Step 3 */}
-          <VStack spacing={4}>
-            <Box
-              size="60px"
-              bg="blue.100"
-              color="blue.700"
-              borderRadius="full"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-            >
+          <VStack spacing={4} align="center" minW="140px">
+            <Circle size="60px" bg="blue.100" color="blue.700">
               <Icon as={CheckCircleIcon} boxSize={6} />
-            </Box>
-            <Text fontWeight="bold">Get Results</Text>
-            <Text fontSize="sm" color="gray.600" maxW="150px">
+            </Circle>
+            <Text fontWeight="bold" minH="1.5em" textAlign="center">
+              Get Results
+            </Text>
+            <Text fontSize="sm" color="gray.600" maxW="200px" textAlign="center">
               View comprehensive comparison with Overall, HEAD, and HEART
               scores.
             </Text>

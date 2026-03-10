@@ -174,7 +174,7 @@ const ResumePage = () => {
               <Alert status="warning">
                 <AlertIcon />
                 <Text fontSize="sm">
-                  You cannot evaluate a resume right now. Please try again later.
+                  You dont have enough attempts to evaluate a resume. Please try again later.
                 </Text>
               </Alert>
               <Button
@@ -274,7 +274,7 @@ const ResumePage = () => {
                   <Text fontWeight="bold">Action Restricted</Text>
                 </Alert>
                 <Text>
-                  You cannot evaluate a resume right now. Please try again later.
+                  You dont have enough attempts to evaluate a resume. Please try again later.
                 </Text>
               </>
             )}

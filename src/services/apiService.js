@@ -35,6 +35,8 @@ export const SDS_ENDPOINTS = {
     `/api/sds/get-holland-points-by-attempt?userId=${userId}&attemptNumber=${attemptNumber}`,
   GET_USER_RESPONSES: (userId) =>
     `/api/sds/get-user-responses?userId=${userId}`,
+  DELETE_LAST_INCOMPLETE: (userId) =>
+    `/api/sds/delete-last-incomplete?userId=${userId}`,
   GET_SDS_RESULTS: "/api/sds/SDSResults",
   SAVE_AI_FEEDBACK: "/api/sds/save-ai-feedback",
   // Admin endpoints (if needed)
