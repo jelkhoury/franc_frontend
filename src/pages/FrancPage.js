@@ -85,8 +85,8 @@ const services = [
     isAdminOnly: true,
   },
   {
-    heading: "Job Matchmaking",
-    description: "The right key opens the right door.",
+    heading: "Job Matching",
+    description: "Your future career is one click away.",
     gif: "/assets/images/job_matching.gif",
     isActive: true,
     link: "/job-matching",

@@ -14,6 +14,8 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
+import { CountrySelect, StateSelect, CitySelect } from 'react-country-state-city';
+import 'react-country-state-city/dist/react-country-state-city.css';
 
 const UserInfoForm = ({
   formData,
@@ -27,10 +29,11 @@ const UserInfoForm = ({
   const navigate = useNavigate();
   const toast = useToast();
 
-  // Filter majors based on selected faculty
+  // Filter majors based on selected faculty (support both facultyId and faculty_id from API)
   const filteredMajors = formData.faculty
     ? majors.filter(
-        (major) => major.facultyId === parseInt(formData.faculty)
+        (major) =>
+          (major.facultyId ?? major.faculty_id) === parseInt(formData.faculty)
       )
     : majors;
 
@@ -62,8 +65,11 @@ const UserInfoForm = ({
       </Text>
 
       {loading ? (
-        <Flex justify="center" align="center" minH="400px">
+        <Flex direction="column" justify="center" align="center" minH="400px" gap={4}>
           <Spinner size="xl" color="brand.500" />
+          <Text color="gray.600" textAlign="center">
+            Loading faculties and majors…
+          </Text>
         </Flex>
       ) : (
         <Box
@@ -109,12 +115,12 @@ const UserInfoForm = ({
             </FormControl>
 
             <FormControl isRequired>
-              <FormLabel>Level</FormLabel>
+              <FormLabel>Select Your Level</FormLabel>
               <Select
                 placeholder="Select your level"
                 value={formData.level}
                 onChange={(e) => onInputChange('level', e.target.value)}
-                bg="white"
+                bg="gray.100"
               >
                 <option value="Undergraduate">Undergraduate</option>
                 <option value="Graduate">Graduate</option>
@@ -125,36 +131,107 @@ const UserInfoForm = ({
 
             <FormControl isRequired>
               <FormLabel>Country</FormLabel>
-              <Input
-                placeholder="Enter your country"
-                value={formData.country}
-                onChange={(e) => onInputChange('country', e.target.value)}
-                bg="white"
-              />
-            </FormControl>
-
-            <FormControl>
-              <FormLabel>City (Optional)</FormLabel>
-              <Input
-                placeholder="Enter your city"
-                value={formData.city}
-                onChange={(e) => onInputChange('city', e.target.value)}
-                bg="white"
-              />
-            </FormControl>
-
-            <HStack spacing={4} w="100%" justify="flex-end">
-              <Button variant="ghost" onClick={handleBackToLanding}>
-                Cancel
-              </Button>
-              <Button
-                colorScheme="brand"
-                onClick={handleNext}
-                isLoading={isLoadingSkills}
+              <Box
+                sx={{
+                  '& .stdropdown-container': { border: '1px solid', borderColor: 'gray.200' },
+                  '& .stdropdown-menu': { border: '1px solid', borderColor: 'gray.200' },
+                  '& input': { bg: 'white', border: 'none !important', boxShadow: 'none !important' },
+                }}
               >
-                Next: Select Skills
-              </Button>
-            </HStack>
+                <CountrySelect
+                  placeHolder="Search country or capital"
+                  defaultValue={formData.countryId ? { id: parseInt(formData.countryId), name: formData.country } : null}
+                  onChange={(country) => {
+                    onInputChange({
+                      countryId: country?.id ?? '',
+                      country: country?.name ?? '',
+                      stateId: '',
+                      city: '',
+                    });
+                  }}
+                  showFlag={true}
+                />
+              </Box>
+            </FormControl>
+
+            <FormControl isDisabled={!formData.countryId}>
+              <FormLabel>State/Province (Optional)</FormLabel>
+              {formData.countryId ? (
+                <Box
+                  sx={{
+                    '& .stdropdown-container': { border: '1px solid', borderColor: 'gray.200' },
+                    '& .stdropdown-menu': { border: '1px solid', borderColor: 'gray.200' },
+                    '& input': { bg: 'white', border: 'none !important', boxShadow: 'none !important' },
+                  }}
+                >
+                  <StateSelect
+                    countryid={parseInt(formData.countryId)}
+                    placeHolder="Search state or province"
+                    onChange={(state) => {
+                      onInputChange({
+                        stateId: state?.id ?? '',
+                        city: '',
+                      });
+                    }}
+                  />
+                </Box>
+              ) : (
+                <Input
+                  placeholder="Select country first"
+                  isDisabled
+                  bg="gray.50"
+                  opacity={0.6}
+                />
+              )}
+            </FormControl>
+
+            <FormControl isDisabled={!formData.countryId}>
+              <FormLabel>City (Optional)</FormLabel>
+              {formData.countryId && formData.stateId ? (
+                <Box
+                  sx={{
+                    '& .stdropdown-container': { border: '1px solid', borderColor: 'gray.200' },
+                    '& .stdropdown-menu': { border: '1px solid', borderColor: 'gray.200' },
+                    '& input': { bg: 'white', border: 'none !important', boxShadow: 'none !important' },
+                  }}
+                >
+                  <CitySelect
+                    countryid={parseInt(formData.countryId)}
+                    stateid={parseInt(formData.stateId)}
+                    placeHolder="Search city or capital"
+                    onChange={(city) => onInputChange('city', city?.name ?? '')}
+                  />
+                </Box>
+              ) : (
+                <Input
+                  placeholder={formData.countryId ? 'Enter your city or capital' : 'Select country first'}
+                  value={formData.city}
+                  onChange={(e) => onInputChange('city', e.target.value)}
+                  bg={formData.countryId ? 'white' : 'gray.50'}
+                  isDisabled={!formData.countryId}
+                />
+              )}
+            </FormControl>
+
+            <VStack spacing={3} w="100%" align="stretch">
+              {isLoadingSkills && (
+                <Text fontSize="sm" color="gray.600" textAlign="center">
+                  Analyzing your profile and matching skills to your major…
+                </Text>
+              )}
+              <HStack spacing={4} w="100%" justify="flex-end">
+                <Button variant="ghost" onClick={handleBackToLanding}>
+                  Cancel
+                </Button>
+                <Button
+                  colorScheme="brand"
+                  onClick={handleNext}
+                  isLoading={isLoadingSkills}
+                >
+                  Next: Select Skills
+                </Button>
+              </HStack>
+            </VStack>
           </VStack>
         </Box>
       )}

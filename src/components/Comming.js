@@ -28,7 +28,7 @@ const services = [
     gif: "/assets/images/comparison.gif",
   },
   {
-    heading: "Job Matchmaking",
+    heading: "Job Matching",
     description: "The right key opens the right door.",
     gif: "/assets/images/job_matching.gif",
   },

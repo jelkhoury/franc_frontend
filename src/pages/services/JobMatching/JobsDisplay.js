@@ -15,9 +15,16 @@ import {
 const JobsDisplay = ({
   jobs,
   loadingJobs,
+  selectedSkills = [],
+  country = '',
+  city = '',
   onBack,
   onStartOver,
 }) => {
+  const skillPart = [].concat(selectedSkills).filter(Boolean).join(' ');
+  const locationPart = [city, country].filter(Boolean).join(', ');
+  const googleSearchQuery = [skillPart, 'jobs', locationPart].filter(Boolean).join(' ').trim() || 'jobs';
+  const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(googleSearchQuery)}`;
   return (
     <Box maxW="1200px" mx="auto">
       <Heading color="brand.500" size="xl" mb={4} textAlign="center">
@@ -32,13 +39,43 @@ const JobsDisplay = ({
           <Spinner size="xl" color="brand.500" />
         </Flex>
       ) : jobs.length === 0 ? (
-        <Box textAlign="center" py={8}>
-          <Text color="gray.500" fontSize="lg" mb={4}>
-            No matching jobs found at this time.
+        <Box py={8} maxW="520px" mx="auto">
+          <Text color="gray.600" fontSize="lg" textAlign="center" mb={6}>
+            We're sorry—we couldn't find any matching jobs at this time.
           </Text>
-          <Button colorScheme="brand" onClick={onBack}>
-            Try Different Skills
-          </Button>
+
+          <HStack spacing={3} justify="center" flexWrap="wrap" mb={3}>
+            <Button colorScheme="brand" variant="outline" onClick={onBack}>
+              Try Different Skills
+            </Button>
+            <Button colorScheme="brand" onClick={onStartOver}>
+              Start Over
+            </Button>
+          </HStack>
+
+          <Text color="gray.600" fontSize="md" fontWeight="semibold" textAlign="center" mb={4}>
+            OR
+          </Text>
+
+          <Card variant="outline" borderColor="gray.200" overflow="hidden">
+            <Box bg="gray.50" px={5} py={4}>
+              <Text fontSize="sm" color="gray.600" mb={3} textAlign="center">
+                Try searching your skills or role on Google for more opportunities.
+              </Text>
+              <Flex justify="center">
+                <Button
+                  as="a"
+                  href={googleSearchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  colorScheme="brand"
+                  size="md"
+                >
+                  Search on Google
+                </Button>
+              </Flex>
+            </Box>
+          </Card>
         </Box>
       ) : (
         <VStack spacing={4} align="stretch">
@@ -74,6 +111,20 @@ const JobsDisplay = ({
                     {job.location && (
                       <Text fontSize="sm" color="gray.500" mb={2}>
                         📍 {job.location}
+                      </Text>
+                    )}
+                    {(job.posted_at != null || job.posted_at_days_ago != null || job.remote) && (
+                      <Text fontSize="xs" color="gray.500" mb={1}>
+                        {[
+                          job.posted_at_days_ago != null &&
+                            (job.posted_at_days_ago === 0
+                              ? 'Posted today'
+                              : `Posted ${job.posted_at_days_ago} day(s) ago`),
+                          job.posted_at_days_ago == null && job.posted_at && `Posted ${job.posted_at}`,
+                          job.remote && 'Remote',
+                        ]
+                          .filter(Boolean)
+                          .join(' • ')}
                       </Text>
                     )}
                     {job.description && (
@@ -130,10 +181,10 @@ const JobsDisplay = ({
                         </Box>
                       )}
                   </Box>
-                  {job.url && (
+                  {(job.url || job.apply_url) && (
                     <Button
                       as="a"
-                      href={job.url}
+                      href={job.url || job.apply_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       colorScheme="brand"

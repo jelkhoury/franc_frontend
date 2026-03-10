@@ -85,15 +85,13 @@ const JobMatchingPage = () => {
             border="1px solid"
             borderColor="gray.100"
           >
-            <Heading color="brand.500" size="xl" mb={4}>
+            <Heading color="brand.500" size="xl" mb={2}>
               Job Matching
             </Heading>
 
             <Text fontSize="lg" mb={6}>
               Find real job opportunities that match your skills and academic
-              background. Enter your faculty, major, level, and country, then
-              select your skills to discover matching job opportunities tailored
-              to your profile.
+              background.
             </Text>
 
             {/* Icons Row */}
