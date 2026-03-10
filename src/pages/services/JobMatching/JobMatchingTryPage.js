@@ -50,6 +50,7 @@ const JobMatchingTryPage = () => {
     city: '',
   });
   const [selectedSkills, setSelectedSkills] = useState([]);
+  const [customSkillsInput, setCustomSkillsInput] = useState('');
   
   // Store Phase 1 response data for Phase 2
   const [majorSkillsResponse, setMajorSkillsResponse] = useState(null);
@@ -212,10 +213,19 @@ const JobMatchingTryPage = () => {
   };
 
   const handleSearchJobs = async () => {
-    if (selectedSkills.length === 0) {
+    const manualSkills = customSkillsInput
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const combinedSkills = [
+      ...selectedSkills,
+      ...manualSkills,
+    ];
+
+    if (combinedSkills.length === 0) {
       toast({
         title: 'No Skills Selected',
-        description: 'Please select at least one skill to find matching jobs.',
+        description: 'Please select at least one skill or role, or enter your own (comma separated), to find matching jobs.',
         status: 'warning',
         duration: 3000,
         isClosable: true,
@@ -225,7 +235,7 @@ const JobMatchingTryPage = () => {
 
     setLoadingJobs(true);
     try {
-      const skillsArray = Array.isArray(selectedSkills) ? selectedSkills : [];
+      const skillsArray = Array.isArray(combinedSkills) ? combinedSkills : [];
       const roles = majorSkillsResponse?.roles && Array.isArray(majorSkillsResponse.roles)
         ? majorSkillsResponse.roles.map((r) => (typeof r === 'string' ? r : r.name || r.title))
         : [];
@@ -280,6 +290,7 @@ const JobMatchingTryPage = () => {
     setStep(1);
     setFormData({ faculty: '', major: '', level: '', country: '', countryId: '', stateId: '', city: '' });
     setSelectedSkills([]);
+    setCustomSkillsInput('');
     setSkills([]);
     setJobs([]);
     setMajorSkillsResponse(null);
@@ -291,6 +302,7 @@ const JobMatchingTryPage = () => {
 
   const handleBackToDetails = () => {
     setSelectedSkills([]);
+    setCustomSkillsInput('');
     setSkills([]);
     setMajorSkillsResponse(null);
     setStep(1);
@@ -337,8 +349,10 @@ const JobMatchingTryPage = () => {
           <SkillsSelection
             majorSkillsResponse={majorSkillsResponse}
             selectedSkills={selectedSkills}
+            customSkillsInput={customSkillsInput}
             loadingSkills={loadingSkills}
             onSkillToggle={handleSkillToggle}
+            onCustomSkillsChange={setCustomSkillsInput}
             onBack={handleBackToDetails}
             onSearchJobs={handleSearchJobs}
             loadingJobs={loadingJobs}

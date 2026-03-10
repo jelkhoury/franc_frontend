@@ -21,8 +21,10 @@ import {
 const SkillsSelection = ({
   majorSkillsResponse,
   selectedSkills,
+  customSkillsInput,
   loadingSkills,
   onSkillToggle,
+  onCustomSkillsChange,
   onBack,
   onSearchJobs,
   loadingJobs,
@@ -83,70 +85,44 @@ const SkillsSelection = ({
             </Card>
           )}
 
-          {/* Job Titles: selectable when no technical skills, otherwise display only */}
-          {majorSkillsResponse.roles && majorSkillsResponse.roles.length > 0 && (() => {
-            const hasTechnicalSkills = majorSkillsResponse.technical_skill_groups?.some(
-              (g) => g.skills && Array.isArray(g.skills) && g.skills.length > 0
-            );
-            const showRolesAsSelectable = !hasTechnicalSkills;
-
-            return (
-              <Card boxShadow="md">
-                <CardBody>
-                  <Heading size="md" color="brand.500" mb={3}>
-                    {showRolesAsSelectable ? 'Select your target job titles' : 'Job Titles & Career Opportunities'}
-                  </Heading>
-                  <Text fontSize="sm" color="gray.600" mb={4}>
-                    {showRolesAsSelectable
-                      ? 'No technical skills list for this major—select job titles to find matching positions. You can match by role or by technical skills when available.'
-                      : 'Directly related roles for internships, entry-level, and full-time positions'}
-                  </Text>
-                  {showRolesAsSelectable ? (
-                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={3}>
-                      {majorSkillsResponse.roles.map((role, index) => {
-                        const roleName = typeof role === 'string' ? role : role.name || role.title;
-                        const isSelected = selectedSkills.includes(roleName);
-                        return (
-                          <Box
-                            key={index}
-                            p={3}
-                            border="1px solid"
-                            borderColor={isSelected ? 'brand.500' : 'gray.200'}
-                            borderRadius="md"
-                            bg={isSelected ? 'brand.50' : 'white'}
-                          >
-                            <Checkbox
-                              value={roleName}
-                              isChecked={isSelected}
-                              onChange={() => onSkillToggle(roleName)}
-                              colorScheme="brand"
-                            >
-                              <Text fontWeight="semibold" ml={2}>{roleName}</Text>
-                            </Checkbox>
-                          </Box>
-                        );
-                      })}
-                    </SimpleGrid>
-                  ) : (
-                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={3}>
-                      {majorSkillsResponse.roles.map((role, index) => (
-                        <Badge
-                          key={index}
-                          colorScheme="blue"
-                          fontSize="md"
-                          px={4}
-                          py={2}
-                          borderRadius="full"
+          {/* Job Titles & Career Opportunities - selectable like skills */}
+          {majorSkillsResponse.roles && majorSkillsResponse.roles.length > 0 && (
+            <Card boxShadow="md">
+              <CardBody>
+                <Heading size="md" color="brand.500" mb={3}>
+                  Job Titles & Career Opportunities
+                </Heading>
+                <Text fontSize="sm" color="gray.600" mb={4}>
+                  Select the job titles that best match the roles you are interested in. These will also be used to find matching opportunities.
+                </Text>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={3}>
+                  {majorSkillsResponse.roles.map((role, index) => {
+                    const roleName = typeof role === 'string' ? role : role.name || role.title;
+                    const isSelected = selectedSkills.includes(roleName);
+                    return (
+                      <Box
+                        key={index}
+                        p={3}
+                        border="1px solid"
+                        borderColor={isSelected ? 'brand.500' : 'gray.200'}
+                        borderRadius="md"
+                        bg={isSelected ? 'brand.50' : 'white'}
+                      >
+                        <Checkbox
+                          value={roleName}
+                          isChecked={isSelected}
+                          onChange={() => onSkillToggle(roleName)}
+                          colorScheme="brand"
                         >
-                          {typeof role === 'string' ? role : role.name || role.title}
-                        </Badge>
-                      ))}
-                    </SimpleGrid>
-                  )}
-                </CardBody>
-              </Card>
-            );
-          })()}
+                          <Text fontWeight="semibold" ml={2}>{roleName}</Text>
+                        </Checkbox>
+                      </Box>
+                    );
+                  })}
+                </SimpleGrid>
+              </CardBody>
+            </Card>
+          )}
 
           {/* Technical Skills - Grouped */}
           {majorSkillsResponse.technical_skill_groups && majorSkillsResponse.technical_skill_groups.length > 0 && (
@@ -331,16 +307,16 @@ const SkillsSelection = ({
             </Card>
           )}
 
-          {/* Action Buttons */}
+          {/* Custom Skills / Roles and Action Buttons */}
           <Card boxShadow="md" bg="brand.50">
             <CardBody>
-              <HStack spacing={4} justify="space-between" flexWrap="wrap">
-                <VStack align="start" spacing={1}>
-                  <Text fontWeight="bold">
+              <VStack align="stretch" spacing={4}>
+                <Box>
+                  <Text fontWeight="bold" mb={1}>
                     Selected Skills: {selectedSkills.length}
                   </Text>
                   {selectedSkills.length > 0 && (
-                    <HStack flexWrap="wrap" spacing={2}>
+                    <HStack flexWrap="wrap" spacing={2} mb={3}>
                       {selectedSkills.slice(0, 5).map((skill, idx) => (
                         <Badge key={idx} colorScheme="green">
                           {skill}
@@ -353,14 +329,34 @@ const SkillsSelection = ({
                       )}
                     </HStack>
                   )}
-                </VStack>
+                  <Text fontSize="sm" color="gray.700" mb={1}>
+                    Add any extra skills or roles you want to match with <strong>(comma separated)</strong>.
+                  </Text>
+                  <Text fontSize="xs" color="gray.500" mb={2}>
+                    Example: <strong>HR Generalist, Excel, HR Analytics</strong>
+                  </Text>
+                  <Box>
+                    <input
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #CBD5E0',
+                        fontSize: '0.875rem',
+                      }}
+                      placeholder="Type additional skills or roles, separated by commas (required if you don’t select from the lists above)"
+                      value={customSkillsInput}
+                      onChange={(e) => onCustomSkillsChange(e.target.value)}
+                    />
+                  </Box>
+                </Box>
                 <VStack spacing={3} align="stretch">
                   {loadingJobs && (
                     <Text fontSize="sm" color="gray.600" textAlign="center">
-                      Searching for positions you can work… Matching your skills to open roles…
+                      Searching for positions you can work… Matching your skills and roles to open opportunities…
                     </Text>
                   )}
-                  <HStack spacing={4}>
+                  <HStack spacing={4} justify="flex-end">
                     <Button variant="ghost" onClick={onBack}>
                       Back
                     </Button>
@@ -368,14 +364,13 @@ const SkillsSelection = ({
                       colorScheme="brand"
                       onClick={onSearchJobs}
                       isLoading={loadingJobs}
-                      isDisabled={selectedSkills.length === 0}
                       size="lg"
                     >
-                      Find Matching Jobs ({selectedSkills.length})
+                      Find Matching Jobs
                     </Button>
                   </HStack>
                 </VStack>
-              </HStack>
+              </VStack>
             </CardBody>
           </Card>
         </VStack>
