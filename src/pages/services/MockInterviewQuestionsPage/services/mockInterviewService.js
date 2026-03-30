@@ -224,6 +224,15 @@ export const handleSubmitVideos = async (
     if (validAnswers.length === 0)
       throw new Error("No valid video recordings found");
 
+    console.log("[MockInterview upload] submit start", {
+      recordedAnswersCount: recordedAnswers?.length,
+      validAnswersCount: validAnswers.length,
+      userId,
+      interviewDuration,
+      totalReplayCount,
+      totalReplayCountType: typeof totalReplayCount,
+    });
+
     validAnswers.forEach((answer, index) => {
       const fileName =
         answer.questionType === "common"
@@ -233,6 +242,17 @@ export const handleSubmitVideos = async (
           : `candidate_question.webm`;
       const file = new File([answer.blob], fileName, { type: "video/webm" });
       formData.append("Videos", file);
+
+      // Log what we are about to send (avoid logging actual blob bytes)
+      console.log("[MockInterview upload] video appended", {
+        index,
+        fileName,
+        blobSize: answer.blob?.size,
+        questionType: answer.questionType,
+        questionIdx: answer.questionIdx,
+        questionId: answer.questionId,
+        questionIdType: typeof answer.questionId,
+      });
     });
 
     const duration = interviewDuration;
@@ -244,17 +264,60 @@ export const handleSubmitVideos = async (
     formData.append("NbOfTry", String(totalReplayCount));
 
     // Add question IDs from both common and major questions
+    let questionIdsAppended = 0;
+    const appendedQuestionIds = [];
     validAnswers.forEach((answer) => {
-      if (answer.questionId) {
-        formData.append("QuestionIds", String(answer.questionId));
+      // Only skip when it's truly missing (do NOT skip `0`)
+      if (answer.questionId !== undefined && answer.questionId !== null && answer.questionId !== "") {
+        const qid = parseInt(String(answer.questionId), 10);
+        if (Number.isNaN(qid)) {
+          console.warn("[MockInterview upload] invalid questionId, skipping", {
+            questionIdRaw: answer.questionId,
+          });
+          return;
+        }
+        formData.append("QuestionIds", String(qid));
+        questionIdsAppended += 1;
+        appendedQuestionIds.push(String(qid));
       }
     });
 
-    const result = await postForm(
-      BLOB_STORAGE_ENDPOINTS.UPLOAD_MOCK_INTERVIEW,
-      formData,
-      { token }
-    );
+    const videosCount = formData.getAll ? formData.getAll("Videos").length : validAnswers.length;
+    console.log("[MockInterview upload] FormData counts", {
+      videosCount,
+      questionIdsAppended,
+      Duration: durationString,
+      UserId: String(userId),
+      NbOfTry: String(totalReplayCount),
+      QuestionIdsAppended: appendedQuestionIds,
+    });
+    if (videosCount !== questionIdsAppended) {
+      console.warn("[MockInterview upload] Count mismatch (videos != QuestionIds)", {
+        videosCount,
+        questionIdsAppended,
+      });
+      // Prevent hitting backend 400; surface a clearer client-side error
+      throw new Error(
+        `Count mismatch: videos=${videosCount}, QuestionIds=${questionIdsAppended}`
+      );
+    }
+
+    let result;
+    try {
+      result = await postForm(
+        BLOB_STORAGE_ENDPOINTS.UPLOAD_MOCK_INTERVIEW,
+        formData,
+        { token }
+      );
+      console.log("[MockInterview upload] success", result);
+    } catch (err) {
+      console.error("[MockInterview upload] request failed", {
+        status: err?.status,
+        message: err?.message,
+        details: err?.details,
+      });
+      throw err;
+    }
     toast({
       title: "Mock Interview completed successfully!",
       description: `Interview ID: ${result.mockInterviewId}. Duration: ${durationString}. Uploaded ${result.videoUrls.length} videos. Replays used: ${totalReplayCount}.`,
