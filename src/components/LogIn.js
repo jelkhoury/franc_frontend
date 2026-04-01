@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { post } from "../utils/httpServices";
+import { captureError } from "../utils/sentryUtils";
 import {
   Flex,
   Box,
@@ -78,6 +79,7 @@ const Login = () => {
 
       navigate(userRole === "Admin" ? "/admin" : "/");
     } catch (err) {
+      captureError(err);
       console.error("Login error:", err);
       const errorMessage = err.message || "Invalid credentials";
 

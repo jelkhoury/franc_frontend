@@ -14,6 +14,7 @@ import { useState, useRef, useEffect } from "react";
 import { ArrowForwardIcon, CloseIcon } from "@chakra-ui/icons";
 import Footer from "../../components/Footer";
 import { post } from "../../utils/httpServices";
+import { captureError } from "../../utils/sentryUtils";
 import { AI_ENDPOINTS } from "../../services/apiService";
 
 const TypingIndicator = () => {
@@ -231,6 +232,7 @@ const Chatting = () => {
 
       setIsGenerating(false);
     } catch (error) {
+      captureError(error);
       console.error("Error fetching response:", error);
       setMessages((prev) => [
         ...prev.slice(0, -1),

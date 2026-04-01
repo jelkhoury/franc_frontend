@@ -1,3 +1,5 @@
+import { captureError } from "./sentryUtils";
+
 // Function to decode JWT token
 export const decodeToken = (token) => {
   try {
@@ -8,6 +10,7 @@ export const decodeToken = (token) => {
     }).join(''));
     return JSON.parse(jsonPayload);
   } catch (error) {
+    captureError(error);
     console.error('Error decoding token:', error);
     return null;
   }

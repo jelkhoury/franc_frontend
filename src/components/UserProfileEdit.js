@@ -20,6 +20,7 @@ import { CheckCircleIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import { FaUser } from "react-icons/fa";
 import { get } from "../utils/httpServices";
+import { captureError } from "../utils/sentryUtils";
 import { getStoredToken, getUserRole, getStoredUserRole } from "../utils/tokenUtils";
 import { USER_ENDPOINTS } from "../services/apiService";
 
@@ -58,6 +59,7 @@ export default function UserProfileEdit({ onClose, onLogout }) {
           sdsAttempts: data.sdsAttempts ?? 0,
         });
       } catch (error) {
+        captureError(error);
         console.error("Error fetching user info:", error);
       } finally {
         setLoading(false);

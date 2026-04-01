@@ -17,6 +17,7 @@ import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { post } from '../utils/httpServices';
+import { captureError } from '../utils/sentryUtils';
 import { USER_ENDPOINTS } from '../services/apiService';
 
 const ResetPassword = () => {
@@ -78,6 +79,7 @@ const ResetPassword = () => {
 
       navigate('/login');
     } catch (error) {
+      captureError(error);
       console.error('Reset password error:', error);
       toast({
         title: 'Reset Failed',

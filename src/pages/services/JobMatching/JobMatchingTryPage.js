@@ -8,6 +8,7 @@ import Footer from '../../../components/Footer';
 import { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../../components/AuthContext';
 import { get, post } from '../../../utils/httpServices';
+import { captureError } from '../../../utils/sentryUtils';
 import {
   BLOB_STORAGE_ENDPOINTS,
   JOB_MATCHING_ENDPOINTS,
@@ -72,6 +73,7 @@ const JobMatchingTryPage = () => {
           setMajors(majorsData);
         }
       } catch (error) {
+        captureError(error);
         console.error('Error fetching faculties/majors:', error);
         toast({
           title: 'Error',
@@ -181,6 +183,7 @@ const JobMatchingTryPage = () => {
         });
       }
     } catch (error) {
+      captureError(error);
       console.error('Error fetching skills:', error);
       toast({
         title: 'Error',
@@ -273,6 +276,7 @@ const JobMatchingTryPage = () => {
         });
       }
     } catch (error) {
+      captureError(error);
       console.error('Error searching jobs:', error);
       toast({
         title: 'Error',

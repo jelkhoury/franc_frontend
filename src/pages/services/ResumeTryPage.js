@@ -19,6 +19,7 @@ import { AttachmentIcon, CheckIcon } from "@chakra-ui/icons";
 import { useRef, useState } from "react";
 import Footer from "../../components/Footer";
 import { postForm } from "../../utils/httpServices";
+import { captureError } from "../../utils/sentryUtils";
 import { BLOB_STORAGE_ENDPOINTS } from "../../services/apiService";
 import { getStoredToken, decodeToken } from "../../utils/tokenUtils";
 
@@ -110,6 +111,7 @@ const FrancResumeUpload = () => {
           token,
         });
       } catch (uploadError) {
+        captureError(uploadError);
         // Silently fail - don't notify user about upload issues
         console.error("Error uploading file:", uploadError);
       }
@@ -117,6 +119,7 @@ const FrancResumeUpload = () => {
       setStep(2);
       setProgress(100);
     } catch (error) {
+      captureError(error);
       console.error("Error submitting resume:", error);
       toast({
         title: "Evaluation failed",

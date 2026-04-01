@@ -29,6 +29,7 @@ import {
 } from "@chakra-ui/icons";
 import Footer from "../../../components/Footer";
 import { get } from "../../../utils/httpServices";
+import { captureError } from "../../../utils/sentryUtils";
 import { JOB_COMPARISON_ENDPOINTS } from "../../../services/apiService";
 
 const JobComparisonLanding = () => {
@@ -50,6 +51,7 @@ const JobComparisonLanding = () => {
       setIncompleteComparison(result);
       onOpen();
     } catch (err) {
+      captureError(err);
       console.warn("Check incomplete comparison failed, going to setup:", err);
       navigate("/job-comparison/setup");
     } finally {
@@ -69,6 +71,7 @@ const JobComparisonLanding = () => {
         const fetched = await get(JOB_COMPARISON_ENDPOINTS.GET_CRITERIA);
         rawCriteria = Array.isArray(fetched) ? fetched : [];
       } catch (e) {
+        captureError(e);
         rawCriteria = [];
       }
     }

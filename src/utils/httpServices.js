@@ -2,7 +2,8 @@ import {
   getStoredToken,
   isTokenExpired,
   clearAuthData,
-} from "./tokenUtils"; 
+} from "./tokenUtils";
+import { captureError } from "./sentryUtils"; 
 
 const BASE_URLS = {
   default: (process.env.REACT_APP_API_BASE_URL || "").replace(/\/+$/, ""),
@@ -96,45 +97,50 @@ async function coreFetch(
   path,
   { params, data, headers, token, signal, base } = {}
 ) {
-  // Resolve token: passed in, or from storage
-  const effectiveToken = token ?? getStoredToken();
+  try {
+    // Resolve token: passed in, or from storage
+    const effectiveToken = token ?? getStoredToken();
 
-  if (effectiveToken && isTokenExpired(effectiveToken)) {
-    clearAuthData();
-    if (typeof httpService.onUnauthorized === "function") {
+    if (effectiveToken && isTokenExpired(effectiveToken)) {
+      clearAuthData();
+      if (typeof httpService.onUnauthorized === "function") {
+        try {
+          httpService.onUnauthorized();
+        } catch {}
+      }
+      throw new HttpError(401, "Token expired");
+    }
+
+    const url = buildUrl(path, params, base);
+    const body =
+      data == null ? undefined : isFormData(data) ? data : JSON.stringify(data);
+
+    const init = {
+      method,
+      headers: buildHeaders({ token: effectiveToken, headers, body }),
+      body,
+      signal,
+    };
+
+    if (typeof httpService.onRequest === "function") {
       try {
-        httpService.onUnauthorized();
+        httpService.onRequest({ url, init });
       } catch {}
     }
-    throw new HttpError(401, "Token expired");
+
+    const res = await fetch(url, init);
+
+    if (typeof httpService.onResponse === "function") {
+      try {
+        httpService.onResponse(res);
+      } catch {}
+    }
+
+    return await parseResponse(res);
+  } catch (error) {
+    captureError(error, { method, path, base: base || "default" });
+    throw error;
   }
-
-  const url = buildUrl(path, params, base);
-  const body =
-    data == null ? undefined : isFormData(data) ? data : JSON.stringify(data);
-
-  const init = {
-    method,
-    headers: buildHeaders({ token: effectiveToken, headers, body }),
-    body,
-    signal,
-  };
-
-  if (typeof httpService.onRequest === "function") {
-    try {
-      httpService.onRequest({ url, init });
-    } catch {}
-  }
-
-  const res = await fetch(url, init);
-
-  if (typeof httpService.onResponse === "function") {
-    try {
-      httpService.onResponse(res);
-    } catch {}
-  }
-
-  return parseResponse(res);
 }
 
 // Public helpers

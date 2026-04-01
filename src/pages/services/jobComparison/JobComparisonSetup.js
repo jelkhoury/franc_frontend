@@ -14,6 +14,7 @@ import {
 } from "@chakra-ui/react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { get } from "../../../utils/httpServices";
+import { captureError } from "../../../utils/sentryUtils";
 import { JOB_COMPARISON_ENDPOINTS } from "../../../services/apiService";
 
 const JobComparisonSetup = () => {
@@ -87,6 +88,7 @@ const JobComparisonSetup = () => {
         });
       }
     } catch (error) {
+      captureError(error);
       console.error("Error starting comparison:", error);
       toast({
         title: "Error",

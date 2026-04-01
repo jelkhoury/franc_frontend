@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { jsPDF } from "jspdf";
 import { get, post, postForm } from "../../utils/httpServices";
+import { captureError } from "../../utils/sentryUtils";
 import { BLOB_STORAGE_ENDPOINTS, MOCK_INTERVIEW_ENDPOINTS, USER_ENDPOINTS } from "../../services/apiService";
 import {
   Box,
@@ -131,6 +132,7 @@ const ManageMockInterviews = () => {
         isClosable: true,
       });
     } catch (error) {
+      captureError(error);
       console.error("Error submitting evaluations:", error);
       toast({
         title: "Error",
@@ -192,6 +194,7 @@ const ManageMockInterviews = () => {
       setEditMode(false);
       setShowSummary(true);
     } catch (error) {
+      captureError(error);
       console.error("Error submitting evaluation:", error);
       toast({
         title: "Error",
@@ -250,6 +253,7 @@ const ManageMockInterviews = () => {
         isClosable: true,
       });
     } catch (error) {
+      captureError(error);
       console.error("Error generating report:", error);
       toast({
         title: "Error",
@@ -416,6 +420,7 @@ const ManageMockInterviews = () => {
         isClosable: true,
       });
     } catch (error) {
+      captureError(error);
       console.error("Error sending PDF:", error);
       toast({
         title: "Error",
@@ -454,6 +459,7 @@ const ManageMockInterviews = () => {
         const data = await get(BLOB_STORAGE_ENDPOINTS.GET_ALL_GROUPED);
         setInterviews(data);
       } catch (err) {
+        captureError(err);
         console.error("Error fetching interviews:", err);
         setError(err.message);
         toast({

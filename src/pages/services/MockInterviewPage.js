@@ -17,6 +17,7 @@ const MockInterviewPage = () => {
   const navigate = useNavigate();
   const [canPerformAction, setCanPerformAction] = useState(true);
   const [checkingPermission, setCheckingPermission] = useState(false);
+  const [restrictionMessage, setRestrictionMessage] = useState(null);
 
   // Check permission when component mounts and user is logged in
   useEffect(() => {
@@ -25,7 +26,8 @@ const MockInterviewPage = () => {
         USER_ACTION_TYPES.MOCK_INTERVIEW,
         setCheckingPermission,
         setCanPerformAction,
-        null // Don't show toast on initial check
+        null, // Don't show toast on initial check
+        setRestrictionMessage
       );
     }
   }, [isLoggedIn]);
@@ -124,7 +126,8 @@ const MockInterviewPage = () => {
               <Alert status="warning">
                 <AlertIcon />
                 <Text fontSize="sm">
-                  You dont have enough attempts to start another interview. Please try again later.
+                  {restrictionMessage ||
+                    "You dont have enough attempts to start another interview. Please try again later."}
                 </Text>
               </Alert>
               <Button

@@ -3,6 +3,7 @@ import { Box, Button, Heading, Text, VStack, HStack, Flex, SimpleGrid, useToast 
 import Webcam from 'react-webcam';
 import Lottie from 'lottie-react';
 
+import { captureError } from '../../utils/sentryUtils';
 import gptTalking from '../../assets/animations/chat_animation.json';
 import voiceover from '../../assets/audio/voiceover.m4a';
 
@@ -112,6 +113,7 @@ export default function DemoMockInterviewStandalone() {
       // While playing, switch to talking chain
       setMode('talkingChain');
     } catch (e) {
+      captureError(e);
       // Autoplay blocked (mobile/desktop policy)
       setAudioBlocked(true);
       toast({
@@ -235,7 +237,7 @@ export default function DemoMockInterviewStandalone() {
                     try {
                       setAudioBlocked(false);
                       await audioRef.current.play();
-                    } catch (e) { console.error(e); }
+                    } catch (e) { captureError(e); console.error(e); }
                   }}
                 >
                   Enable Audio

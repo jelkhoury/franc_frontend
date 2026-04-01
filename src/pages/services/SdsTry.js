@@ -39,6 +39,7 @@ import QuestionField from "../../components/QuestionField";
 import { AuthContext } from "../../components/AuthContext";
 import { getStoredUserId } from "../../utils/tokenUtils";
 import { get, post, del } from "../../utils/httpServices";
+import { captureError } from "../../utils/sentryUtils";
 import { SDS_ENDPOINTS } from "../../services/apiService";
 
 const SDS_DRAFT_STORAGE_KEY = "sds_draft_answers";
@@ -209,7 +210,8 @@ const SdsTry = () => {
       const userId = tokenData["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
       const id = parseInt(userId, 10);
       return isNaN(id) ? null : id;
-    } catch {
+    } catch (e) {
+      captureError(e);
       return null;
     }
   };
@@ -302,6 +304,7 @@ const SdsTry = () => {
       });
       navigate("/self-directed-search");
     } catch (err) {
+      captureError(err);
       toast({
         title: "Save failed",
         description: err.message || "Could not save draft. Your answers are still in this browser.",
@@ -338,6 +341,7 @@ const SdsTry = () => {
       try {
         await del(SDS_ENDPOINTS.DELETE_LAST_INCOMPLETE(userId));
       } catch (err) {
+        captureError(err);
         console.warn("Could not delete incomplete attempt on server:", err);
         toast({
           title: "Draft cleared locally",
@@ -358,6 +362,7 @@ const SdsTry = () => {
         localStorage.removeItem(SDS_DRAFT_STORAGE_KEY);
       }
     } catch (e) {
+      captureError(e);
       console.warn("Could not save draft to localStorage", e);
     }
   };
@@ -485,6 +490,7 @@ const SdsTry = () => {
         const data = await get(SDS_ENDPOINTS.GET_SECTIONS);
         setSections(Array.isArray(data) ? data : []);
       } catch (e) {
+        captureError(e);
         setError(e.message || "Failed to load");
       } finally {
         setLoading(false);
@@ -519,7 +525,8 @@ const SdsTry = () => {
         const userId = tokenData["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
         const id = parseInt(userId, 10);
         return isNaN(id) ? null : id;
-      } catch {
+      } catch (e) {
+        captureError(e);
         return null;
       }
     };
@@ -825,6 +832,7 @@ const SdsTry = () => {
       // eslint-disable-next-line no-console
       console.log("SDS response (normalized):", { code, responses, data });
     } catch (error) {
+      captureError(error);
       console.error("Error submitting SDS responses:", error);
       toast({
         title: "Submission Failed",

@@ -31,6 +31,7 @@ import {
 import { TimeIcon, InfoIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import { get } from "../../utils/httpServices";
+import { captureError } from "../../utils/sentryUtils";
 
 /**
  * SDS Onboarding
@@ -159,6 +160,7 @@ const SdsOnBoarding = ({
           setSelectedEmbedSrc(items[0].embedSrc);
         }
       } catch (e) {
+        captureError(e);
         console.error("Failed to load YouTube videos", e);
       }
     };

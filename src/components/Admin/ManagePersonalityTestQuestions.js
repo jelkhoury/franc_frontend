@@ -45,6 +45,7 @@ import {
 } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
 import { get, post, del } from "../../utils/httpServices";
+import { captureError } from "../../utils/sentryUtils";
 import { SDS_ENDPOINTS } from "../../services/apiService";
 
 const QUESTION_TYPES = {
@@ -102,6 +103,7 @@ const ManagePersonalityTestQuestions = () => {
       const data = await get(SDS_ENDPOINTS.GET_SECTIONS, { token });
       setSections(Array.isArray(data) ? data : []);
     } catch (err) {
+      captureError(err);
       console.error("Error fetching sections:", err);
       setError(err.message);
       toast({
@@ -195,6 +197,7 @@ const ManagePersonalityTestQuestions = () => {
       onAddClose();
       fetchSections();
     } catch (err) {
+      captureError(err);
       console.error("Error adding question:", err);
       toast({
         title: "Error",
@@ -231,6 +234,7 @@ const ManagePersonalityTestQuestions = () => {
       setDeleteQuestion(null);
       fetchSections();
     } catch (err) {
+      captureError(err);
       console.error("Error deleting question:", err);
       toast({
         title: "Error",

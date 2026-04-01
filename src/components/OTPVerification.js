@@ -18,6 +18,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../components/AuthContext";
 import { decodeToken, getUserRole, getUserName, getUserId } from "../utils/tokenUtils";
 import { post } from "../utils/httpServices";
+import { captureError } from "../utils/sentryUtils";
 import { USER_ENDPOINTS } from "../services/apiService";
 
 const OTPVerification = () => {
@@ -47,6 +48,7 @@ const OTPVerification = () => {
         isClosable: true,
       });
     } catch (err) {
+      captureError(err);
       toast({
         title: "Failed to send code",
         description: err.message || "Could not send verification code. Please try again.",
@@ -178,6 +180,7 @@ const OTPVerification = () => {
         throw new Error(data.message || 'Verification failed');
       }
     } catch (err) {
+      captureError(err);
       toast({
         title: "Verification Failed",
         description: err.message,

@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 
 import { post } from '../utils/httpServices';
+import { captureError } from '../utils/sentryUtils';
 import { USER_ENDPOINTS } from '../services/apiService';
 
 const ForgotPassword = () => {
@@ -53,6 +54,7 @@ const ForgotPassword = () => {
       });
       navigate('/reset-password', { state: { email, from: from || null } });
     } catch (err) {
+      captureError(err);
       console.error('Forgot password error:', err);
       toast({
         title: 'Error',

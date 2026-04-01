@@ -27,6 +27,7 @@ import {
   SimpleGrid,
 } from "@chakra-ui/react";
 import { get } from "../../utils/httpServices";
+import { captureError } from "../../utils/sentryUtils";
 import { USER_ENDPOINTS } from "../../services/apiService";
 
 const ManageChatbot = () => {
@@ -58,6 +59,7 @@ const ManageChatbot = () => {
       const data = await get(USER_ENDPOINTS.GET_CHATS, { token });
       setChats(data);
     } catch (err) {
+      captureError(err);
       console.error("Error fetching chats:", err);
       setError(err.message);
       toast({

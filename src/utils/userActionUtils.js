@@ -1,4 +1,5 @@
 import { get } from './httpServices';
+import { captureError } from './sentryUtils';
 import { getStoredToken, decodeToken } from './tokenUtils';
 import { USER_ENDPOINTS, USER_ACTION_TYPES } from '../services/apiService';
 
@@ -14,7 +15,8 @@ export const checkUserActionPermission = async (
   actionType,
   setCheckingStatus = null,
   setCanPerform = null,
-  toast = null
+  toast = null,
+  setRestrictionMessage = null
 ) => {
   try {
     if (setCheckingStatus) setCheckingStatus(true);
@@ -39,12 +41,48 @@ export const checkUserActionPermission = async (
       throw new Error("Invalid user ID");
     }
     
-    const data = await get(USER_ENDPOINTS.CAN_USER_PERFORM_ACTION(userId, actionType), {
-      token,
-    });
+    const data = await get(
+      USER_ENDPOINTS.CAN_USER_PERFORM_ACTION(userId, actionType),
+      { token }
+    );
     
     // Backend returns { userId, canDoMock: canDo } for all action types
-    const canPerform = data.canDoMock === true;
+    let canPerform = data.canDoMock === true;
+    let mockAttempts = null;
+
+    // Special handling for Mock Interview:
+    // - If user has no attempts => "not enough attempts"
+    // - If user has attempts but canDoMock is false => "pending evaluation by CCD"
+    if (actionType === USER_ACTION_TYPES.MOCK_INTERVIEW) {
+      const userInfo = await get(USER_ENDPOINTS.GET_USER_INFO, { token });
+      mockAttempts = userInfo?.mockAttempts ?? 0;
+
+      const hasAttempts = Number(mockAttempts) > 0;
+      if (!hasAttempts) {
+        canPerform = false;
+        if (setRestrictionMessage) {
+          setRestrictionMessage(
+            "You dont have enough attempts to start another interview. Please try again later."
+          );
+        }
+      } else if (!canPerform) {
+        canPerform = false;
+        if (setRestrictionMessage) {
+          setRestrictionMessage(
+            "Please wait till CCD Department evaluate your pending mock interview submitted"
+          );
+        }
+      } else if (setRestrictionMessage) {
+        setRestrictionMessage(null);
+      }
+
+      console.log("[MockInterview permission]", {
+        userId,
+        mockAttempts,
+        canDoMock: data?.canDoMock,
+        canPerform,
+      });
+    }
     
     if (setCanPerform) {
       setCanPerform(canPerform);
@@ -70,6 +108,21 @@ export const checkUserActionPermission = async (
         },
       };
       
+      // Override message for mock interview using mockAttempts + canDoMock
+      if (actionType === USER_ACTION_TYPES.MOCK_INTERVIEW) {
+        const hasAttempts = Number(mockAttempts) > 0;
+        toast({
+          title: "Cannot Start Interview",
+          description: hasAttempts
+            ? "Please wait till CCD Department evaluate your pending mock interview submitted"
+            : "You dont have enough attempts to do another interview. Please try again later.",
+          status: "warning",
+          duration: 5000,
+          isClosable: true,
+        });
+        return canPerform;
+      }
+
       const message = actionMessages[actionType] || {
         title: "Action Not Allowed",
         description: "You cannot perform this action right now. Please try again later.",
@@ -86,11 +139,13 @@ export const checkUserActionPermission = async (
     
     return canPerform;
   } catch (err) {
+    captureError(err);
     console.error("Error checking user action permission:", err);
     
     if (setCanPerform) {
       setCanPerform(false);
     }
+    if (setRestrictionMessage) setRestrictionMessage(null);
     
     if (toast) {
       toast({

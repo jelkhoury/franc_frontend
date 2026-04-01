@@ -33,6 +33,7 @@ import {
 } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { get } from "../../utils/httpServices";
+import { captureError } from "../../utils/sentryUtils";
 import { BLOB_STORAGE_ENDPOINTS } from "../../services/apiService";
 
 const ManageFiles = () => {
@@ -65,6 +66,7 @@ const ManageFiles = () => {
       const data = await get(BLOB_STORAGE_ENDPOINTS.GET_ADMIN_FILES, { token });
       setFiles(data);
     } catch (err) {
+      captureError(err);
       console.error("Error fetching files:", err);
       setError(err.message);
       toast({

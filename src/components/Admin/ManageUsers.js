@@ -26,6 +26,7 @@ import {
   Flex,
 } from "@chakra-ui/react";
 import { get, post, put, del } from "../../utils/httpServices";
+import { captureError } from "../../utils/sentryUtils";
 import { USER_ENDPOINTS } from "../../services/apiService";
 import UserForm from "./UserForm";
 import UserTable from "./UserTable";
@@ -88,6 +89,7 @@ const ManageUsers = () => {
       const data = await get(USER_ENDPOINTS.GET_ALL_USERS, { token });
       setUsers(data);
     } catch (err) {
+      captureError(err);
       console.error("Error fetching users:", err);
       setError(err.message);
       toast({
@@ -176,6 +178,7 @@ const ManageUsers = () => {
       onAddClose();
       fetchUsers();
     } catch (err) {
+      captureError(err);
       console.error("Error adding user:", err);
       toast({
         title: "Error",
@@ -229,6 +232,7 @@ const ManageUsers = () => {
       onEditClose();
       fetchUsers();
     } catch (err) {
+      captureError(err);
       console.error("Error updating user:", err);
       toast({
         title: "Error",
@@ -264,6 +268,7 @@ const ManageUsers = () => {
       setDeleteUser(null);
       fetchUsers();
     } catch (err) {
+      captureError(err);
       console.error("Error deleting user:", err);
       toast({
         title: "Error",

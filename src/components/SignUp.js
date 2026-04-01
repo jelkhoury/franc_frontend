@@ -27,6 +27,7 @@ import {
   getUserId,
 } from "../utils/tokenUtils";
 import { post } from "../utils/httpServices";
+import { captureError } from "../utils/sentryUtils";
 import { USER_ENDPOINTS } from "../services/apiService";
 
 const Signup = () => {
@@ -191,6 +192,7 @@ const Signup = () => {
         isClosable: true,
       });
     } catch (error) {
+      captureError(error);
       console.error("Error during sign-up:", error);
       toast({
         title: "Signup failed",

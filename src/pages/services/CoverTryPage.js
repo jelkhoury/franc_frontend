@@ -19,6 +19,7 @@ import { AttachmentIcon, CheckIcon } from "@chakra-ui/icons";
 import { useRef, useState } from "react";
 import Footer from "../../components/Footer";
 import { postForm } from "../../utils/httpServices";
+import { captureError } from "../../utils/sentryUtils";
 import { BLOB_STORAGE_ENDPOINTS } from "../../services/apiService";
 import { getStoredToken, decodeToken } from "../../utils/tokenUtils";
 
@@ -129,6 +130,7 @@ const CoverTryPage = () => {
           token,
         });
       } catch (uploadError) {
+        captureError(uploadError);
         // Silently fail - don't notify user about upload issues
         console.error("Error uploading files:", uploadError);
       }
@@ -136,6 +138,7 @@ const CoverTryPage = () => {
       setStep(3);
       setProgress(100);
     } catch (error) {
+      captureError(error);
       console.error("Error submitting files:", error);
       toast({
         title: "Evaluation Failed",

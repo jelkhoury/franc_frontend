@@ -3,6 +3,7 @@ import { Box, Button, Heading, Flex, useToast } from "@chakra-ui/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTimer } from "react-timer-hook";
 import { getStoredToken, decodeToken } from "../../../utils/tokenUtils";
+import { captureError } from "../../../utils/sentryUtils";
 import { useMockInterviewState } from "../../../contexts/MockInterviewStateContext";
 import Footer from "../../../components/Footer";
 import fallbackVoiceover from "../../../assets/audio/voiceover.m4a";
@@ -312,6 +313,7 @@ const MockInterviewQuestionsPage = () => {
         await audioRef.current.play();
       }
     } catch (e) {
+      captureError(e);
       console.error("Audio play blocked:", e);
       setAudioBlocked(true);
       toast({
@@ -381,6 +383,7 @@ const MockInterviewQuestionsPage = () => {
         await audioRef.current.play(); // user gesture
       }
     } catch (e) {
+      captureError(e);
       console.error("Audio play blocked:", e);
       setAudioBlocked(true);
       toast({
@@ -1010,6 +1013,7 @@ const MockInterviewQuestionsPage = () => {
                     setAudioBlocked(false);
                     await audioRef.current?.play();
                   } catch (e) {
+                    captureError(e);
                     console.error(e);
                   }
                 }}

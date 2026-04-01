@@ -25,6 +25,7 @@ import {
 } from "@chakra-ui/react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { get, post } from "../../../utils/httpServices";
+import { captureError } from "../../../utils/sentryUtils";
 import { JOB_COMPARISON_ENDPOINTS } from "../../../services/apiService";
 import { FaBan, FaEdit, FaCheckCircle } from "react-icons/fa";
 
@@ -123,6 +124,7 @@ const JobComparisonReview = () => {
           jobComparisonId: result.id ?? result.Id,
         });
       } catch (e) {
+        captureError(e);
         if (!cancelled) {
           console.warn("Restore review from API failed:", e);
           navigate("/job-comparison/setup", { replace: true });
@@ -213,6 +215,7 @@ const JobComparisonReview = () => {
         }
       });
     } catch (error) {
+      captureError(error);
       console.error("Error saving comparison:", error);
       toast({
         title: "Error",

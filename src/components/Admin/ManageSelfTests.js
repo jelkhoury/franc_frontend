@@ -36,6 +36,7 @@ import {
 } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
 import { get } from "../../utils/httpServices";
+import { captureError } from "../../utils/sentryUtils";
 import { SDS_ENDPOINTS } from "../../services/apiService";
 import RIASECScoringTable from "./RIASECScoringTable";
 
@@ -79,6 +80,7 @@ const ManageSelfTests = () => {
       const data = await get(SDS_ENDPOINTS.GET_SDS_RESULTS, { token });
       setResults(data);
     } catch (err) {
+      captureError(err);
       console.error("Error fetching SDS results:", err);
       setError(err.message);
       toast({
@@ -121,6 +123,7 @@ const ManageSelfTests = () => {
         throw new Error("Invalid response format");
       }
     } catch (err) {
+      captureError(err);
       console.error("Error fetching Holland points:", err);
       setHollandPointsError("Could not load Holland points.");
       toast({

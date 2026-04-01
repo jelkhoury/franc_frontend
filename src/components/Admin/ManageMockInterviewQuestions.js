@@ -45,6 +45,7 @@ import {
 } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
 import { get, postForm, del, put } from "../../utils/httpServices";
+import { captureError } from "../../utils/sentryUtils";
 import { BLOB_STORAGE_ENDPOINTS } from "../../services/apiService";
 
 const ManageMockInterviewQuestions = () => {
@@ -113,6 +114,7 @@ const ManageMockInterviewQuestions = () => {
         }
         setMajorsLoaded(true);
       } catch (err) {
+        captureError(err);
         console.error("Error fetching majors:", err);
         setError(err.message);
         toast({
@@ -161,6 +163,7 @@ const ManageMockInterviewQuestions = () => {
         setQuestions([]);
       }
     } catch (err) {
+      captureError(err);
       console.error(`Error fetching questions for ${majorName}:`, err);
       setError(err.message);
       toast({
@@ -239,6 +242,7 @@ const ManageMockInterviewQuestions = () => {
         fetchQuestionsForMajor(filterMajor);
       }
     } catch (err) {
+      captureError(err);
       console.error("Error adding question:", err);
       toast({
         title: "Error",
@@ -295,6 +299,7 @@ const ManageMockInterviewQuestions = () => {
         fetchQuestionsForMajor(filterMajor);
       }
     } catch (err) {
+      captureError(err);
       console.error("Error updating question:", err);
       toast({
         title: "Error",
@@ -335,6 +340,7 @@ const ManageMockInterviewQuestions = () => {
         fetchQuestionsForMajor(filterMajor);
       }
     } catch (err) {
+      captureError(err);
       console.error("Error deleting question:", err);
       toast({
         title: "Error",

@@ -24,6 +24,7 @@ import {
   Tooltip,
 } from "@chakra-ui/react";
 import { get } from "../../utils/httpServices";
+import { captureError } from "../../utils/sentryUtils";
 import { JOB_COMPARISON_ENDPOINTS } from "../../services/apiService";
 import { FaFileExcel, FaExternalLinkAlt, FaDownload } from "react-icons/fa";
 
@@ -53,6 +54,7 @@ const ManageJobComparisons = () => {
       const data = await get(JOB_COMPARISON_ENDPOINTS.GET_ALL_COMPARISONS);
       setComparisons(Array.isArray(data) ? data : []);
     } catch (err) {
+      captureError(err);
       console.error("Error fetching job comparisons:", err);
       setError(err.message || "Failed to load job comparisons");
       toast({
@@ -103,6 +105,7 @@ const ManageJobComparisons = () => {
         isClosable: true,
       });
     } catch (error) {
+      captureError(error);
       console.error("Error downloading Excel:", error);
       toast({
         title: "Download Failed",

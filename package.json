@@ -22,6 +22,7 @@
     "@emotion/styled": "^11.14.0",
     "@react-three/drei": "^9.88.13",
     "@react-three/fiber": "^8.15.19",
+    "@sentry/react": "^10.47.0",
     "@supabase/supabase-js": "^2.52.0",
     "canvas-confetti": "^1.9.3",
     "chakra-ui-steps": "^2.2.0",

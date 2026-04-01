@@ -21,6 +21,7 @@ import Footer from "../../components/Footer";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../components/AuthContext";
 import { get } from "../../utils/httpServices";
+import { captureError } from "../../utils/sentryUtils";
 import { BLOB_STORAGE_ENDPOINTS } from "../../services/apiService";
 
 // Dummy faculties
@@ -191,6 +192,7 @@ const MockInterviewMajorSelectPage = () => {
               apiSuccess = true;
             }
           } catch (err) {
+            captureError(err);
             console.warn("Failed to fetch faculties:", err);
           }
 
@@ -201,9 +203,11 @@ const MockInterviewMajorSelectPage = () => {
               apiSuccess = true;
             }
           } catch (err) {
+            captureError(err);
             console.warn("Failed to fetch majors:", err);
           }
         } catch (apiError) {
+          captureError(apiError);
           console.warn(
             "API endpoints not available, using dummy data:",
             apiError.message
@@ -234,6 +238,7 @@ const MockInterviewMajorSelectPage = () => {
           });
         }
       } catch (err) {
+        captureError(err);
         console.error("Error in data loading:", err);
         // Final fallback to dummy data
         setFaculties(dummyFaculties);

@@ -1,4 +1,5 @@
 import { get, post, postForm } from "../../../../utils/httpServices";
+import { captureError } from "../../../../utils/sentryUtils";
 import { getStoredToken, decodeToken } from "../../../../utils/tokenUtils";
 import {
   MOCK_INTERVIEW_ENDPOINTS,
@@ -50,6 +51,7 @@ export const checkMockInterviewStatus = async (
       });
     }
   } catch (err) {
+    captureError(err);
     console.error(err);
     toast({
       title: "Error",
@@ -127,6 +129,7 @@ export const fetchQuestions = async (
       setInterviewQuestions(interviewQuestionsList);
     }
   } catch (err) {
+    captureError(err);
     console.error(err);
     setError(err.message);
     const fallbackQuestion = {
@@ -167,6 +170,7 @@ export const increaseAttemptCount = async () => {
 
     await post(MOCK_INTERVIEW_ENDPOINTS.INCREASE_ATTEMPT(userId), {});
   } catch (err) {
+    captureError(err);
     // Don't block interview start if this fails
     console.error("Error incrementing attempt count:", err);
   }
@@ -311,6 +315,7 @@ export const handleSubmitVideos = async (
       );
       console.log("[MockInterview upload] success", result);
     } catch (err) {
+      captureError(err);
       console.error("[MockInterview upload] request failed", {
         status: err?.status,
         message: err?.message,
@@ -330,6 +335,7 @@ export const handleSubmitVideos = async (
     setInterviewDuration(0);
     setIsInterviewActive(false); // Interview completed, allow navigation
   } catch (err) {
+    captureError(err);
     console.error(err);
     toast({
       title: "Upload failed",

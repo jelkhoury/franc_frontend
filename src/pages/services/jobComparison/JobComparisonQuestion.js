@@ -30,6 +30,7 @@ import {
 import { FaExclamationTriangle, FaInfoCircle, FaArrowLeft, FaArrowRight, FaCheckCircle, FaDollarSign, FaGift, FaBuilding, FaBriefcase, FaClock, FaEllipsisH, FaTimesCircle, FaBan, FaListUl } from "react-icons/fa";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { get, post } from "../../../utils/httpServices";
+import { captureError } from "../../../utils/sentryUtils";
 import { JOB_COMPARISON_ENDPOINTS } from "../../../services/apiService";
 import ProgressBar from "./components/ProgressBar";
 import SideBySideComparison from "./components/SideBySideComparison";
@@ -203,6 +204,7 @@ const JobComparisonQuestion = () => {
         }, {});
       setJobComparisonId(stateForNav.jobComparisonId);
       } catch (e) {
+        captureError(e);
         if (!cancelled) {
           console.warn("Restore question from API failed:", e);
           navigate("/job-comparison/setup", { replace: true });
@@ -400,6 +402,7 @@ const JobComparisonQuestion = () => {
       }
       return jobComparisonId || response.jobComparisonId;
     } catch (error) {
+      captureError(error);
       console.error("Error saving progress:", error);
       return jobComparisonId;
     } finally {
