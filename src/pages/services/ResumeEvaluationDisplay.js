@@ -139,7 +139,12 @@ function renderTextBlock(body, keyPrefix = "") {
     const filtered = buf.filter((l) => l.trim() !== "");
     if (allBullets && filtered.length > 0) {
       blocks.push(
-        <List key={`${keyPrefix}-list-${blocks.length}`} spacing={2} pl={0} styleType="none">
+        <List
+          key={`${keyPrefix}-list-${blocks.length}`}
+          spacing={2}
+          pl={0}
+          styleType="none"
+        >
           {filtered.map((line, i) => {
             const clean = line.replace(/^(\s*[-*•]|\s*\d+\.)\s+/, "").trim();
             return (
@@ -160,7 +165,7 @@ function renderTextBlock(body, keyPrefix = "") {
               </ListItem>
             );
           })}
-        </List>
+        </List>,
       );
     } else {
       blocks.push(
@@ -172,7 +177,7 @@ function renderTextBlock(body, keyPrefix = "") {
           whiteSpace="pre-wrap"
         >
           {buf.join("\n").trim()}
-        </Text>
+        </Text>,
       );
     }
     buf = [];
@@ -196,8 +201,7 @@ function renderTextBlock(body, keyPrefix = "") {
 }
 
 function ScoreBanner({ score }) {
-  const colorScheme =
-    score >= 75 ? "green" : score >= 50 ? "yellow" : "orange";
+  const colorScheme = score >= 75 ? "green" : score >= 50 ? "yellow" : "orange";
   return (
     <Box
       borderRadius="xl"
@@ -209,7 +213,13 @@ function ScoreBanner({ score }) {
     >
       <HStack justify="space-between" align="center" flexWrap="wrap" gap={3}>
         <VStack align="start" spacing={1}>
-          <Text fontSize="sm" fontWeight="semibold" color="gray.600" textTransform="uppercase" letterSpacing="wide">
+          <Text
+            fontSize="sm"
+            fontWeight="semibold"
+            color="gray.600"
+            textTransform="uppercase"
+            letterSpacing="wide"
+          >
             Overall impression
           </Text>
           <Text fontSize="lg" fontWeight="bold" color="gray.800">
@@ -217,7 +227,13 @@ function ScoreBanner({ score }) {
           </Text>
         </VStack>
         <HStack spacing={4} align="center">
-          <Badge colorScheme={colorScheme} fontSize="2xl" px={4} py={2} borderRadius="lg">
+          <Badge
+            colorScheme={colorScheme}
+            fontSize="2xl"
+            px={4}
+            py={2}
+            borderRadius="lg"
+          >
             {score}/100
           </Badge>
         </HStack>
@@ -267,7 +283,12 @@ function renderValue(value, depth = 0) {
         <List spacing={2} styleType="none" pl={0}>
           {value.map((item, i) => (
             <ListItem key={i} display="flex" alignItems="flex-start" gap={2}>
-              <ListIcon as={CheckCircleIcon} color="green.500" mt={0.5} flexShrink={0} />
+              <ListIcon
+                as={CheckCircleIcon}
+                color="green.500"
+                mt={0.5}
+                flexShrink={0}
+              />
               <Text fontSize="md" color="gray.700" lineHeight="tall">
                 {String(item)}
               </Text>
@@ -279,7 +300,12 @@ function renderValue(value, depth = 0) {
     return (
       <VStack align="stretch" spacing={3}>
         {value.map((item, i) => (
-          <Box key={i} pl={depth > 0 ? 2 : 0} borderLeftWidth={depth > 0 ? "2px" : 0} borderColor="brand.100">
+          <Box
+            key={i}
+            pl={depth > 0 ? 2 : 0}
+            borderLeftWidth={depth > 0 ? "2px" : 0}
+            borderColor="brand.100"
+          >
             {typeof item === "object" && item !== null ? (
               <StructuredObject data={item} depth={depth + 1} />
             ) : (
@@ -298,7 +324,11 @@ function renderValue(value, depth = 0) {
 
 function sectionIconForKey(key) {
   const k = key.toLowerCase();
-  if (k.includes("strength") || k.includes("highlight") || k.includes("work_well"))
+  if (
+    k.includes("strength") ||
+    k.includes("highlight") ||
+    k.includes("work_well")
+  )
     return CheckCircleIcon;
   if (
     k.includes("weak") ||
@@ -350,11 +380,22 @@ function StructuredObject({ data, depth = 0 }) {
             >
               <HStack spacing={2} align="center">
                 {showBulletMarker ? (
-                  <Text color="brand.500" fontWeight="bold" fontSize="lg" lineHeight="none" flexShrink={0}>
+                  <Text
+                    color="brand.500"
+                    fontWeight="bold"
+                    fontSize="lg"
+                    lineHeight="none"
+                    flexShrink={0}
+                  >
                     •
                   </Text>
                 ) : (
-                  <Icon as={SectionGlyph} color="brand.500" boxSize={5} flexShrink={0} />
+                  <Icon
+                    as={SectionGlyph}
+                    color="brand.500"
+                    boxSize={5}
+                    flexShrink={0}
+                  />
                 )}
                 <Heading size="sm" color="gray.800" fontWeight="semibold">
                   {title}
@@ -368,7 +409,12 @@ function StructuredObject({ data, depth = 0 }) {
                 <SimpleGrid columns={{ base: 1, md: 2 }} spacing={2}>
                   {value.map((item, i) => (
                     <HStack key={i} align="start" spacing={2}>
-                      <ListIcon as={CheckCircleIcon} color="green.500" mt={1} flexShrink={0} />
+                      <ListIcon
+                        as={CheckCircleIcon}
+                        color="green.500"
+                        mt={1}
+                        flexShrink={0}
+                      />
                       <Text fontSize="md" color="gray.700">
                         {String(item)}
                       </Text>
@@ -392,7 +438,13 @@ function MarkdownSectionsView({ sections }) {
       {sections.map((sec, i) => (
         <Card key={i} variant="outline" shadow="sm" borderColor="gray.200">
           {sec.title && (
-            <CardHeader py={3} px={5} bg="gray.50" borderBottomWidth="1px" borderColor="gray.100">
+            <CardHeader
+              py={3}
+              px={5}
+              bg="gray.50"
+              borderBottomWidth="1px"
+              borderColor="gray.100"
+            >
               <Heading size="sm" color="gray.800">
                 {sec.title}
               </Heading>
@@ -419,7 +471,8 @@ export default function ResumeEvaluationDisplay({ evaluationResult }) {
   ) {
     return (
       <Text color="gray.500" fontSize="md" textAlign="center" py={4}>
-        No written feedback was returned. Try again in a moment or use a different file.
+        No written feedback was returned. Try again in a moment or use a
+        different file.
       </Text>
     );
   }
@@ -433,7 +486,9 @@ export default function ResumeEvaluationDisplay({ evaluationResult }) {
   }
 
   const scoreFromString =
-    typeof evaluationResult === "string" ? extractScore(evaluationResult) : null;
+    typeof evaluationResult === "string"
+      ? extractScore(evaluationResult)
+      : null;
 
   if (typeof data === "object" && data !== null && !Array.isArray(data)) {
     const numericScore = pickNumericScoreFromObject(data) ?? scoreFromString;
@@ -461,7 +516,8 @@ export default function ResumeEvaluationDisplay({ evaluationResult }) {
           <StructuredObject data={rest} />
         ) : numericScore != null ? (
           <Text color="gray.600" fontSize="md" textAlign="center" py={2}>
-            Your score is shown above. Upload another version anytime to track improvements.
+            Your score is shown above. Upload another version anytime to track
+            improvements.
           </Text>
         ) : (
           <Text color="gray.600" fontSize="sm">
@@ -508,7 +564,13 @@ export default function ResumeEvaluationDisplay({ evaluationResult }) {
     <VStack align="stretch" spacing={5} w="full">
       {score != null && <ScoreBanner score={score} />}
       <Card variant="outline" shadow="sm" borderColor="gray.200">
-        <CardHeader py={3} px={5} bg="gray.50" borderBottomWidth="1px" borderColor="gray.100">
+        <CardHeader
+          py={3}
+          px={5}
+          bg="gray.50"
+          borderBottomWidth="1px"
+          borderColor="gray.100"
+        >
           <Heading size="sm" color="gray.800">
             Feedback
           </Heading>
