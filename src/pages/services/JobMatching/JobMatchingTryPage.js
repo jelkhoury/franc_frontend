@@ -16,6 +16,7 @@ import {
 import UserInfoForm from './UserInfoForm';
 import SkillsSelection from './SkillsSelection';
 import JobsDisplay from './JobsDisplay';
+import { isMajorSkillsSelectable } from './majorSkillsPolicy';
 
 const JobMatchingTryPage = () => {
   const { isLoggedIn } = useContext(AuthContext);
@@ -215,20 +216,23 @@ const JobMatchingTryPage = () => {
     return ['entry', 'associate'];
   };
 
+  const selectedMajorName =
+    majors.find((m) => m.id === parseInt(formData.major, 10))?.name || '';
+  const skillsSelectable = isMajorSkillsSelectable(selectedMajorName);
+
   const handleSearchJobs = async () => {
     const manualSkills = customSkillsInput
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
-    const combinedSkills = [
-      ...selectedSkills,
-      ...manualSkills,
-    ];
+    const combinedSkills = [...selectedSkills, ...manualSkills];
 
     if (combinedSkills.length === 0) {
       toast({
-        title: 'No Skills Selected',
-        description: 'Please select at least one skill or role, or enter your own (comma separated), to find matching jobs.',
+        title: skillsSelectable ? 'No Skills Selected' : 'Nothing Selected',
+        description: skillsSelectable
+          ? 'Please select at least one skill or role, or enter your own (comma separated), to find matching jobs.'
+          : 'Please select at least one job title, or enter extra keywords (comma separated), to find matching jobs.',
         status: 'warning',
         duration: 3000,
         isClosable: true,
@@ -360,6 +364,7 @@ const JobMatchingTryPage = () => {
             onBack={handleBackToDetails}
             onSearchJobs={handleSearchJobs}
             loadingJobs={loadingJobs}
+            skillsSelectable={skillsSelectable}
           />
         )}
 

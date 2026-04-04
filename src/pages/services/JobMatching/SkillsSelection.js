@@ -28,6 +28,7 @@ const SkillsSelection = ({
   onBack,
   onSearchJobs,
   loadingJobs,
+  skillsSelectable = true,
 }) => {
   return (
     <Box maxW="1400px" mx="auto">
@@ -35,15 +36,32 @@ const SkillsSelection = ({
         Career Analysis & Skills Mapping
       </Heading>
       <Text color="gray.600" mb={4} textAlign="center">
-        Review the analysis below and select the skills you have to find matching opportunities.
+        {skillsSelectable
+          ? 'Review the analysis below and select the skills you have to find matching opportunities.'
+          : 'Review the analysis below and select the job titles that match what you want; skill lists are shown for context.'}
       </Text>
       <Box bg="blue.50" borderLeft="4px solid" borderColor="brand.500" p={4} mb={8} borderRadius="md" maxW="700px" mx="auto">
-        <Text fontSize="sm" color="gray.700" mb={2}>
-          <strong>Tip:</strong> Select skills based on priority for a better match—choose the ones most important to you first.
-        </Text>
-        <Text fontSize="sm" color="gray.600">
-          You can match based on <strong>technical skills</strong> (e.g. tools, languages) or based on <strong>role</strong> (job title); both help us find the right positions.
-        </Text>
+        {skillsSelectable ? (
+          <>
+            <Text fontSize="sm" color="gray.700" mb={2}>
+              <strong>Tip:</strong> Select skills based on priority for a better match—choose the ones most important to you first.
+            </Text>
+            <Text fontSize="sm" color="gray.600">
+              You can match based on <strong>technical skills</strong> (e.g. tools, languages) or based on <strong>role</strong> (job title); both help us find the right positions.
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text fontSize="sm" color="gray.700" mb={2}>
+              <strong>Tip:</strong> For your major, matching uses <strong>job titles</strong> only. Use the lists below as career context—select titles in the{' '}
+              <Text as="span" fontWeight="semibold">Job Titles & Career Opportunities</Text>
+              {' '}section.
+            </Text>
+            <Text fontSize="sm" color="gray.600">
+              Technical and soft skills are not selectable for this program; they are shown to help you understand typical expectations.
+            </Text>
+          </>
+        )}
       </Box>
 
       {loadingSkills ? (
@@ -132,7 +150,9 @@ const SkillsSelection = ({
                   Technical Skills
                 </Heading>
                 <Text fontSize="sm" color="gray.600" mb={4}>
-                  Select the technical skills you have. Each skill includes a description and proficiency level.
+                  {skillsSelectable
+                    ? 'Select the technical skills you have. Each skill includes a description and proficiency level.'
+                    : 'Reference only for your field — selection is not used for matching for your major.'}
                 </Text>
                 <Accordion allowMultiple defaultIndex={[]}>
                   {majorSkillsResponse.technical_skill_groups.map((group, groupIndex) => (
@@ -150,7 +170,42 @@ const SkillsSelection = ({
                             const skillDescription = skill.description || '';
                             const skillLevel = skill.level || '';
                             const isSelected = selectedSkills.includes(skillName);
-                            
+
+                            if (!skillsSelectable) {
+                              return (
+                                <Box
+                                  key={skillIndex}
+                                  p={3}
+                                  border="1px solid"
+                                  borderColor="gray.200"
+                                  borderRadius="md"
+                                  bg="gray.50"
+                                >
+                                  <VStack align="start" spacing={1}>
+                                    <HStack>
+                                      <Text fontWeight="semibold">{skillName}</Text>
+                                      {skillLevel && (
+                                        <Badge
+                                          colorScheme={
+                                            skillLevel === 'advanced' ? 'green' :
+                                            skillLevel === 'intermediate' ? 'blue' : 'gray'
+                                          }
+                                          fontSize="xs"
+                                        >
+                                          {skillLevel}
+                                        </Badge>
+                                      )}
+                                    </HStack>
+                                    {skillDescription && (
+                                      <Text fontSize="sm" color="gray.600">
+                                        {skillDescription}
+                                      </Text>
+                                    )}
+                                  </VStack>
+                                </Box>
+                              );
+                            }
+
                             return (
                               <Box
                                 key={skillIndex}
@@ -208,7 +263,9 @@ const SkillsSelection = ({
                   Soft Skills
                 </Heading>
                 <Text fontSize="sm" color="gray.600" mb={4}>
-                  Select the soft skills you possess. These are important for internships and full-time positions.
+                  {skillsSelectable
+                    ? 'Select the soft skills you possess. These are important for internships and full-time positions.'
+                    : 'Reference only — not used for matching for your major.'}
                 </Text>
                 <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
                   {majorSkillsResponse.soft_skills.map((skill, index) => {
@@ -216,7 +273,42 @@ const SkillsSelection = ({
                     const skillDescription = skill.description || '';
                     const skillLevel = skill.level || '';
                     const isSelected = selectedSkills.includes(skillName);
-                    
+
+                    if (!skillsSelectable) {
+                      return (
+                        <Box
+                          key={index}
+                          p={3}
+                          border="1px solid"
+                          borderColor="gray.200"
+                          borderRadius="md"
+                          bg="gray.50"
+                        >
+                          <VStack align="start" spacing={1}>
+                            <HStack>
+                              <Text fontWeight="semibold">{skillName}</Text>
+                              {skillLevel && (
+                                <Badge
+                                  colorScheme={
+                                    skillLevel === 'advanced' ? 'green' :
+                                    skillLevel === 'intermediate' ? 'blue' : 'gray'
+                                  }
+                                  fontSize="xs"
+                                >
+                                  {skillLevel}
+                                </Badge>
+                              )}
+                            </HStack>
+                            {skillDescription && (
+                              <Text fontSize="sm" color="gray.600">
+                                {skillDescription}
+                              </Text>
+                            )}
+                          </VStack>
+                        </Box>
+                      );
+                    }
+
                     return (
                       <Box
                         key={index}
