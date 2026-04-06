@@ -232,12 +232,63 @@ const ManageMockInterviews = () => {
         (answer) => answer.answerId
       );
 
+      // Build per-answer ratings/comments from local review state (matches API answer shape)
+      const answersPayload = selectedInterview.answers.map((answer, i) => {
+        const rev = reviews[i] || {};
+        const rawRating = rev.rating;
+        const rating =
+          rawRating !== undefined &&
+          rawRating !== null &&
+          rawRating !== ""
+            ? parseInt(String(rawRating), 10)
+            : null;
+        const commentText = rev.comments != null ? String(rev.comments).trim() : "";
+        return {
+          answerId: answer.answerId,
+          questionId: answer.questionId,
+          questionTitle: answer.questionTitle,
+          videoUrl: answer.videoUrl,
+          rating: Number.isFinite(rating) ? rating : null,
+          comment: commentText ? commentText : null,
+        };
+      });
+
+      const numericRatings = answersPayload
+        .map((a) => a.rating)
+        .filter((r) => r != null && !Number.isNaN(r));
+      const overallRating =
+        numericRatings.length > 0
+          ? Math.round(
+              (numericRatings.reduce((s, x) => s + x, 0) /
+                numericRatings.length) *
+                10
+            ) / 10
+          : null;
+
+      if (numericRatings.length === 0) {
+        toast({
+          title: "Add ratings first",
+          description:
+            "Enter a rating for each question on the summary screen (or save evaluations) before generating the report.",
+          status: "warning",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      const mockInterviewId =
+        selectedInterview.mockInterviewId ?? selectedInterview.MockInterviewId;
+
       const report = await post(
         MOCK_INTERVIEW_ENDPOINTS.CREATE_REPORT,
         {
-          userId: userId,
-          answerIds: answerIds,
-          summaryComment: overallComment || null,
+          userId,
+          answerIds,
+          summaryComment: overallComment?.trim() || null,
+          overallRating,
+          answers: answersPayload,
+          ...(mockInterviewId != null ? { mockInterviewId } : {}),
         },
         { token }
       );
@@ -812,11 +863,10 @@ const ManageMockInterviews = () => {
   }
 
   const filteredInterviews = interviews.filter((interview) => {
-    const matchesSearch =
-      interview.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      interview.mockInterviewTitle
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+    const term = (searchTerm || "").toLowerCase();
+    const email = (interview.email ?? "").toString().toLowerCase();
+    const title = (interview.mockInterviewTitle ?? "").toString().toLowerCase();
+    const matchesSearch = email.includes(term) || title.includes(term);
     let matchesFilter = true;
     if (questionFilter === "1") {
       matchesFilter = interview.answers.length === 1;

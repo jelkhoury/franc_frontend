@@ -88,6 +88,11 @@ export default function UserProfileEdit({ onClose, onLogout }) {
     navigate("/forgot-password", { state: { from: "profile-edit" } });
   };
 
+  const handleViewHistory = () => {
+    onClose?.();
+    navigate("/activity-history");
+  };
+
   if (loading) {
     return (
       <Center py={8}>
@@ -194,33 +199,41 @@ export default function UserProfileEdit({ onClose, onLogout }) {
         </SimpleGrid>
       </Box>
 
-      <HStack spacing={4} pt={4} flexWrap="wrap">
+      <VStack spacing={3} w="full" pt={4} align="stretch">
         {isAdmin && (
           <Button
-            bg="blue.50"
-            color="brand.500"
+            variant="outline"
+            colorScheme="brand"
+            size="md"
             w="full"
-            _hover={{ bg: "blue.100" }}
             onClick={handleReturnToAdmin}
           >
             Return to Admin Panel
           </Button>
         )}
         <Button
-          bg="gray.100"
-          color="brand.500"
+          variant="outline"
+          colorScheme="brand"
+          size="md"
           w="full"
-          _hover={{ bg: "gray.200" }}
+          onClick={handleViewHistory}
+        >
+          View History
+        </Button>
+        <Button
+          variant="outline"
+          colorScheme="brand"
+          size="md"
+          w="full"
           onClick={handleChangePassword}
         >
           Change Password
         </Button>
-
         <Button
-          bg="brand.500"
-          color="white"
+          variant="solid"
+          colorScheme="brand"
+          size="md"
           w="full"
-          _hover={{ bg: "brand.700" }}
           onClick={() => {
             onClose?.();
             onLogout?.();
@@ -228,7 +241,7 @@ export default function UserProfileEdit({ onClose, onLogout }) {
         >
           Logout
         </Button>
-      </HStack>
+      </VStack>
     </Stack>
   );
 }

@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Box,
+  Button,
   Heading,
   Tabs,
   TabList,
@@ -20,8 +21,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { FaChartBar, FaBrain, FaHeart, FaTrophy } from "react-icons/fa";
 import ScoreComparisonChart from "./components/ScoreComparisonChart";
 import CriterionBreakdownTable from "./components/CriterionBreakdownTable";
-import RadarChart from "./components/RadarChart";
-import { JOB_COMPARISON_ENDPOINTS } from "../../../services/apiService";
 
 const JobComparisonResults = () => {
   const location = useLocation();
@@ -32,6 +31,8 @@ const JobComparisonResults = () => {
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [jobComparisonId, setJobComparisonId] = useState(0);
+  const [fromActivityHistory, setFromActivityHistory] = useState(false);
+  const fromHistoryRef = useRef(false);
 
   const cardBg = useColorModeValue("white", "gray.800");
 
@@ -45,13 +46,18 @@ const JobComparisonResults = () => {
     setCriteria(location.state.criteria);
     setAnswers(location.state.answers || {});
     setJobComparisonId(location.state.jobComparisonId || 0);
+    const fromHist = !!location.state.fromActivityHistory;
+    setFromActivityHistory(fromHist);
+    fromHistoryRef.current = fromHist;
     setLoading(false);
   }, [location.state, navigate]);
 
-  // When on results, browser back should go to home page
+  // Browser back: return to activity history if opened from there, else home
   useEffect(() => {
     const handlePopState = () => {
-      navigate("/", { replace: true });
+      navigate(fromHistoryRef.current ? "/activity-history" : "/", {
+        replace: true,
+      });
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -247,6 +253,17 @@ const JobComparisonResults = () => {
   return (
     <Box minH="100vh" bg="gray.50" py={8}>
       <Box maxW="1400px" mx="auto" px={6}>
+        {fromActivityHistory && (
+          <Button
+            variant="outline"
+            colorScheme="orange"
+            size="sm"
+            mb={4}
+            onClick={() => navigate("/activity-history")}
+          >
+            ← Back to activity history
+          </Button>
+        )}
         <VStack spacing={4} mb={8}>
           <Icon as={FaTrophy} color="brand.500" boxSize={10} />
           <Heading textAlign="center" color="brand.500">
