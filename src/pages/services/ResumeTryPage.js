@@ -14,6 +14,7 @@ import {
   useToast,
   Image,
   Spinner,
+  HStack,
 } from "@chakra-ui/react";
 import { AttachmentIcon, CheckIcon } from "@chakra-ui/icons";
 import { useRef, useState } from "react";
@@ -22,6 +23,7 @@ import { postForm } from "../../utils/httpServices";
 import { captureError } from "../../utils/sentryUtils";
 import { BLOB_STORAGE_ENDPOINTS } from "../../services/apiService";
 import { getStoredToken, decodeToken } from "../../utils/tokenUtils";
+import ResumeEvaluationDisplay from "./ResumeEvaluationDisplay";
 
 const FrancResumeUpload = () => {
   const inputRef = useRef(null);
@@ -136,6 +138,14 @@ const FrancResumeUpload = () => {
   const handleBack = () => {
     setStep(1);
     setProgress(50);
+    setEvaluationResult(null);
+  };
+
+  const handleEvaluateAnother = () => {
+    setStep(1);
+    setProgress(50);
+    setEvaluationResult(null);
+    setFile(null);
   };
 
   return (
@@ -149,26 +159,33 @@ const FrancResumeUpload = () => {
       <Flex justify="center" align="center" flex="1" px={4} py={16}>
         <Box
           bg="white"
-          p={10}
+          p={{ base: 6, md: 10 }}
           borderRadius="2xl"
           boxShadow="lg"
           border="1px solid"
           borderColor="gray.100"
-          maxW="600px"
+          maxW={step === 2 ? { base: "100%", md: "960px", lg: "1000px" } : "600px"}
           w="100%"
           textAlign="center"
         >
-          <Image
-            src="/assets/images/franc_avatar.jpg"
-            alt="Franc Avatar"
-            boxSize="100px"
-            objectFit="cover"
-            borderRadius="full"
+          <Box
+            height={{ base: "56px", md: "72px" }}
+            width="auto"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
             mx="auto"
             mb={4}
-            transition="transform 0.3s"
-            _hover={{ transform: "scale(1.05)" }}
-          />
+          >
+            <Image
+              src="/assets/images/francyellow_transparentbg-01.svg"
+              alt="Franc logo"
+              height="100%"
+              width="auto"
+              objectFit="contain"
+              ignoreFallback
+            />
+          </Box>
 
           <Heading color="brand.500" size="lg" mb={4}>
             Upload Your Resume
@@ -250,33 +267,34 @@ const FrancResumeUpload = () => {
           )}
 
           {step === 2 && (
-            <VStack spacing={6}>
-              <Text color="gray.600" fontSize="md">
-                Franc has evaluated your resume.
-              </Text>
+            <VStack spacing={6} align="stretch">
+              <Box textAlign="center">
+                <Heading color="brand.500" size="lg" mb={2}>
+                  Your evaluation is ready
+                </Heading>
+                <Text color="gray.600" fontSize="md" maxW="lg" mx="auto">
+                  Review the feedback below. Each section is organized so you can see what is working well and what to improve next.
+                </Text>
+              </Box>
 
               {evaluationResult ? (
-                <Box
-                  bg="gray.50"
-                  p={5}
-                  borderRadius="lg"
-                  border="1px solid"
-                  borderColor="gray.200"
-                  w="full"
-                  textAlign="left"
-                  fontSize="sm"
-                  color="gray.600"
-                  whiteSpace="pre-wrap"
-                >
-                  {evaluationResult}
+                <Box w="full" textAlign="left">
+                  <ResumeEvaluationDisplay evaluationResult={evaluationResult} />
                 </Box>
               ) : (
-                <Spinner size="lg" />
+                <Flex justify="center" py={10}>
+                  <Spinner size="lg" color="brand.500" />
+                </Flex>
               )}
 
-              <Button variant="ghost" colorScheme="gray" onClick={handleBack}>
-                Back
-              </Button>
+              <HStack spacing={4} justify="center" flexWrap="wrap" pt={2}>
+                <Button colorScheme="brand" variant="solid" onClick={handleEvaluateAnother}>
+                  Evaluate another resume
+                </Button>
+                <Button variant="ghost" colorScheme="gray" onClick={handleBack}>
+                  Back to upload
+                </Button>
+              </HStack>
             </VStack>
           )}
         </Box>
