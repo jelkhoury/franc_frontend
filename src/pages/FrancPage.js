@@ -104,7 +104,9 @@ const services = [
     heading: "Gamification",
     description: "Level up your skills, level up your future.",
     gif: "/assets/images/gamification.gif",
-    isActive: false,
+    isActive: true,
+    link: "/game",
+    buttonText: "Play",
   },
 ];
 

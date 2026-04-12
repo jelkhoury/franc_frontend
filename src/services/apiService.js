@@ -119,5 +119,21 @@ export const JOB_MATCHING_ENDPOINTS = {
   SEARCH_OPPORTUNITIES: "/jobmatching/search_opportunities",
 };
 
+// Gamification quiz (JWT-protected, default API base)
+export const GAME_ENDPOINTS = {
+  PROGRESS: "/api/game/progress",
+  /** Start a run — body e.g. { levelNumber } */
+  START: "/api/game/start",
+  SESSION: (sessionId) =>
+    `/api/game/session/${encodeURIComponent(String(sessionId))}`,
+  ANSWER: (sessionId, answerId) =>
+    `/api/game/session/${encodeURIComponent(String(sessionId))}/answer/${encodeURIComponent(String(answerId))}`,
+  ABILITY: (sessionId, answerId) =>
+    `/api/game/session/${encodeURIComponent(String(sessionId))}/ability/${encodeURIComponent(String(answerId))}`,
+  FINISH: (sessionId) =>
+    `/api/game/session/${encodeURIComponent(String(sessionId))}/finish`,
+  /** Admin: bulk import questions */
+  QUESTIONS_IMPORT: "/api/game/questions/import",
+};
 
 
