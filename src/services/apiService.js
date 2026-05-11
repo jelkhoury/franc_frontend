@@ -126,12 +126,16 @@ export const GAME_ENDPOINTS = {
   START: "/api/game/start",
   SESSION: (sessionId) =>
     `/api/game/session/${encodeURIComponent(String(sessionId))}`,
+  /** Body: { selectedOption: "A"|"B"|"C"|"D" } and/or { timedOut: true } if API supports it */
   ANSWER: (sessionId, answerId) =>
     `/api/game/session/${encodeURIComponent(String(sessionId))}/answer/${encodeURIComponent(String(answerId))}`,
   ABILITY: (sessionId, answerId) =>
     `/api/game/session/${encodeURIComponent(String(sessionId))}/ability/${encodeURIComponent(String(answerId))}`,
   FINISH: (sessionId) =>
     `/api/game/session/${encodeURIComponent(String(sessionId))}/finish`,
+  /** All question justifications / hints for the session (for correct-answer UI). */
+  SESSION_HINTS: (sessionId) =>
+    `/api/game/session/${encodeURIComponent(String(sessionId))}/hints`,
   /** Admin: bulk import questions */
   QUESTIONS_IMPORT: "/api/game/questions/import",
 };
