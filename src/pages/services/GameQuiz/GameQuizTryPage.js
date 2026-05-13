@@ -921,12 +921,16 @@ const GameQuizTryPage = () => {
   return (
     <Box
       minH="100vh"
-      bgGradient="linear(to-r, white, #ebf8ff)"
+      bg={step === 1 ? "#f9f9ff" : "linear-gradient(to right, white, #ebf8ff)"}
       display="flex"
       flexDirection="column"
       justifyContent="space-between"
     >
-      <Box px={{ base: 4, md: 16 }} py={8}>
+      <Box
+        flex="1"
+        px={step === 1 ? 0 : { base: 4, md: 16 }}
+        py={step === 1 ? 0 : 8}
+      >
         {step === 1 && (
           <GameLevelsView
             totalPoints={totalPoints}

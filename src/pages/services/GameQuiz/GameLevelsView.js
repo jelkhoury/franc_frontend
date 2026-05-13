@@ -1,20 +1,26 @@
 import {
   Box,
   Button,
-  Card,
-  CardBody,
   Circle,
   Flex,
   Heading,
+  Icon,
   SimpleGrid,
   Text,
   VStack,
   HStack,
-  Badge,
   Spinner,
-  Icon,
 } from "@chakra-ui/react";
-import { LockIcon, UnlockIcon, CheckCircleIcon, StarIcon, RepeatIcon } from "@chakra-ui/icons";
+import { CheckCircleIcon, LockIcon, UnlockIcon } from "@chakra-ui/icons";
+import {
+  Award,
+  BarChart2,
+  Gift,
+  LayoutGrid,
+  RefreshCw,
+  Star,
+  User,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 import { LEVEL_BADGE_ORDER } from "./gameSessionUtils";
@@ -23,76 +29,82 @@ import { useCountUp } from "./useCountUp";
 const MotionText = motion(Text);
 const MotionBox = motion(Box);
 
-/** Unlocked card: gradient surface + top bar + glow. Keys align with `colorScheme` on each tier. */
-const TIER_CARD_STYLES = {
-  orange: {
-    unlockBg: "linear-gradient(165deg, #fffbeb 0%, #ffedd5 42%, #fdba74 120%)",
-    unlockBorder: "orange.400",
-    accentBar: "linear(to-r, #c2410c, #f97316, #fb923c)",
-    shadow: "0 12px 40px -14px rgba(234, 88, 12, 0.42)",
-    buttonScheme: "orange",
-  },
-  gray: {
-    unlockBg: "linear-gradient(165deg, #f8fafc 0%, #e2e8f0 48%, #94a3b8 125%)",
-    unlockBorder: "blue.400",
-    accentBar: "linear(to-r, #334155, #64748b, #94a3b8)",
-    shadow: "0 12px 40px -14px rgba(59, 130, 246, 0.3)",
-    buttonScheme: "blue",
-  },
-  yellow: {
-    unlockBg: "linear-gradient(165deg, #fefce8 0%, #fef9c3 45%, #facc15 115%)",
-    unlockBorder: "yellow.500",
-    accentBar: "linear(to-r, #a16207, #ca8a04, #eab308)",
-    shadow: "0 12px 40px -14px rgba(202, 138, 4, 0.38)",
-    buttonScheme: "yellow",
-  },
-  purple: {
-    unlockBg: "linear-gradient(165deg, #faf5ff 0%, #f3e8ff 42%, #c084fc 120%)",
-    unlockBorder: "purple.500",
-    accentBar: "linear(to-r, #6b21a8, #9333ea, #c084fc)",
-    shadow: "0 12px 40px -14px rgba(147, 51, 234, 0.36)",
-    buttonScheme: "purple",
-  },
-  cyan: {
-    unlockBg: "linear-gradient(165deg, #ecfeff 0%, #cffafe 48%, #22d3ee 118%)",
-    unlockBorder: "cyan.500",
-    accentBar: "linear(to-r, #0e7490, #0891b2, #22d3ee)",
-    shadow: "0 12px 40px -14px rgba(8, 145, 178, 0.4)",
-    buttonScheme: "cyan",
-  },
+/** CareerQuest mock palette */
+const CQ = {
+  primary: "#005ea1",
+  primaryContainer: "#2178c3",
+  surface: "#f9f9ff",
+  onSurface: "#121c2c",
+  onSurfaceVariant: "#414751",
+  onPrimary: "#ffffff",
+  outlineVariant: "rgba(192, 199, 211, 0.45)",
+  tierBronze: "#B9722D",
+  tierSilver: "#9BA3AF",
+  tierGold: "#F6AD55",
+  tierPlatinum: "#4A5568",
+  tierDiamond: "#3182CE",
+  success: "#48BB78",
+  surfaceContainerHigh: "#dee8ff",
+  glass: "rgba(255, 255, 255, 0.72)",
+  shadowPrimary: "0 10px 30px rgba(0, 94, 161, 0.06)",
 };
 
-function tierStyle(colorScheme) {
-  return TIER_CARD_STYLES[colorScheme] || TIER_CARD_STYLES.cyan;
+const fontHeadline = '"Outfit", system-ui, sans-serif';
+const fontBody = '"Plus Jakarta Sans", system-ui, sans-serif';
+
+function tierHexFromColorScheme(colorScheme) {
+  const m = {
+    orange: CQ.tierBronze,
+    gray: CQ.tierSilver,
+    yellow: CQ.tierGold,
+    purple: CQ.tierPlatinum,
+    cyan: CQ.tierDiamond,
+  };
+  return m[colorScheme] ?? CQ.tierDiamond;
 }
 
-/** Soft panel tint for the “highest unlocked” stat — matches tier. */
-function statPanelBgForTier(colorScheme) {
-  const m = {
-    orange: "linear-gradient(135deg, #fff7ed 0%, #ffffff 55%)",
-    gray: "linear-gradient(135deg, #eff6ff 0%, #ffffff 55%)",
-    yellow: "linear-gradient(135deg, #fefce8 0%, #ffffff 55%)",
-    purple: "linear-gradient(135deg, #faf5ff 0%, #ffffff 55%)",
-    cyan: "linear-gradient(135deg, #ecfeff 0%, #ffffff 55%)",
-  };
-  return m[colorScheme] ?? m.cyan;
+function tierTintBg(hex) {
+  return `${hex}18`;
 }
 
 function AnimatedTotalPoints({ total }) {
-  const n = typeof total === "number" && Number.isFinite(total) ? total : Number(total) || 0;
+  const n =
+    typeof total === "number" && Number.isFinite(total)
+      ? total
+      : Number(total) || 0;
   const display = useCountUp(n, { duration: 950, enabled: true });
   return (
     <MotionText
-      fontSize="2xl"
-      fontWeight="bold"
-      color="brand.600"
+      fontFamily={fontHeadline}
+      fontSize={{ base: "1.5rem", md: "1.875rem" }}
+      fontWeight="700"
+      lineHeight="1.15"
+      letterSpacing="-0.02em"
+      color={CQ.primary}
       fontVariantNumeric="tabular-nums"
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
     >
       {display}
     </MotionText>
+  );
+}
+
+function GlassCard({ children, ...rest }) {
+  return (
+    <Box
+      bg={CQ.glass}
+      backdropFilter="blur(12px)"
+      sx={{ WebkitBackdropFilter: "blur(12px)" }}
+      borderRadius="lg"
+      borderWidth="1px"
+      borderColor="rgba(0, 94, 161, 0.12)"
+      boxShadow={CQ.shadowPrimary}
+      {...rest}
+    >
+      {children}
+    </Box>
   );
 }
 
@@ -104,7 +116,6 @@ const GameLevelsView = ({
   startingLevel,
   resumingSession,
   activeSessionId,
-  /** When set, this level card plays a short “newly unlocked” celebration (e.g. after passing prior level). */
   celebrateLevelNumber,
   onStartLevel,
   onResumeSession,
@@ -122,380 +133,678 @@ const GameLevelsView = ({
       questionCount: 10,
     }));
 
-  const highestUnlockedVisual = useMemo(() => {
+  const highestTierHex = useMemo(() => {
     const row =
-      LEVEL_BADGE_ORDER.find((r) => r.level === maxUnlockedLevel) ?? LEVEL_BADGE_ORDER[0];
-    const badgeScheme = row.colorScheme === "gray" ? "blue" : row.colorScheme;
-    return {
-      tier: tierStyle(row.colorScheme),
-      badgeScheme,
-      statBg: statPanelBgForTier(row.colorScheme),
-    };
+      LEVEL_BADGE_ORDER.find((r) => r.level === maxUnlockedLevel) ??
+      LEVEL_BADGE_ORDER[0];
+    return tierHexFromColorScheme(row.colorScheme);
   }, [maxUnlockedLevel]);
 
   return (
-    <Box maxW="1100px" mx="auto">
-      <VStack spacing={8} align="stretch">
-        {activeSessionId && onResumeSession && (
-          <Box
-            borderRadius="2xl"
-            overflow="hidden"
-            borderWidth="1px"
-            borderColor="brand.100"
-            bg="white"
-            boxShadow="0 4px 28px rgba(49, 130, 206, 0.08)"
-            position="relative"
-            _before={{
-              content: '""',
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              h: "3px",
-              bgGradient: "linear(to-r, brand.400, purple.400, cyan.400)",
-            }}
-          >
-            <HStack align="stretch" spacing={0}>
-              <Flex w={1} bgGradient="linear(to-b, cyan.400, brand.400)" flexShrink={0} />
-              <VStack
-                align="stretch"
-                spacing={3}
-                p={{ base: 4, md: 5 }}
-                pt={{ base: 5, md: 6 }}
-                flex="1"
+    <Box
+      w="100%"
+      minH="100%"
+      pb={{ base: "72px", md: 0 }}
+      fontFamily={fontBody}
+      color={CQ.onSurface}
+      bg={CQ.surface}
+    >
+      <Box
+        as="main"
+        maxW="1280px"
+        mx="auto"
+        px={{ base: 4, md: 8 }}
+        py={{ base: 5, md: 7 }}
+      >
+        <VStack spacing={{ base: 6, md: 9 }} align="stretch">
+          {activeSessionId && onResumeSession && (
+            <GlassCard p={{ base: 3, md: 4 }}>
+              <Flex
+                direction={{ base: "column", md: "row" }}
+                align={{ base: "stretch", md: "center" }}
+                gap={4}
               >
-                <HStack align="start" spacing={3}>
-                  <Circle size="40px" bg="brand.50" color="brand.600" flexShrink={0} mt={0.5}>
-                    <Icon as={RepeatIcon} boxSize={5} />
-                  </Circle>
-                  <VStack align="start" spacing={1.5} flex="1">
-                    <Text
-                      fontSize="2xs"
-                      fontWeight="bold"
-                      letterSpacing="0.1em"
-                      color="brand.600"
-                      textTransform="uppercase"
-                    >
-                      Active session
-                    </Text>
-                    <Heading as="h2" size="sm" color="gray.800" fontWeight="extrabold" lineHeight="shorter">
-                      Quiz in progress
-                    </Heading>
-                    <Text color="gray.600" fontSize="sm" lineHeight="tall">
-                      You already have a run started. Continue where you left off, or finish it from the
-                      quiz screen before starting another level.
-                    </Text>
-                  </VStack>
-                </HStack>
+                <Circle
+                  size="36px"
+                  bg="rgba(0, 94, 161, 0.1)"
+                  color={CQ.primary}
+                  flexShrink={0}
+                >
+                  <Icon as={RefreshCw} boxSize={4} />
+                </Circle>
+                <Box flex="1">
+                  <Text
+                    fontSize="10px"
+                    fontWeight="700"
+                    letterSpacing="0.1em"
+                    color={CQ.primary}
+                    textTransform="uppercase"
+                    mb={0.5}
+                  >
+                    Active session
+                  </Text>
+                  <Heading
+                    as="h2"
+                    fontFamily={fontHeadline}
+                    fontSize="md"
+                    fontWeight="600"
+                    mb={1}
+                  >
+                    Level in progress
+                  </Heading>
+                  <Text
+                    color={CQ.onSurfaceVariant}
+                    fontSize="sm"
+                    maxW="2xl"
+                    lineHeight="short"
+                  >
+                    You already have a run started. Continue where you left off,
+                    or finish it from the quiz screen before starting another
+                    level.
+                  </Text>
+                </Box>
                 <Button
-                  colorScheme="brand"
-                  size="sm"
-                  alignSelf={{ base: "stretch", sm: "flex-start" }}
-                  fontWeight="bold"
+                  bg={CQ.primary}
+                  color={CQ.onPrimary}
+                  fontWeight="600"
+                  fontSize="sm"
+                  px={5}
+                  py={2.5}
+                  h="auto"
+                  borderRadius="md"
+                  boxShadow="0 6px 16px rgba(0, 94, 161, 0.2)"
+                  _hover={{ bg: CQ.primaryContainer }}
+                  _active={{ transform: "scale(0.98)" }}
                   isLoading={resumingSession}
                   isDisabled={!!startingLevel}
                   onClick={() => onResumeSession(activeSessionId)}
+                  flexShrink={0}
+                  alignSelf={{ base: "stretch", md: "center" }}
                 >
-                  Continue quiz
+                  Continue level
                 </Button>
-              </VStack>
-            </HStack>
-          </Box>
-        )}
+              </Flex>
+            </GlassCard>
+          )}
 
-        <Box
-          borderRadius="2xl"
-          bg="white"
-          borderWidth="1px"
-          borderColor="brand.100"
-          boxShadow="0 4px 28px rgba(49, 130, 206, 0.08)"
-          px={{ base: 4, md: 8 }}
-          py={{ base: 5, md: 7 }}
-          textAlign={{ base: "left", md: "center" }}
-          position="relative"
-          overflow="hidden"
-          _before={{
-            content: '""',
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            h: "3px",
-            bgGradient: "linear(to-r, brand.400, purple.400, cyan.400)",
-          }}
-        >
-          <Text
-            fontSize="2xs"
-            fontWeight="bold"
-            letterSpacing="0.1em"
-            color="brand.600"
-            textTransform="uppercase"
-            mb={1.5}
-            textAlign={{ base: "left", md: "center" }}
-          >
-            Your progression
-          </Text>
-          <Heading
-            as="h1"
-            color="gray.800"
-            fontWeight="extrabold"
-            letterSpacing="-0.02em"
-            fontSize={{ base: "xl", md: "2xl" }}
-            mb={2}
-            lineHeight="shorter"
-          >
-            Career Quest
-          </Heading>
-          <Text
-            color="gray.600"
-            fontSize={{ base: "sm", md: "md" }}
-            lineHeight="tall"
-            maxW="3xl"
-            mx={{ md: "auto" }}
-          >
-            Clear <Box as="span" fontWeight="semibold" color="gray.700">five levels</Box>, earn badges
-            from <Box as="span" color="orange.600" fontWeight="semibold">Bronze</Box> to{" "}
-            <Box as="span" color="cyan.700" fontWeight="semibold">Diamond</Box>, and stack points. Jump
-            into any <Box as="span" fontWeight="semibold" color="brand.600">unlocked</Box> stage when
-            you&apos;re ready.
-          </Text>
-        </Box>
-
-        <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={4} maxW="640px" mx="auto" w="full">
-          <MotionBox
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.06, duration: 0.38 }}
-          >
-            <HStack
-              align="stretch"
-              spacing={0}
-              borderRadius="xl"
-              overflow="hidden"
-              borderWidth="1px"
-              borderColor="brand.100"
-              bg="linear-gradient(135deg, #eff6ff 0%, #ffffff 55%)"
-              boxShadow="sm"
+          <Box textAlign="center">
+            <Box
+              as="span"
+              display="inline-block"
+              px={3}
+              py={0.5}
+              borderRadius="full"
+              bg={CQ.surfaceContainerHigh}
+              color={CQ.primary}
+              fontSize="10px"
+              fontWeight="700"
+              letterSpacing="0.1em"
+              textTransform="uppercase"
+              mb={2}
             >
-              <Flex w={1} bgGradient="linear(to-b, brand.400, cyan.400)" flexShrink={0} />
-              <HStack flex="1" spacing={4} p={4} align="center">
-                <Circle size="44px" bg="brand.100" color="brand.600">
-                  <Icon as={StarIcon} boxSize={5} />
-                </Circle>
-                <VStack align="start" spacing={0}>
-                  <Text fontSize="xs" fontWeight="bold" color="gray.500" letterSpacing="wide">
+              Your progression
+            </Box>
+            <Heading
+              as="h1"
+              fontFamily={fontHeadline}
+              fontSize={{ base: "1.5rem", md: "1.875rem" }}
+              fontWeight="700"
+              letterSpacing="-0.02em"
+              lineHeight="1.15"
+              mb={3}
+            >
+              Career Quest
+            </Heading>
+            <Text
+              fontSize={{ base: "sm", md: "md" }}
+              color={CQ.onSurfaceVariant}
+              maxW="3xl"
+              mx="auto"
+              lineHeight="short"
+            >
+              Clear{" "}
+              <Box as="span" fontWeight="700" color={CQ.onSurface}>
+                five levels
+              </Box>
+              , earn badges from{" "}
+              <Box as="span" fontWeight="700" color={CQ.tierBronze}>
+                Bronze
+              </Box>{" "}
+              to{" "}
+              <Box as="span" fontWeight="700" color={CQ.tierDiamond}>
+                Diamond
+              </Box>
+              , and stack points. Jump into any{" "}
+              <Box as="span" fontWeight="700" color={CQ.primary}>
+                unlocked
+              </Box>{" "}
+              stage when you&apos;re ready.
+            </Text>
+          </Box>
+
+          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} alignItems="stretch">
+            <MotionBox
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.06, duration: 0.38 }}
+              h="full"
+              minH={0}
+            >
+              <GlassCard
+                p={4}
+                borderLeftWidth="5px"
+                borderLeftColor={CQ.primary}
+                display="flex"
+                alignItems="center"
+                gap={4}
+                h="full"
+                w="full"
+                transition="all 0.2s"
+                _hover={{ shadow: "md", transform: "translateY(-2px)" }}
+              >
+                <Flex
+                  w="44px"
+                  h="44px"
+                  borderRadius="xl"
+                  bg="rgba(33, 120, 195, 0.1)"
+                  align="center"
+                  justify="center"
+                  flexShrink={0}
+                >
+                  <Icon
+                    as={Star}
+                    boxSize={6}
+                    color={CQ.primary}
+                    fill={CQ.primary}
+                  />
+                </Flex>
+                <Box flex="1" minW={0}>
+                  <Text
+                    fontSize="xs"
+                    fontWeight="600"
+                    color={CQ.onSurfaceVariant}
+                    mb={0.5}
+                  >
                     Total points
                   </Text>
-                  {loading ? (
-                    <Text fontSize="2xl" fontWeight="extrabold" color="brand.600">
-                      —
-                    </Text>
-                  ) : (
-                    <AnimatedTotalPoints key={totalPoints} total={totalPoints} />
-                  )}
-                </VStack>
-              </HStack>
-            </HStack>
-          </MotionBox>
-          <MotionBox
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.16, duration: 0.38 }}
-          >
-            <HStack
-              align="stretch"
-              spacing={0}
-              borderRadius="xl"
-              overflow="hidden"
-              borderWidth="1px"
-              borderColor={highestUnlockedVisual.tier.unlockBorder}
-              bg={highestUnlockedVisual.statBg}
-              boxShadow="sm"
+                  <Box
+                    minH={{ base: "2.5rem", md: "2.875rem" }}
+                    display="flex"
+                    alignItems="center"
+                  >
+                    {loading ? (
+                      <Text
+                        fontFamily={fontHeadline}
+                        fontSize={{ base: "1.5rem", md: "1.875rem" }}
+                        fontWeight="700"
+                        lineHeight="1.15"
+                        letterSpacing="-0.02em"
+                        color={CQ.primary}
+                      >
+                        —
+                      </Text>
+                    ) : (
+                      <AnimatedTotalPoints
+                        key={totalPoints}
+                        total={totalPoints}
+                      />
+                    )}
+                  </Box>
+                </Box>
+              </GlassCard>
+            </MotionBox>
+            <MotionBox
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.14, duration: 0.38 }}
+              h="full"
+              minH={0}
             >
-              <Flex
-                w={1}
-                bgGradient={highestUnlockedVisual.tier.accentBar}
-                flexShrink={0}
-              />
-              <HStack flex="1" spacing={4} p={4} align="center">
-                <Circle
-                  size="44px"
-                  bg={`${highestUnlockedVisual.badgeScheme}.100`}
-                  color={`${highestUnlockedVisual.badgeScheme}.600`}
+              <GlassCard
+                p={4}
+                borderLeftWidth="5px"
+                borderLeftColor={highestTierHex}
+                display="flex"
+                alignItems="center"
+                gap={4}
+                h="full"
+                w="full"
+                transition="all 0.2s"
+                _hover={{ shadow: "md", transform: "translateY(-2px)" }}
+              >
+                <Flex
+                  w="44px"
+                  h="44px"
+                  borderRadius="xl"
+                  bg={tierTintBg(highestTierHex)}
+                  align="center"
+                  justify="center"
+                  flexShrink={0}
                 >
-                  <Icon as={UnlockIcon} boxSize={5} />
-                </Circle>
-                <VStack align="start" spacing={0}>
-                  <Text fontSize="xs" fontWeight="bold" color="gray.500" letterSpacing="wide">
+                  <Icon as={UnlockIcon} boxSize={6} color={highestTierHex} />
+                </Flex>
+                <Box flex="1" minW={0}>
+                  <Text
+                    fontSize="xs"
+                    fontWeight="600"
+                    color={CQ.onSurfaceVariant}
+                    mb={0.5}
+                  >
                     Highest unlocked
                   </Text>
-                  <MotionText
-                    fontSize="2xl"
-                    fontWeight="extrabold"
-                    color={`${highestUnlockedVisual.badgeScheme}.600`}
-                    fontVariantNumeric="tabular-nums"
-                    initial={{ scale: 0.92 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                  >
-                    Level {maxUnlockedLevel}
-                  </MotionText>
-                </VStack>
-              </HStack>
-            </HStack>
-          </MotionBox>
-        </SimpleGrid>
-
-        {loading ? (
-          <FlexCentered>
-            <Spinner size="xl" color="brand.500" />
-          </FlexCentered>
-        ) : (
-          <SimpleGrid columns={{ base: 1, sm: 2, lg: 5 }} spacing={5}>
-            {rows.map(({ level, label, colorScheme, unlocked, cleared, bestScore, questionCount }) => {
-              const busy = startingLevel === level;
-              const tier = tierStyle(colorScheme);
-              const badgeScheme = colorScheme === "gray" ? "blue" : colorScheme;
-              const celebrateHere =
-                celebrateLevelNumber != null && Number(celebrateLevelNumber) === Number(level);
-              const card = (
-                <Card
-                  variant="outline"
-                  overflow="hidden"
-                  borderWidth={celebrateHere ? 3 : 2}
-                  borderColor={
-                    celebrateHere ? "green.400" : unlocked ? tier.unlockBorder : "gray.300"
-                  }
-                  bg={unlocked ? tier.unlockBg : "linear-gradient(180deg, #f4f4f5 0%, #e4e4e7 100%)"}
-                  boxShadow={unlocked ? tier.shadow : "sm"}
-                  opacity={unlocked ? 1 : 0.88}
-                  transition="transform 0.22s ease, box-shadow 0.22s ease"
-                  _hover={
-                    unlocked
-                      ? {
-                          transform: "translateY(-6px)",
-                          boxShadow: "0 18px 44px -16px rgba(0, 0, 0, 0.18)",
-                        }
-                      : undefined
-                  }
-                >
                   <Box
-                    h="3px"
-                    w="full"
-                    bgGradient={unlocked ? tier.accentBar : "linear(to-r, #a1a1aa, #d4d4d8)"}
-                  />
-                  <CardBody pt={5} pb={4} px={4}>
-                    <VStack spacing={3.5}>
-                      <Badge
-                        colorScheme={badgeScheme}
-                        fontSize="0.8em"
+                    minH={{ base: "2.5rem", md: "2.875rem" }}
+                    display="flex"
+                    alignItems="center"
+                  >
+                    <MotionText
+                      fontFamily={fontHeadline}
+                      fontSize={{ base: "1.5rem", md: "1.875rem" }}
+                      fontWeight="700"
+                      letterSpacing="-0.02em"
+                      lineHeight="1.15"
+                      color={highestTierHex}
+                      fontVariantNumeric="tabular-nums"
+                      whiteSpace="nowrap"
+                      initial={{ scale: 0.92 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                    >
+                      Level {maxUnlockedLevel}
+                    </MotionText>
+                  </Box>
+                </Box>
+              </GlassCard>
+            </MotionBox>
+          </SimpleGrid>
+
+          {loading ? (
+            <FlexCentered>
+              <Spinner size="lg" color={CQ.primary} thickness="3px" />
+            </FlexCentered>
+          ) : (
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 5 }} spacing={5}>
+              {rows.map(
+                ({
+                  level,
+                  label,
+                  colorScheme,
+                  unlocked,
+                  cleared,
+                  bestScore,
+                  questionCount,
+                }) => {
+                  const busy = startingLevel === level;
+                  const tierHex = tierHexFromColorScheme(colorScheme);
+                  const celebrateHere =
+                    celebrateLevelNumber != null &&
+                    Number(celebrateLevelNumber) === Number(level);
+                  const isHighlightTier = level === 5 && unlocked && !cleared;
+
+                  const cardInner = (
+                    <GlassCard
+                      p={5}
+                      borderRadius="xl"
+                      display="flex"
+                      flexDirection="column"
+                      alignItems="center"
+                      textAlign="center"
+                      borderTopWidth="4px"
+                      borderTopColor={tierHex}
+                      position="relative"
+                      overflow="hidden"
+                      opacity={unlocked ? 1 : 0.88}
+                      transition="all 0.2s"
+                      boxShadow={
+                        isHighlightTier
+                          ? `0 0 0 2px ${tierHex}55, ${CQ.shadowPrimary}`
+                          : CQ.shadowPrimary
+                      }
+                      _hover={unlocked ? { shadow: "md" } : { shadow: "sm" }}
+                      bg={unlocked ? CQ.glass : "rgba(240, 244, 250, 0.85)"}
+                    >
+                      {isHighlightTier && (
+                        <Box
+                          position="absolute"
+                          inset={0}
+                          bg={`${tierHex}0D`}
+                          opacity={0}
+                          _groupHover={{ opacity: 1 }}
+                          transition="opacity 0.2s"
+                          pointerEvents="none"
+                        />
+                      )}
+                      <Box
                         px={3}
                         py={1}
                         borderRadius="full"
-                        textTransform="none"
-                        fontWeight="bold"
-                        boxShadow="sm"
+                        bg={tierTintBg(tierHex)}
+                        color={tierHex}
+                        fontSize="xs"
+                        fontWeight="700"
+                        letterSpacing="0.04em"
+                        textTransform="uppercase"
+                        mb={4}
+                        position="relative"
+                        zIndex={1}
                       >
                         {label}
-                      </Badge>
-                      <Text fontWeight="extrabold" fontSize="xl" color={unlocked ? "gray.800" : "gray.500"}>
-                        Level {level}
-                      </Text>
-                      <HStack
-                        color={unlocked ? "green.700" : "gray.500"}
-                        bg={unlocked ? "whiteAlpha.700" : "blackAlpha.50"}
-                        px={3}
-                        py={1}
-                        borderRadius="full"
+                      </Box>
+                      <Heading
+                        as="h3"
+                        fontFamily={fontHeadline}
+                        fontSize="lg"
+                        fontWeight="600"
+                        mb={5}
+                        position="relative"
+                        zIndex={1}
+                        color={unlocked ? CQ.onSurface : CQ.onSurfaceVariant}
                       >
-                        <Icon as={unlocked ? UnlockIcon : LockIcon} boxSize={3.5} />
-                        <Text fontSize="sm" fontWeight="semibold">
+                        Level {level}
+                      </Heading>
+                      <HStack
+                        color={unlocked ? CQ.success : CQ.onSurfaceVariant}
+                        spacing={2}
+                        mb={1.5}
+                        position="relative"
+                        zIndex={1}
+                      >
+                        <Icon
+                          as={unlocked ? UnlockIcon : LockIcon}
+                          boxSize={3.5}
+                        />
+                        <Text
+                          fontSize="xs"
+                          fontWeight="700"
+                          letterSpacing="0.06em"
+                        >
                           {unlocked ? "Unlocked" : "Locked"}
                         </Text>
                       </HStack>
                       {cleared && (
-                        <VStack spacing={1}>
-                          <HStack spacing={1.5} color="green.800">
-                            <Icon as={CheckCircleIcon} boxSize={4} />
-                            <Text fontSize="sm" fontWeight="bold">
+                        <>
+                          <HStack
+                            color={CQ.success}
+                            fontWeight="700"
+                            spacing={2}
+                            mb={3}
+                            position="relative"
+                            zIndex={1}
+                          >
+                            <Icon as={CheckCircleIcon} boxSize={3.5} />
+                            <Text
+                              fontSize="xs"
+                              fontWeight="700"
+                              letterSpacing="0.08em"
+                              textTransform="uppercase"
+                            >
                               Passed
                             </Text>
                           </HStack>
                           {bestScore != null && Number.isFinite(bestScore) && (
-                            <Text fontSize="sm" color="gray.700" fontWeight="bold">
-                              Best score: {bestScore}/{questionCount ?? 10}
+                            <Text
+                              fontSize="sm"
+                              fontWeight="600"
+                              color={CQ.onSurfaceVariant}
+                              mt="auto"
+                              position="relative"
+                              zIndex={1}
+                            >
+                              Best score:{" "}
+                              <Box
+                                as="span"
+                                color={CQ.onSurface}
+                                fontWeight="700"
+                              >
+                                {bestScore}/{questionCount ?? 10}
+                              </Box>
                             </Text>
                           )}
-                        </VStack>
+                        </>
                       )}
                       {unlocked && !cleared && (
-                        <Text fontSize="xs" color="gray.700" textAlign="center" lineHeight="short" px={1}>
+                        <Text
+                          fontSize="xs"
+                          color={CQ.onSurfaceVariant}
+                          lineHeight="short"
+                          mb={3}
+                          mt="auto"
+                          position="relative"
+                          zIndex={1}
+                        >
                           Earn the badge by passing this level.
                         </Text>
                       )}
                       {unlocked && !activeSessionId && (
                         <Button
-                          colorScheme={tier.buttonScheme}
-                          size="sm"
                           w="full"
-                          fontWeight="bold"
+                          px={8}
+                          py={4}
+                          h="auto"
+                          size="md"
+                          bg={tierHex}
+                          color={CQ.onPrimary}
+                          fontWeight="600"
+                          fontSize="md"
+                          borderRadius="lg"
+                          _hover={{ bg: CQ.primaryContainer }}
+                          boxShadow={`0 8px 18px ${tierHex}33`}
                           isDisabled={!!startingLevel}
                           isLoading={busy}
                           onClick={() => onStartLevel(level)}
+                          position="relative"
+                          zIndex={1}
                         >
-                          Play level
+                          Start level
                         </Button>
                       )}
                       {!unlocked && (
-                        <Button colorScheme="gray" size="sm" w="full" fontWeight="bold" isDisabled>
+                        <Button
+                          w="full"
+                          px={8}
+                          py={4}
+                          h="auto"
+                          size="md"
+                          variant="outline"
+                          borderColor={CQ.outlineVariant}
+                          color={CQ.onSurfaceVariant}
+                          fontWeight="600"
+                          fontSize="md"
+                          borderRadius="lg"
+                          isDisabled
+                          mt="auto"
+                          position="relative"
+                          zIndex={1}
+                        >
                           Locked
                         </Button>
                       )}
-                    </VStack>
-                  </CardBody>
-                </Card>
-              );
-              if (!celebrateHere) {
-                return (
-                  <Box key={level}>
-                    {card}
-                  </Box>
-                );
-              }
-              return (
-                <MotionBox
-                  key={level}
-                  layout
-                  initial={{ scale: 0.97, opacity: 0.92 }}
-                  animate={{
-                    scale: [1, 1.045, 1, 1.035, 1],
-                    opacity: 1,
-                    boxShadow: [
-                      tier.shadow,
-                      "0 0 0 6px rgba(34, 197, 94, 0.35), 0 22px 48px -12px rgba(22, 163, 74, 0.45)",
-                      tier.shadow,
-                      "0 0 0 5px rgba(34, 197, 94, 0.28), 0 18px 40px -12px rgba(22, 163, 74, 0.35)",
-                      tier.shadow,
-                    ],
-                  }}
-                  transition={{ duration: 2.4, ease: "easeInOut", times: [0, 0.22, 0.45, 0.72, 1] }}
-                >
-                  {card}
-                </MotionBox>
-              );
-            })}
-          </SimpleGrid>
-        )}
+                    </GlassCard>
+                  );
 
-       
-      </VStack>
+                  const wrapped = (
+                    <Box key={level} role="group">
+                      {cardInner}
+                    </Box>
+                  );
+
+                  if (!celebrateHere) {
+                    return wrapped;
+                  }
+                  return (
+                    <MotionBox
+                      key={level}
+                      layout
+                      initial={{ scale: 0.97, opacity: 0.92 }}
+                      animate={{
+                        scale: [1, 1.045, 1, 1.035, 1],
+                        opacity: 1,
+                        boxShadow: [
+                          CQ.shadowPrimary,
+                          "0 0 0 6px rgba(72, 187, 120, 0.35), 0 22px 48px -12px rgba(34, 197, 94, 0.35)",
+                          CQ.shadowPrimary,
+                          "0 0 0 5px rgba(72, 187, 120, 0.28), 0 18px 40px -12px rgba(34, 197, 94, 0.28)",
+                          CQ.shadowPrimary,
+                        ],
+                      }}
+                      transition={{
+                        duration: 2.4,
+                        ease: "easeInOut",
+                        times: [0, 0.22, 0.45, 0.72, 1],
+                      }}
+                    >
+                      {wrapped}
+                    </MotionBox>
+                  );
+                },
+              )}
+            </SimpleGrid>
+          )}
+
+          <Box
+            borderRadius="2xl"
+            overflow="hidden"
+            bgGradient={`linear(to-r, ${CQ.primaryContainer}, ${CQ.tierDiamond})`}
+            p={{ base: 4, md: 6 }}
+            color={CQ.onPrimary}
+            position="relative"
+            boxShadow="md"
+          >
+            <Box
+              position="absolute"
+              right="-5%"
+              top="-10%"
+              w="180px"
+              h="180px"
+              bg="rgba(255,255,255,0.1)"
+              borderRadius="full"
+              filter="blur(40px)"
+              pointerEvents="none"
+            />
+            <Flex
+              direction={{ base: "column", md: "row" }}
+              align="center"
+              justify="space-between"
+              gap={5}
+              position="relative"
+              zIndex={1}
+            >
+              <VStack
+                align={{ base: "center", md: "start" }}
+                spacing={2.5}
+                maxW="lg"
+                textAlign={{ base: "center", md: "left" }}
+              >
+                <Heading
+                  as="h2"
+                  fontFamily={fontHeadline}
+                  fontSize={{ base: "md", md: "lg" }}
+                  fontWeight="600"
+                >
+                  Badges worth earning
+                </Heading>
+                <Text
+                  fontSize={{ base: "sm", md: "md" }}
+                  opacity={0.92}
+                  lineHeight="short"
+                >
+                  Every level you pass earns you a badge—a clear mark of what
+                  you&apos;ve mastered and something you can genuinely be proud
+                  of.
+                </Text>
+                <Button
+                  bg="white"
+                  color={CQ.primary}
+                  px={5}
+                  py={2}
+                  h="auto"
+                  fontSize="sm"
+                  borderRadius="lg"
+                  fontWeight="600"
+                  boxShadow="0 8px 24px rgba(0,0,0,0.1)"
+                  _hover={{ transform: "scale(1.02)" }}
+                  onClick={onBack}
+                >
+                  Explore game badges
+                </Button>
+              </VStack>
+              <Flex
+                justify="center"
+                align="center"
+                fontSize="3rem"
+                filter="drop-shadow(0 8px 16px rgba(0,0,0,0.18))"
+                aria-hidden
+              >
+                <Icon as={Award} strokeWidth={1.25} boxSize={12} />
+              </Flex>
+            </Flex>
+          </Box>
+        </VStack>
+      </Box>
+
+      {/* Mobile bottom nav */}
+      <Flex
+        as="nav"
+        display={{ base: "flex", md: "none" }}
+        position="fixed"
+        bottom={0}
+        left={0}
+        right={0}
+        zIndex={50}
+        bg="rgba(249, 249, 255, 0.96)"
+        backdropFilter="blur(10px)"
+        borderTopWidth="1px"
+        borderColor={CQ.outlineVariant}
+        borderTopRadius="xl"
+        boxShadow="0 -6px 20px rgba(18, 28, 44, 0.06)"
+        py={2}
+        px={3}
+        justify="space-around"
+        align="center"
+      >
+        <VStack
+          as="button"
+          spacing={0.5}
+          cursor="pointer"
+          onClick={onBack}
+          bg="rgba(33, 120, 195, 0.12)"
+          borderRadius="lg"
+          px={3}
+          py={0.5}
+          border="none"
+          color={CQ.primary}
+        >
+          <Icon as={LayoutGrid} boxSize={4} />
+          <Text fontSize="10px" fontWeight="700">
+            Home
+          </Text>
+        </VStack>
+        <VStack spacing={0.5} color={CQ.onSurfaceVariant} opacity={0.7}>
+          <Icon as={BarChart2} boxSize={4} />
+          <Text fontSize="10px" fontWeight="700">
+            Rank
+          </Text>
+        </VStack>
+        <VStack spacing={0.5} color={CQ.onSurfaceVariant} opacity={0.7}>
+          <Icon as={Gift} boxSize={4} />
+          <Text fontSize="10px" fontWeight="700">
+            Prizes
+          </Text>
+        </VStack>
+        <VStack spacing={0.5} color={CQ.onSurfaceVariant} opacity={0.7}>
+          <Icon as={User} boxSize={4} />
+          <Text fontSize="10px" fontWeight="700">
+            Me
+          </Text>
+        </VStack>
+      </Flex>
     </Box>
   );
 };
 
 function FlexCentered({ children }) {
   return (
-    <Flex justify="center" align="center" minH="200px">
+    <Flex justify="center" align="center" minH="140px">
       {children}
     </Flex>
   );
