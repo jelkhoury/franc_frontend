@@ -5,6 +5,13 @@ import {
   Flex,
   Heading,
   Icon,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   SimpleGrid,
   Text,
   VStack,
@@ -22,7 +29,7 @@ import {
   User,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { LEVEL_BADGE_ORDER } from "./gameSessionUtils";
 import { useCountUp } from "./useCountUp";
 
@@ -121,6 +128,8 @@ const GameLevelsView = ({
   onResumeSession,
   onBack,
 }) => {
+  const [badgesDialogOpen, setBadgesDialogOpen] = useState(false);
+
   const rows =
     levelSummaries ??
     LEVEL_BADGE_ORDER.map(({ level, label, colorScheme }) => ({
@@ -547,6 +556,7 @@ const GameLevelsView = ({
                               fontWeight="600"
                               color={CQ.onSurfaceVariant}
                               mt="auto"
+                              mb={2}
                               position="relative"
                               zIndex={1}
                             >
@@ -567,7 +577,7 @@ const GameLevelsView = ({
                           fontSize="xs"
                           color={CQ.onSurfaceVariant}
                           lineHeight="short"
-                          mb={3}
+                          mb={2}
                           mt="auto"
                           position="relative"
                           zIndex={1}
@@ -578,15 +588,16 @@ const GameLevelsView = ({
                       {unlocked && !activeSessionId && (
                         <Button
                           w="full"
-                          px={8}
-                          py={4}
+                          px={6}
+                          py={2.5}
                           h="auto"
-                          size="md"
+                          size="sm"
+                          mt={2}
                           bg={tierHex}
                           color={CQ.onPrimary}
                           fontWeight="600"
-                          fontSize="md"
-                          borderRadius="lg"
+                          fontSize="sm"
+                          borderRadius="md"
                           _hover={{ bg: CQ.primaryContainer }}
                           boxShadow={`0 8px 18px ${tierHex}33`}
                           isDisabled={!!startingLevel}
@@ -601,16 +612,16 @@ const GameLevelsView = ({
                       {!unlocked && (
                         <Button
                           w="full"
-                          px={8}
-                          py={4}
+                          px={6}
+                          py={2.5}
                           h="auto"
-                          size="md"
+                          size="sm"
                           variant="outline"
                           borderColor={CQ.outlineVariant}
                           color={CQ.onSurfaceVariant}
                           fontWeight="600"
-                          fontSize="md"
-                          borderRadius="lg"
+                          fontSize="sm"
+                          borderRadius="md"
                           isDisabled
                           mt="auto"
                           position="relative"
@@ -723,7 +734,7 @@ const GameLevelsView = ({
                   fontWeight="600"
                   boxShadow="0 8px 24px rgba(0,0,0,0.1)"
                   _hover={{ transform: "scale(1.02)" }}
-                  onClick={onBack}
+                  onClick={() => setBadgesDialogOpen(true)}
                 >
                   Explore game badges
                 </Button>
@@ -798,6 +809,89 @@ const GameLevelsView = ({
           </Text>
         </VStack>
       </Flex>
+
+      <Modal
+        isOpen={badgesDialogOpen}
+        onClose={() => setBadgesDialogOpen(false)}
+        isCentered
+        size="md"
+        motionPreset="slideInBottom"
+      >
+        <ModalOverlay bg="blackAlpha.400" backdropFilter="blur(4px)" />
+        <ModalContent
+          borderRadius="xl"
+          mx={3}
+          fontFamily={fontBody}
+          boxShadow="xl"
+          borderWidth="1px"
+          borderColor="rgba(0, 94, 161, 0.12)"
+        >
+          <ModalHeader
+            fontFamily={fontHeadline}
+            fontSize="lg"
+            fontWeight="700"
+            color={CQ.onSurface}
+            pr={10}
+            pb={1}
+          >
+            Your level badges
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody maxH="65vh" overflowY="auto" pt={0}>
+            <Text fontSize="sm" color={CQ.onSurfaceVariant} mb={4} lineHeight="short">
+              One badge per level when you pass it. For now this is a simple view—colored dots match each
+              tier; descriptions show what you&apos;ve earned or what&apos;s left.
+            </Text>
+            <VStack align="stretch" spacing={3.5}>
+              {rows.map(({ level, label, colorScheme, cleared, unlocked }) => {
+                const tierHex = tierHexFromColorScheme(colorScheme);
+                const earned = !!cleared;
+                const desc = earned
+                  ? `${label} — earned by passing Level ${level}.`
+                  : unlocked
+                    ? `${label} — pass Level ${level} to earn this badge.`
+                    : `${label} — unlock Level ${level} by clearing the previous stage.`;
+                return (
+                  <HStack key={level} align="start" spacing={3}>
+                    <Circle
+                      size="12px"
+                      mt={1.5}
+                      flexShrink={0}
+                      bg={earned ? tierHex : "rgba(160, 174, 192, 0.55)"}
+                      boxShadow={earned ? `0 0 0 2px ${tierHex}40` : "none"}
+                      aria-hidden
+                    />
+                    <Box minW={0}>
+                      <Text fontSize="xs" fontWeight="700" color={CQ.onSurface} lineHeight="short">
+                        Level {level}{" "}
+                        <Text as="span" fontWeight="600" color={CQ.onSurfaceVariant}>
+                          ({label})
+                        </Text>
+                      </Text>
+                      <Text fontSize="xs" color={CQ.onSurfaceVariant} lineHeight="short" mt={0.5}>
+                        {desc}
+                      </Text>
+                    </Box>
+                  </HStack>
+                );
+              })}
+            </VStack>
+          </ModalBody>
+          <ModalFooter pt={2} gap={2}>
+            <Button
+              bg={CQ.primary}
+              color={CQ.onPrimary}
+              fontWeight="600"
+              size="sm"
+              px={6}
+              _hover={{ bg: CQ.primaryContainer }}
+              onClick={() => setBadgesDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };

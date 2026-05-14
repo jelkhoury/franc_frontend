@@ -510,13 +510,19 @@ const GameSessionView = ({
 
           <CardBody p={0}>
             <VStack spacing={5} align="stretch">
-              <Box textAlign="center" maxW="48rem" mx="auto" mb={1}>
+              <Box w="full" mb={1}>
                 <Text
+                  as="p"
+                  dir="ltr"
                   fontFamily={fontHeadline}
                   fontSize={{ base: "md", md: "lg" }}
                   fontWeight="600"
                   color={CQ.onSurface}
                   lineHeight="snug"
+                  textAlign="left"
+                  w="full"
+                  maxW="48rem"
+                  mx="auto"
                 >
                   {currentAnswer.questionText || "Question"}
                 </Text>
@@ -613,9 +619,11 @@ const GameSessionView = ({
                           {key}
                         </Flex>
                         <Text
+                          dir="ltr"
                           flex="1"
                           fontSize="sm"
                           lineHeight="short"
+                          textAlign="left"
                           color={
                             selectedFeedback
                               ? CQ.onSurface
