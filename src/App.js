@@ -44,7 +44,6 @@ import JobMatchingTryPage from "./pages/services/JobMatching/JobMatchingTryPage"
 import ActivityHistoryPage from "./pages/ActivityHistoryPage";
 import GameQuizPage from "./pages/services/GameQuizPage";
 import GameQuizTryPage from "./pages/services/GameQuiz/GameQuizTryPage";
-import ActivityHistoryPage from "./pages/ActivityHistoryPage";
 
 // ScrollToTop component to reset scroll position on route change
 const ScrollToTop = () => {
