@@ -38,6 +38,9 @@ export const SDS_ENDPOINTS = {
   DELETE_LAST_INCOMPLETE: (userId) =>
     `/api/sds/delete-last-incomplete?userId=${userId}`,
   GET_SDS_RESULTS: "/api/sds/SDSResults",
+  /** Per-user SDS results (same row shape as SDSResults, scoped to userId) */
+  GET_USER_SDS_RESULTS: (userId) =>
+    `/api/sds/GetUserSDSResults?userId=${userId}`,
   SAVE_AI_FEEDBACK: "/api/sds/save-ai-feedback",
   // Admin endpoints (if needed)
   CREATE_SECTION: "/api/sds/create-section",
@@ -57,6 +60,9 @@ export const MOCK_INTERVIEW_ENDPOINTS = {
   EVALUATE: "/api/evaluation/evaluate",
   EVALUATE_MULTIPLE: "/api/evaluation/evaluate-multiple",
   CREATE_REPORT: "/api/evaluation/create-report",
+  /** Completed mock interview evaluation reports for a user */
+  GET_USER_INTERVIEW_REPORTS: (userId) =>
+    `/api/evaluation/GetUserInterviewsReports?userId=${userId}`,
 };
 
 // User Action Types (matches backend UserActionType enum)
@@ -76,6 +82,8 @@ export const BLOB_STORAGE_ENDPOINTS = {
   GET_MAJORS: "/api/blob/get-majors",
   UPLOAD_FILE: "/api/blob/upload-file",
   GET_ADMIN_FILES: "/api/blob/get-admin-files",
+  /** Per-user resume/cover files (same item shape as get-admin-files) */
+  GET_USER_FILES: (userId) => `/api/blob/GetUserFiles?userId=${userId}`,
   // Admin endpoints (if needed)
   CREATE_QUESTION: "/api/blob/create-question",
   CREATE_QUESTIONS: "/api/blob/create-questions",
@@ -99,6 +107,8 @@ export const JOB_COMPARISON_ENDPOINTS = {
   SAVE_COMPARISON: "/api/jobcomparison/save",
   GET_COMPARISON: (id) => `/api/jobcomparison/${id}`,
   GET_ALL_COMPARISONS: "/api/jobcomparison",
+  GET_ALL_BY_USER_ID: (userId) =>
+    `/api/jobcomparison/GetAllJobComparisonsByUserId?userId=${userId}`,
   DELETE_COMPARISON: (id) => `/api/jobcomparison/${id}`,
   EXPORT_EXCEL: (id) => `/api/jobcomparison/${id}/export-excel`,
 };

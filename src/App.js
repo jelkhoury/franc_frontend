@@ -43,6 +43,7 @@ import JobMatchingPage from "./pages/services/JobMatchingPage";
 import JobMatchingTryPage from "./pages/services/JobMatching/JobMatchingTryPage";
 import GameQuizPage from "./pages/services/GameQuizPage";
 import GameQuizTryPage from "./pages/services/GameQuiz/GameQuizTryPage";
+import ActivityHistoryPage from "./pages/ActivityHistoryPage";
 
 // ScrollToTop component to reset scroll position on route change
 const ScrollToTop = () => {
@@ -139,6 +140,7 @@ const MainLayout = () => {
         <Route path="/job-matching/try" element={<JobMatchingTryPage />} />
         <Route path="/game" element={<GameQuizPage />} />
         <Route path="/game/try" element={<GameQuizTryPage />} />
+        <Route path="/activity-history" element={<ActivityHistoryPage />} />
       </Routes>
     </>
   );

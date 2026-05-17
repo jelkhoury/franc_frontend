@@ -148,12 +148,14 @@ const ManageSelfTests = () => {
     ));
   };
 
-  // Filter and search logic
+  // Filter and search logic (guard null/undefined email or holland code from API)
   const filteredResults = useMemo(() => {
+    const term = (searchTerm || "").toLowerCase();
     return results.filter((result) => {
+      const email = (result.userEmail ?? "").toString().toLowerCase();
+      const holland = (result.hollandCode ?? "").toString().toLowerCase();
       const matchesSearch =
-        result.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        result.hollandCode.toLowerCase().includes(searchTerm.toLowerCase());
+        email.includes(term) || holland.includes(term);
       const matchesFilter =
         !filterHollandCode || result.hollandCode === filterHollandCode;
       return matchesSearch && matchesFilter;
