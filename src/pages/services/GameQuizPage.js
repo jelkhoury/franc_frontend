@@ -141,7 +141,7 @@ const GameQuizPage = () => {
             </Circle>
             <Text fontWeight="bold">Beat the clock</Text>
             <Text fontSize="sm" color="gray.600" maxW="150px">
-              Each question has limited time; the whole session has a 15-minute cap on the client.
+              Each question has its own countdown on the client.
             </Text>
           </VStack>
 

@@ -41,6 +41,7 @@ import JobComparisonReview from "./pages/services/jobComparison/JobComparisonRev
 import JobComparisonResults from "./pages/services/jobComparison/JobComparisonResults";
 import JobMatchingPage from "./pages/services/JobMatchingPage";
 import JobMatchingTryPage from "./pages/services/JobMatching/JobMatchingTryPage";
+import ActivityHistoryPage from "./pages/ActivityHistoryPage";
 import GameQuizPage from "./pages/services/GameQuizPage";
 import GameQuizTryPage from "./pages/services/GameQuiz/GameQuizTryPage";
 import ActivityHistoryPage from "./pages/ActivityHistoryPage";
@@ -138,6 +139,7 @@ const MainLayout = () => {
         />
         <Route path="/job-matching" element={<JobMatchingPage />} />
         <Route path="/job-matching/try" element={<JobMatchingTryPage />} />
+
         <Route path="/game" element={<GameQuizPage />} />
         <Route path="/game/try" element={<GameQuizTryPage />} />
         <Route path="/activity-history" element={<ActivityHistoryPage />} />

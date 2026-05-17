@@ -5,6 +5,8 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  /** False only on first paint — token read runs in useEffect after. Prevents false "logged out" redirects on reload. */
+  const [authInitialized, setAuthInitialized] = useState(false);
 
   // Validate token on app initialization
   useEffect(() => {
@@ -27,6 +29,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('isLoggedIn');
       setIsLoggedIn(false);
     }
+    setAuthInitialized(true);
   }, []);
 
   const login = () => {
@@ -41,7 +44,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, authInitialized, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

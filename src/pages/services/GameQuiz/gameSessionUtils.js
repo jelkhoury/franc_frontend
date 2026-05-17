@@ -16,8 +16,58 @@ export const GAME_ABILITIES = [
   "FiftyFifty",
   "DoubleChance",
   "TimeFreeze",
-  "Hint",
 ];
+
+/** Mirrors GameQuizConstants (backend) — used to derive remaining uses from per-answer flags. */
+export const GAME_ABILITY_MAX_PER_SESSION = {
+  Skip: 1,
+  FiftyFifty: 1,
+  DoubleChance: 1,
+  TimeFreeze: 1,
+};
+
+export const GAME_TIME_FREEZE_EXTRA_SECONDS = 15;
+
+function rowIndicatesAbilityUsed(row, abilityName) {
+  if (!row || typeof row !== "object") return false;
+  switch (abilityName) {
+    case "Skip":
+      return !!(row.usedSkip ?? row.UsedSkip);
+    case "FiftyFifty":
+      return !!(row.usedFiftyFifty ?? row.UsedFiftyFifty);
+    case "DoubleChance":
+      return !!(row.usedDoubleChance ?? row.UsedDoubleChance);
+    case "TimeFreeze":
+      return !!(row.usedTimeFreeze ?? row.UsedTimeFreeze);
+    default:
+      return false;
+  }
+}
+
+/**
+ * Remaining ability uses from session answers[] / questions[] Used* flags (authoritative when present).
+ */
+export function deriveAbilityRemainingFromAnswersList(list, abilityName) {
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const max = GAME_ABILITY_MAX_PER_SESSION[abilityName];
+  if (!Number.isFinite(max)) return null;
+  const used = list.filter((row) => rowIndicatesAbilityUsed(row, abilityName)).length;
+  return Math.max(0, max - used);
+}
+
+function rowHasAnyAbilityUseFlag(row) {
+  if (!row || typeof row !== "object") return false;
+  return !!(
+    row.usedSkip ??
+    row.UsedSkip ??
+    row.usedFiftyFifty ??
+    row.UsedFiftyFifty ??
+    row.usedDoubleChance ??
+    row.UsedDoubleChance ??
+    row.usedTimeFreeze ??
+    row.UsedTimeFreeze
+  );
+}
 
 export const OPTION_KEYS = ["A", "B", "C", "D"];
 
@@ -122,6 +172,116 @@ export function getMaxUnlockedLevel(progress) {
   const n = parseInt(String(v), 10);
   if (!Number.isFinite(n) || n < 1) return 1;
   return Math.min(5, n);
+}
+
+/** Questions per run (must match GameQuizConstants.QuestionsPerSession on the API). */
+export const GAME_QUIZ_QUESTIONS_PER_LEVEL = 10;
+
+/** Progress flags that indicate a level was passed (badge earned). */
+const LEVEL_BADGE_EARNED_KEYS = {
+  1: ["bronzeBadgeEarned", "BronzeBadgeEarned"],
+  2: ["silverBadgeEarned", "SilverBadgeEarned"],
+  3: ["goldBadgeEarned", "GoldBadgeEarned"],
+  4: ["platinumBadgeEarned", "PlatinumBadgeEarned"],
+  5: ["diamondBadgeEarned", "DiamondBadgeEarned"],
+};
+
+export function isLevelBadgeEarned(progress, levelNumber) {
+  const u = unwrapSessionPayload(progress);
+  if (!u || typeof u !== "object") return false;
+  const keys = LEVEL_BADGE_EARNED_KEYS[levelNumber];
+  if (!keys) return false;
+  for (const k of keys) {
+    const v = u[k];
+    if (v === true || v === 1 || String(v).toLowerCase() === "true") return true;
+  }
+  return false;
+}
+
+/**
+ * Best correct-answer count for a completed level, if the API exposes it.
+ * Supports: levelScores { "1": 8 }, completedLevelSummaries[], scoresByLevel[], level1BestScore, etc.
+ */
+export function readBestScoreForLevelFromProgress(progress, levelNumber) {
+  const u = unwrapSessionPayload(progress);
+  if (!u || typeof u !== "object") return null;
+
+  const flat =
+    u[`level${levelNumber}BestScore`] ??
+    u[`Level${levelNumber}BestScore`] ??
+    u[`level${levelNumber}Score`] ??
+    u[`Level${levelNumber}Score`];
+  if (flat != null) {
+    const n = Number(flat);
+    if (Number.isFinite(n)) return n;
+  }
+
+  const block =
+    u.levelScores ??
+    u.LevelScores ??
+    u.bestScoresByLevel ??
+    u.BestScoresByLevel ??
+    u.levelBestScores ??
+    u.LevelBestScores;
+  if (block && typeof block === "object" && !Array.isArray(block)) {
+    const raw =
+      block[levelNumber] ??
+      block[String(levelNumber)] ??
+      block[`L${levelNumber}`] ??
+      null;
+    if (raw != null) {
+      const n = Number(raw);
+      if (Number.isFinite(n)) return n;
+    }
+  }
+
+  const arr = u.scoresByLevel ?? u.ScoresByLevel ?? u.bestScores ?? u.BestScores;
+  if (Array.isArray(arr) && arr[levelNumber - 1] != null && arr[levelNumber - 1] !== "") {
+    const n = Number(arr[levelNumber - 1]);
+    if (Number.isFinite(n)) return n;
+  }
+
+  const list =
+    u.completedLevelSummaries ??
+    u.CompletedLevelSummaries ??
+    u.levelResults ??
+    u.LevelResults;
+  if (Array.isArray(list)) {
+    const row = list.find(
+      (x) => x && Number(x.levelNumber ?? x.LevelNumber ?? x.level ?? x.Level) === levelNumber
+    );
+    if (row && typeof row === "object") {
+      const s = Number(
+        row.bestScore ??
+          row.BestScore ??
+          row.bestCorrect ??
+          row.BestCorrect ??
+          row.correctAnswers ??
+          row.CorrectAnswers ??
+          row.score ??
+          row.Score
+      );
+      if (Number.isFinite(s)) return s;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Rows for the level picker: unlocked vs cleared (badge) and optional best score / N questions.
+ */
+export function getLevelSummariesForLevelsView(progress, questionsPerLevel = GAME_QUIZ_QUESTIONS_PER_LEVEL) {
+  const maxU = getMaxUnlockedLevel(progress);
+  return LEVEL_BADGE_ORDER.map(({ level, label, colorScheme }) => ({
+    level,
+    label,
+    colorScheme,
+    unlocked: level <= maxU,
+    cleared: isLevelBadgeEarned(progress, level),
+    bestScore: readBestScoreForLevelFromProgress(progress, level),
+    questionCount: questionsPerLevel,
+  }));
 }
 
 export function normalizeOptions(answer) {
@@ -318,6 +478,122 @@ export function hasSessionAnswerId(currentAnswer) {
   return true;
 }
 
+/**
+ * After POST /answer, read whether that slot was graded correct (API row IsCorrect).
+ */
+export function getAnswerRowOutcome(sessionPayload, sessionAnswerId) {
+  if (sessionAnswerId == null || sessionAnswerId === "") return null;
+  const s = unwrapSessionPayload(sessionPayload);
+  if (!s || typeof s !== "object") return null;
+  const list =
+    s.answers ??
+    s.Answers ??
+    s.sessionAnswers ??
+    s.SessionAnswers ??
+    s.questions ??
+    s.Questions ??
+    [];
+  if (!Array.isArray(list)) return null;
+  const row = list.find((a) => a && String(pickSessionAnswerId(a)) === String(sessionAnswerId));
+  if (!row || typeof row !== "object") return null;
+  const v = row.isCorrect ?? row.IsCorrect;
+  if (typeof v === "boolean") return { isCorrect: v };
+  if (v === true || v === 1 || String(v).toLowerCase() === "true") return { isCorrect: true };
+  if (v === false || v === 0 || String(v).toLowerCase() === "false") return { isCorrect: false };
+  return null;
+}
+
+/**
+ * Text shown after a correct answer (same sources as the old “hint”: API row hint/explanation).
+ */
+export function getAnswerRowJustificationText(sessionPayload, sessionAnswerId) {
+  if (sessionAnswerId == null || sessionAnswerId === "") return null;
+  const s = unwrapSessionPayload(sessionPayload);
+  if (!s || typeof s !== "object") return null;
+  const list =
+    s.answers ??
+    s.Answers ??
+    s.sessionAnswers ??
+    s.SessionAnswers ??
+    s.questions ??
+    s.Questions ??
+    [];
+  if (!Array.isArray(list)) return null;
+  const row = list.find((a) => a && String(pickSessionAnswerId(a)) === String(sessionAnswerId));
+  if (!row || typeof row !== "object") return null;
+  const candidates = [
+    row.hint,
+    row.Hint,
+    row.explanation,
+    row.Explanation,
+    row.rationale,
+    row.Rationale,
+    row.correctAnswerExplanation,
+    row.CorrectAnswerExplanation,
+    row.answerExplanation,
+    row.AnswerExplanation,
+  ];
+  for (const c of candidates) {
+    if (c != null && String(c).trim() !== "") return String(c).trim();
+  }
+  return null;
+}
+
+/**
+ * Builds sessionAnswerId → justification text from GET .../session/{id}/hints.
+ * Tolerates several DTO shapes (array root, hints/questions lists, camel or Pascal keys).
+ */
+export function buildJustificationLookupFromHintsApi(payload) {
+  const out = Object.create(null);
+  if (payload == null) return out;
+  const root = unwrapSessionPayload(payload);
+
+  const list = Array.isArray(root)
+    ? root
+    : root && typeof root === "object"
+      ? root.hints ??
+        root.Hints ??
+        root.items ??
+        root.Items ??
+        root.questions ??
+        root.Questions ??
+        root.answers ??
+        root.Answers ??
+        root.sessionAnswers ??
+        root.SessionAnswers ??
+        null
+      : null;
+
+  if (!Array.isArray(list)) return out;
+
+  for (const row of list) {
+    if (!row || typeof row !== "object") continue;
+    const id = pickSessionAnswerId(row);
+    if (id == null || String(id) === "") continue;
+    const candidates = [
+      row.justification,
+      row.Justification,
+      row.hint,
+      row.Hint,
+      row.text,
+      row.Text,
+      row.explanation,
+      row.Explanation,
+      row.rationale,
+      row.Rationale,
+    ];
+    let text = null;
+    for (const c of candidates) {
+      if (c != null && String(c).trim() !== "") {
+        text = String(c).trim();
+        break;
+      }
+    }
+    if (text) out[String(id)] = text;
+  }
+  return out;
+}
+
 export function hasQuestionContent(currentAnswer) {
   if (!currentAnswer) return false;
   if (String(currentAnswer.questionText || "").trim()) return true;
@@ -383,6 +659,8 @@ function readAbilityCountFromBlock(block, abilityName) {
 }
 
 export function getAbilityRemaining(session, currentAnswer, abilityName) {
+  const s = unwrapSessionPayload(session);
+
   const from = (obj) => {
     if (!obj || typeof obj !== "object") return null;
     const block =
@@ -404,11 +682,36 @@ export function getAbilityRemaining(session, currentAnswer, abilityName) {
     if (pascal in obj) return Number(obj[pascal]);
     return null;
   };
-  let n = from(currentAnswer?.raw);
-  if (n == null || Number.isNaN(n)) n = from(session);
-  if (n == null || Number.isNaN(n)) n = from(unwrapSessionPayload(session));
-  if (n == null || Number.isNaN(n)) return 0;
-  return Math.max(0, n);
+
+  // Prefer session root for ability totals — never let a question row shadow with a stale nested block.
+  let fromDto = from(session);
+  if (fromDto == null || Number.isNaN(fromDto)) fromDto = from(s);
+  if (fromDto == null || Number.isNaN(fromDto)) fromDto = from(currentAnswer?.raw);
+
+  const list = getSessionQuestionListRoot(s);
+  const anyUsed =
+    Array.isArray(list) &&
+    list.length > 0 &&
+    list.some((row) => rowHasAnyAbilityUseFlag(row));
+
+  if (anyUsed) {
+    const derived = deriveAbilityRemainingFromAnswersList(list, abilityName);
+    if (derived != null) {
+      if (fromDto != null && Number.isFinite(fromDto) && !Number.isNaN(fromDto)) {
+        const merged = Math.max(0, Math.min(derived, fromDto));
+        const maxCap = GAME_ABILITY_MAX_PER_SESSION[abilityName];
+        return Number.isFinite(maxCap) ? Math.min(merged, maxCap) : merged;
+      }
+      return derived;
+    }
+  }
+
+  if (fromDto != null && Number.isFinite(fromDto) && !Number.isNaN(fromDto)) {
+    const n = Math.max(0, fromDto);
+    const maxCap = GAME_ABILITY_MAX_PER_SESSION[abilityName];
+    return Number.isFinite(maxCap) ? Math.min(n, maxCap) : n;
+  }
+  return 0;
 }
 
 export function buildAbilityCounts(session, currentAnswer) {
@@ -444,7 +747,10 @@ export function getQuestionProgressDisplay(session, currentAnswer) {
   return { index: i >= 0 ? i + 1 : 1, total };
 }
 
-/** Active run id from GET /api/game/progress (field names vary by backend). */
+/** Active run id from GET /api/game/progress (field names vary by backend).
+ *  Continue quiz only appears when this is set — e.g. activeSessionId from an in-progress GameSession.
+ *  currentLevel / highestUnlockedLevel alone are not enough.
+ */
 export function getActiveSessionIdFromProgress(progress) {
   if (!progress || typeof progress !== "object") return null;
   const u = unwrapSessionPayload(progress);
@@ -518,8 +824,46 @@ export function pickSessionIdFromErrorDetails(details) {
   );
 }
 
+/** Questions per run from session DTO (defaults to 10 — GameQuizConstants.QuestionsPerSession). */
+export function getSessionTotalQuestions(session) {
+  const s = session && typeof session === "object" ? unwrapSessionPayload(session) : null;
+  if (!s) return 10;
+  const n = Number(s.totalQuestions ?? s.TotalQuestions);
+  return Number.isFinite(n) && n > 0 ? n : 10;
+}
+
+/** Parse "2", "Level 2", etc. from API unlock fields. */
+export function parseUnlockedLevelNumber(value) {
+  if (value == null || value === "") return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const m = String(value).match(/\d+/);
+  return m ? parseInt(m[0], 10) : null;
+}
+
 export function extractResultSummary(session, finishPayload) {
-  const src = finishPayload && typeof finishPayload === "object" ? finishPayload : session;
+  const finishObj =
+    finishPayload != null && typeof finishPayload === "object"
+      ? unwrapSessionPayload(finishPayload)
+      : null;
+  const sessionObj =
+    session != null && typeof session === "object" ? unwrapSessionPayload(session) : null;
+  const finishLooksUseful =
+    finishObj &&
+    (finishObj.passed != null ||
+      finishObj.Passed != null ||
+      finishObj.isPassed != null ||
+      finishObj.IsPassed != null ||
+      finishObj.levelPassed != null ||
+      finishObj.LevelPassed != null ||
+      finishObj.score != null ||
+      finishObj.Score != null);
+
+  const src = finishLooksUseful
+    ? finishObj
+    : sessionObj != null && typeof sessionObj === "object"
+      ? sessionObj
+      : null;
+
   if (!src || typeof src !== "object") {
     return {
       passed: null,
@@ -530,7 +874,14 @@ export function extractResultSummary(session, finishPayload) {
     };
   }
   return {
-    passed: src.passed ?? src.Passed ?? src.isPassed ?? src.IsPassed ?? null,
+    passed:
+      src.passed ??
+      src.Passed ??
+      src.isPassed ??
+      src.IsPassed ??
+      src.levelPassed ??
+      src.LevelPassed ??
+      null,
     score: src.score ?? src.Score ?? src.totalScore ?? src.TotalScore ?? null,
     badge: src.badge ?? src.Badge ?? src.badgeEarned ?? src.BadgeEarned ?? null,
     pointsEarned: src.pointsEarned ?? src.PointsEarned ?? src.sessionPoints ?? null,
@@ -540,6 +891,30 @@ export function extractResultSummary(session, finishPayload) {
 }
 
 const PENDING_GAME_SESSION_KEY = "franc_game_pending_session_id";
+
+function fiftyFiftyUsedStorageKey(sessionId) {
+  return `franc_game_fifty_used_${String(sessionId)}`;
+}
+
+/** Frontend-only: 50/50 once per run even if API exposes two charges. */
+export function readFiftyFiftyAlreadyUsedSession(sessionId) {
+  if (sessionId == null || sessionId === "") return false;
+  try {
+    return window.sessionStorage.getItem(fiftyFiftyUsedStorageKey(sessionId)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markFiftyFiftyUsedSession(sessionId) {
+  try {
+    if (sessionId != null && sessionId !== "") {
+      window.sessionStorage.setItem(fiftyFiftyUsedStorageKey(sessionId), "1");
+    }
+  } catch {
+    /* ignore */
+  }
+}
 
 /** Remember in-flight run after “Exit to levels” so Continue works before progress refetches. */
 export function readPendingGameSessionId() {

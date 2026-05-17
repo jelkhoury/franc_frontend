@@ -1,7 +1,15 @@
-import { Box, Button, Progress, useToast } from "@chakra-ui/react";
+import { Box, Button, useToast } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../../components/Footer";
-import { useContext, useState, useEffect, useMemo, useRef, useCallback } from "react";
+import {
+  useContext,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import { AuthContext } from "../../../components/AuthContext";
 import { get, post } from "../../../utils/httpServices";
 import { captureError } from "../../../utils/sentryUtils";
@@ -9,6 +17,8 @@ import { GAME_ENDPOINTS } from "../../../services/apiService";
 import GameLevelsView from "./GameLevelsView";
 import GameSessionView from "./GameSessionView";
 import GameResultsView from "./GameResultsView";
+import AbilityFlashOverlay from "./AbilityFlashOverlay";
+import LevelOutcomeFlashOverlay from "./LevelOutcomeFlashOverlay";
 import {
   pickSessionId,
   getTotalPoints,
@@ -22,21 +32,38 @@ import {
   unwrapSessionPayload,
   getActiveSessionIdFromProgress,
   getLevelNumberFromSession,
+  getSessionTotalQuestions,
+  parseUnlockedLevelNumber,
+  getAnswerRowOutcome,
+  getAnswerRowJustificationText,
+  buildJustificationLookupFromHintsApi,
+  readFiftyFiftyAlreadyUsedSession,
+  markFiftyFiftyUsedSession,
+  getLevelSummariesForLevelsView,
   formatGameApiError,
   isLikelySessionAlreadyActiveError,
   pickSessionIdFromErrorDetails,
   readPendingGameSessionId,
   writePendingGameSessionId,
   clearPendingGameSessionId,
-  OPTION_KEYS,
+  GAME_TIME_FREEZE_EXTRA_SECONDS,
 } from "./gameSessionUtils";
 import { playGameSound, unlockGameAudio } from "./gameWebAudio";
+import { playGameMediaFeedback, startGameBgm, stopGameBgm, playLevelFailSound, playLevelPassFlashSound, playLastThreeSecondsSound, playAbilityUseSound, playUnlockNewLevelSound } from "./gameMediaAudio";
 
-const SESSION_LIMIT_SEC = 15 * 60;
 const QUESTION_LIMIT_SEC = 30;
+/** Hold after grading before session advances (wrong: quick; correct: longer so explanation can be read). */
+const ANSWER_REVEAL_MS_WRONG = 2400;
+const ANSWER_REVEAL_MS_CORRECT = 5200;
+
+/** Set to true to trace [GameQuiz timeout] in the console */
+const DEBUG_GAME_QUIZ_TIMEOUT = false;
+
+/** Ignore timeout arming briefly after sessionAnswerId changes (stops spurious timedOut on new question / first paint). */
+const QUESTION_KEY_ARM_COOLDOWN_MS = 450;
 
 const GameQuizTryPage = () => {
-  const { isLoggedIn } = useContext(AuthContext);
+  const { isLoggedIn, authInitialized } = useContext(AuthContext);
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -48,11 +75,29 @@ const GameQuizTryPage = () => {
   const [activeLevelNumber, setActiveLevelNumber] = useState(1);
   const [startingLevel, setStartingLevel] = useState(null);
   const [resumingSession, setResumingSession] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  /** null — idle; 'answer' — POST /answer or reveal; 'finish' — POST /finish only */
+  const [submittingMode, setSubmittingMode] = useState(null);
+  const submitting = submittingMode != null;
+  /** True only until the answer POST returns (friendly overlay on the card; not during reveal delay). */
+  const [answerAwaitingApi, setAnswerAwaitingApi] = useState(false);
   const [abilityLoading, setAbilityLoading] = useState(null);
-  const [hintRevealed, setHintRevealed] = useState(false);
+  /** Successful ability use — drives center-screen flash (see AbilityFlashOverlay). */
+  const [abilityFlash, setAbilityFlash] = useState(null);
+  /** After POST /answer: highlight chosen option green/red until next question or timeout (Double Chance retry). */
+  const [answerFeedback, setAnswerFeedback] = useState(null);
+  /** sessionAnswerId → justification from GET /session/{id}/hints */
+  const [justificationByAnswerId, setJustificationByAnswerId] = useState(() => ({}));
   const [finishSnapshot, setFinishSnapshot] = useState(null);
+  /** One-shot pass/fail flash when landing on results (see LevelOutcomeFlashOverlay). */
+  const [levelOutcomeFlash, setLevelOutcomeFlash] = useState(null);
+  /** Level grid: pulse this stage after pass + unlock (see GameLevelsView). */
+  const [levelsCelebrateLevel, setLevelsCelebrateLevel] = useState(null);
   const [tick, setTick] = useState(0);
+  /** Client-only: allow 50/50 once per session id even if API returns two charges. */
+  const [fiftyFiftyConsumedFrontend, setFiftyFiftyConsumedFrontend] = useState(false);
+
+  /** After a level pass with unlock: play unlock SFX only once PROGRESS has loaded (ref set in handleLevelOutcomeComplete). */
+  const pendingUnlockSoundAfterProgressRef = useRef(false);
 
   const [soundEnabled, setSoundEnabled] = useState(() => {
     try {
@@ -62,28 +107,94 @@ const GameQuizTryPage = () => {
     }
   });
 
-  const sessionStartedAtRef = useRef(null);
+  const soundEnabledRef = useRef(soundEnabled);
+  soundEnabledRef.current = soundEnabled;
+
   const questionEndsAtRef = useRef(null);
-  const sessionTimeoutFiredRef = useRef(false);
+  /** While an answer POST is in flight, UI shows this many seconds frozen (no countdown). */
+  const questionDisplayFrozenRef = useRef(null);
+  const sessionIdRef = useRef(null);
   const lastQuestionTimeoutIdRef = useRef(null);
   const lastTickSoundAtRef = useRef(0);
   const tenSecondSoundPlayedForKeyRef = useRef(null);
+  const lastThreeSecSoundPlayedForKeyRef = useRef(null);
+  /** Sync question timer as soon as the active question id changes (must run before effects; avoids double timeout POST). */
+  const prevQuestionKeyForTimerRef = useRef(null);
+  /** Only the question id that triggered the “time’s up” overlay may show 0s; avoids next question looking expired. */
+  const timeUpDisplayKeyRef = useRef(null);
+  /** After a question key change, do not arm question-timeout until this time (prevents false ARM when memo lags ref). */
+  const questionKeyArmCooldownUntilRef = useRef(0);
+  const prevStepForOutcomeRef = useRef(null);
+
+  const dismissAbilityFlash = useCallback(() => setAbilityFlash(null), []);
+  const handleLevelOutcomeComplete = useCallback((payload) => {
+    setLevelOutcomeFlash(null);
+    if (payload?.variant !== "pass") return;
+    clearPendingGameSessionId();
+    setFinishSnapshot(null);
+    setSession(null);
+    setSessionId(null);
+    setJustificationByAnswerId({});
+    stopGameBgm();
+    questionEndsAtRef.current = null;
+    const ul = payload.unlockedLevel;
+    if (ul != null) {
+      setLevelsCelebrateLevel(Number(ul));
+      pendingUnlockSoundAfterProgressRef.current = true;
+    }
+    setStep(1);
+  }, []);
+
+  const loadSessionJustifications = useCallback(async (sid) => {
+    if (sid == null || sid === "") return;
+    try {
+      const data = await get(GAME_ENDPOINTS.SESSION_HINTS(sid));
+      const lookup = buildJustificationLookupFromHintsApi(data);
+      setJustificationByAnswerId(lookup);
+    } catch (error) {
+      captureError(error);
+      setJustificationByAnswerId({});
+    }
+  }, []);
+
+  const [timeUpAnimating, setTimeUpAnimating] = useState(false);
+  /** Mirrors timeUpAnimating synchronously so the timeout effect never sees a stale “idle” while overlay is active. */
+  const timeUpAnimatingRef = useRef(false);
+
+  const applySessionFromResponse = useCallback((res) => {
+    if (res == null || typeof res !== "object") return;
+    const layer = unwrapSessionPayload(res);
+    const sess =
+      layer && typeof layer === "object" && !Array.isArray(layer) ? { ...layer } : res;
+    setSession(sess);
+  }, []);
 
   useEffect(() => {
+    sessionIdRef.current = sessionId;
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!authInitialized) return;
     if (!isLoggedIn) {
       navigate("/login");
     }
-  }, [isLoggedIn, navigate]);
+  }, [authInitialized, isLoggedIn, navigate]);
 
   useEffect(() => {
-    if (!isLoggedIn || step !== 1) return undefined;
+    if (!authInitialized || !isLoggedIn || step !== 1) return undefined;
     let cancelled = false;
     (async () => {
       setLoadingProgress(true);
       try {
         const data = await get(GAME_ENDPOINTS.PROGRESS);
-        if (!cancelled) setProgress(data);
+        if (cancelled) return;
+        setProgress(data);
+        if (pendingUnlockSoundAfterProgressRef.current) {
+          pendingUnlockSoundAfterProgressRef.current = false;
+          playUnlockNewLevelSound(soundEnabledRef.current);
+        }
       } catch (error) {
+        pendingUnlockSoundAfterProgressRef.current = false;
         captureError(error);
         console.error("Game progress:", error);
         toast({
@@ -100,12 +211,23 @@ const GameQuizTryPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [isLoggedIn, step, toast]);
+  }, [authInitialized, isLoggedIn, step, toast]);
 
   useEffect(() => {
     if (step !== 2) return undefined;
     const id = window.setInterval(() => setTick((t) => t + 1), 1000);
     return () => window.clearInterval(id);
+  }, [step]);
+
+  useEffect(() => {
+    if (step !== 2) setAbilityFlash(null);
+  }, [step]);
+
+  useEffect(() => {
+    if (step !== 2) {
+      setAnswerFeedback(null);
+      setAnswerAwaitingApi(false);
+    }
   }, [step]);
 
   const totalPoints = useMemo(() => getTotalPoints(progress), [progress]);
@@ -114,44 +236,86 @@ const GameQuizTryPage = () => {
     () => getActiveSessionIdFromProgress(progress) ?? readPendingGameSessionId(),
     [progress]
   );
+  const levelSummaries = useMemo(() => getLevelSummariesForLevelsView(progress), [progress]);
 
   const currentAnswer = useMemo(() => resolveCurrentAnswer(session), [session]);
   const currentQuestionKey = useMemo(() => {
     const ca = resolveCurrentAnswer(session);
     return hasSessionAnswerId(ca) ? String(ca.sessionAnswerId) : null;
   }, [session]);
-  const abilityCounts = useMemo(
-    () => buildAbilityCounts(session, currentAnswer),
-    [session, currentAnswer]
-  );
+
+  // Must run BEFORE questionSecondsLeft useMemo: that memo reads questionEndsAtRef. If this ran after
+  // useMemo, one render would pair the NEW sessionAnswerId with the OLD expired deadline → double timedOut POST.
+  if (step === 2 && currentQuestionKey) {
+    if (currentQuestionKey !== prevQuestionKeyForTimerRef.current) {
+      if (DEBUG_GAME_QUIZ_TIMEOUT) {
+        // eslint-disable-next-line no-console
+        console.log("[GameQuiz timeout] question key changed — reset 30s deadline + timeout guards", {
+          from: prevQuestionKeyForTimerRef.current,
+          to: currentQuestionKey,
+          prevDeadlineMs: questionEndsAtRef.current,
+        });
+      }
+      prevQuestionKeyForTimerRef.current = currentQuestionKey;
+      questionEndsAtRef.current = Date.now() + QUESTION_LIMIT_SEC * 1000;
+      questionKeyArmCooldownUntilRef.current = Date.now() + QUESTION_KEY_ARM_COOLDOWN_MS;
+      lastQuestionTimeoutIdRef.current = null;
+      timeUpDisplayKeyRef.current = null;
+      tenSecondSoundPlayedForKeyRef.current = null;
+      lastThreeSecSoundPlayedForKeyRef.current = null;
+      questionDisplayFrozenRef.current = null;
+    }
+  } else {
+    prevQuestionKeyForTimerRef.current = null;
+    timeUpDisplayKeyRef.current = null;
+    questionKeyArmCooldownUntilRef.current = 0;
+  }
+
+  useEffect(() => {
+    if (sessionId == null || sessionId === "") {
+      setFiftyFiftyConsumedFrontend(false);
+      return;
+    }
+    setFiftyFiftyConsumedFrontend(readFiftyFiftyAlreadyUsedSession(sessionId));
+  }, [sessionId]);
+
+  const abilityCounts = useMemo(() => {
+    const base = buildAbilityCounts(session, currentAnswer);
+    if (!fiftyFiftyConsumedFrontend) return base;
+    return { ...base, FiftyFifty: 0 };
+  }, [session, currentAnswer, fiftyFiftyConsumedFrontend]);
   const qProgress = useMemo(
     () => getQuestionProgressDisplay(session, currentAnswer),
     [session, currentAnswer]
   );
 
-  const sessionSecondsLeft = useMemo(() => {
-    if (step !== 2 || sessionStartedAtRef.current == null) return SESSION_LIMIT_SEC;
-    const elapsed = (Date.now() - sessionStartedAtRef.current) / 1000;
-    return Math.max(0, SESSION_LIMIT_SEC - elapsed);
-  }, [step, tick]);
-
   const questionSecondsLeft = useMemo(() => {
     if (step !== 2 || !currentAnswer) return QUESTION_LIMIT_SEC;
+    const key = currentQuestionKey;
+    if (
+      timeUpAnimating &&
+      key != null &&
+      timeUpDisplayKeyRef.current != null &&
+      String(key) === String(timeUpDisplayKeyRef.current)
+    ) {
+      return 0;
+    }
+    if (submitting && questionDisplayFrozenRef.current != null) {
+      return questionDisplayFrozenRef.current;
+    }
     const end = questionEndsAtRef.current;
     if (end == null) return QUESTION_LIMIT_SEC;
     return Math.max(0, (end - Date.now()) / 1000);
-  }, [step, currentAnswer, tick]);
+  }, [step, currentAnswer, currentQuestionKey, tick, submitting, timeUpAnimating]);
 
   const questionUrgency =
     questionSecondsLeft <= 8 ? "critical" : questionSecondsLeft <= 15 ? "warning" : "normal";
-  const sessionUrgency =
-    sessionSecondsLeft <= 60 ? "critical" : sessionSecondsLeft <= 120 ? "warning" : "normal";
 
-  useEffect(() => {
-    if (step !== 2 || !currentQuestionKey) return;
-    questionEndsAtRef.current = Date.now() + QUESTION_LIMIT_SEC * 1000;
-    lastQuestionTimeoutIdRef.current = null;
-    tenSecondSoundPlayedForKeyRef.current = null;
+  useLayoutEffect(() => {
+    if (step === 2 && currentQuestionKey) {
+      timeUpAnimatingRef.current = false;
+      setTimeUpAnimating(false);
+    }
   }, [step, currentQuestionKey]);
 
   const autoFinishStartedForSessionRef = useRef(null);
@@ -165,9 +329,10 @@ const GameQuizTryPage = () => {
   const finalizeRunAndShowResults = useCallback(async (sid, latestSession) => {
     if (sid == null || sid === "") return;
     clearPendingGameSessionId();
+    let finishRes = null;
     try {
-      const res = await post(GAME_ENDPOINTS.FINISH(sid), {});
-      setFinishSnapshot({ session: latestSession, finish: res });
+      finishRes = await post(GAME_ENDPOINTS.FINISH(sid), {});
+      setFinishSnapshot({ session: latestSession, finish: finishRes });
     } catch (e) {
       captureError(e);
       setFinishSnapshot({ session: latestSession, finish: null });
@@ -187,19 +352,25 @@ const GameQuizTryPage = () => {
     return undefined;
   }, [step, sessionId, session, finalizeRunAndShowResults]);
 
-  const reloadSession = useCallback(async () => {
-    if (!sessionId) return null;
-    const s = await get(GAME_ENDPOINTS.SESSION(sessionId));
-    setSession(s);
-    return s;
-  }, [sessionId]);
-
   const playSound = useCallback(
     (key) => {
+      if (key === "correct" || key === "wrong") {
+        playGameMediaFeedback(key, soundEnabled);
+        return;
+      }
       playGameSound(key, soundEnabled);
     },
     [soundEnabled]
   );
+
+  useEffect(() => {
+    if (step === 2 && soundEnabled) {
+      startGameBgm();
+    } else {
+      stopGameBgm();
+    }
+    return () => stopGameBgm();
+  }, [step, soundEnabled]);
 
   useEffect(() => {
     if (step !== 2 || !soundEnabled || !currentQuestionKey) return undefined;
@@ -211,8 +382,18 @@ const GameQuizTryPage = () => {
   }, [step, soundEnabled, currentQuestionKey, questionSecondsLeft, tick]);
 
   useEffect(() => {
+    if (step !== 2 || !soundEnabled || !currentQuestionKey) return undefined;
+    if (Math.ceil(questionSecondsLeft) !== 3) return undefined;
+    if (lastThreeSecSoundPlayedForKeyRef.current === currentQuestionKey) return undefined;
+    lastThreeSecSoundPlayedForKeyRef.current = currentQuestionKey;
+    playLastThreeSecondsSound(soundEnabled);
+    return undefined;
+  }, [step, soundEnabled, currentQuestionKey, questionSecondsLeft, tick]);
+
+  useEffect(() => {
     if (step !== 2 || questionUrgency !== "critical" || !soundEnabled) return undefined;
     if (questionSecondsLeft > 5) return undefined;
+    if (questionSecondsLeft <= 3) return undefined;
     const now = Date.now();
     if (now - lastTickSoundAtRef.current < 900) return undefined;
     lastTickSoundAtRef.current = now;
@@ -220,115 +401,154 @@ const GameQuizTryPage = () => {
     return undefined;
   }, [step, questionUrgency, questionSecondsLeft, soundEnabled, tick]);
 
+  /**
+   * Question timer expired: show brief overlay, then POST answer as timeout (wrong), no abilities.
+   * Backend: extend SubmitGameAnswerRequestDto with bool TimedOut; when true, set wrong answer
+   * without consuming Skip (see GameQuizService.SubmitAnswerAsync).
+   */
   useEffect(() => {
-    if (step !== 2 || !sessionId || sessionSecondsLeft > 0 || sessionTimeoutFiredRef.current) {
+    if (step !== 2 || !currentQuestionKey || !sessionId || submitting) {
       return undefined;
     }
-    sessionTimeoutFiredRef.current = true;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await post(GAME_ENDPOINTS.FINISH(sessionId), {});
-        if (cancelled) return;
-        clearPendingGameSessionId();
-        setFinishSnapshot({ session, finish: res });
-        setStep(3);
-        toast({
-          title: "Time's up",
-          description: "Session ended — here is your result.",
-          status: "info",
-          duration: 4000,
-          isClosable: true,
+    // While overlay / POST for a timed-out question is in flight, do not arm another timeout (fixes double timedOut on next question).
+    if (timeUpAnimatingRef.current) {
+      if (DEBUG_GAME_QUIZ_TIMEOUT) {
+        // eslint-disable-next-line no-console
+        console.log("[GameQuiz timeout] skip arm: timeUpAnimatingRef still true", {
+          currentQuestionKey,
+          questionSecondsLeft,
         });
-      } catch (error) {
-        captureError(error);
-        if (!cancelled) {
-          toast({
-            title: "Could not finish session",
-            description: error?.message || "Try again.",
-            status: "error",
-            duration: 4000,
-            isClosable: true,
-          });
-        }
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [step, sessionId, sessionSecondsLeft, session, toast]);
-
-  useEffect(() => {
-    if (step !== 2 || !currentQuestionKey || submitting) return undefined;
-    if (questionSecondsLeft > 0.25) return undefined;
+      return undefined;
+    }
+    const now = Date.now();
+    if (now < questionKeyArmCooldownUntilRef.current) {
+      if (DEBUG_GAME_QUIZ_TIMEOUT) {
+        // eslint-disable-next-line no-console
+        console.log("[GameQuiz timeout] skip arm: key-change cooldown", {
+          currentQuestionKey,
+          cooldownEndsInMs: questionKeyArmCooldownUntilRef.current - now,
+        });
+      }
+      return undefined;
+    }
+    const endMs = questionEndsAtRef.current;
+    const liveQuestionSecLeft =
+      endMs == null ? QUESTION_LIMIT_SEC : Math.max(0, (endMs - now) / 1000);
+    if (liveQuestionSecLeft > 0.25) return undefined;
     const id = currentQuestionKey;
     if (lastQuestionTimeoutIdRef.current === id) return undefined;
+    const prevTimeoutGuard = lastQuestionTimeoutIdRef.current;
     lastQuestionTimeoutIdRef.current = id;
+
+    if (DEBUG_GAME_QUIZ_TIMEOUT) {
+      // eslint-disable-next-line no-console
+      console.log("[GameQuiz timeout] ARM question timeout flow", {
+        sessionAnswerId: id,
+        questionSecondsLeftMemo: questionSecondsLeft,
+        liveQuestionSecLeft,
+        questionEndsAtMs: questionEndsAtRef.current,
+        prevTimeoutGuard,
+      });
+    }
+
     let cancelled = false;
-    (async () => {
-      try {
-        if (!sessionId) return;
-        let s = await get(GAME_ENDPOINTS.SESSION(sessionId));
-        if (cancelled) return;
-        let nextCa = resolveCurrentAnswer(s);
-        if (!nextCa || String(nextCa.sessionAnswerId) !== String(id)) {
-          setSession(s);
-          return;
-        }
-
-        const skipLeft = buildAbilityCounts(s, nextCa).Skip ?? 0;
-        if (skipLeft > 0) {
-          await post(GAME_ENDPOINTS.ABILITY(sessionId, id), { ability: "Skip" });
-        } else {
-          try {
-            await post(GAME_ENDPOINTS.ABILITY(sessionId, id), { ability: "Skip" });
-          } catch {
-            /* server may still advance */
+    timeUpDisplayKeyRef.current = id;
+    timeUpAnimatingRef.current = true;
+    setTimeUpAnimating(true);
+    const animTimer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const sid = sessionIdRef.current;
+          if (cancelled || sid == null) return;
+          if (DEBUG_GAME_QUIZ_TIMEOUT) {
+            // eslint-disable-next-line no-console
+            console.log("[GameQuiz timeout] POST timedOut", {
+              url: `session/${sid}/answer/${id}`,
+              sessionAnswerId: id,
+            });
           }
-        }
-        if (cancelled) return;
-        s = await get(GAME_ENDPOINTS.SESSION(sessionId));
-        setSession(s);
-        nextCa = resolveCurrentAnswer(s);
-        if (nextCa && String(nextCa.sessionAnswerId) === String(id)) {
-          const fallback = OPTION_KEYS[0];
-          try {
-            await post(GAME_ENDPOINTS.ANSWER(sessionId, id), { selectedOption: fallback });
-            if (cancelled) return;
-            s = await get(GAME_ENDPOINTS.SESSION(sessionId));
-            setSession(s);
-          } catch (e) {
-            captureError(e);
-          }
-        }
+          let res = await post(GAME_ENDPOINTS.ANSWER(sid, id), { timedOut: true });
+          /**
+           * Do not skip applySession when `cancelled` — effect cleanup can run while `post` is in flight
+           * (e.g. deps tick). Dropping the response leaves the user on the same question at 0s forever.
+           */
+          applySessionFromResponse(res);
 
-        const still = resolveCurrentAnswer(s);
-        if (still && String(still.sessionAnswerId) === String(id)) {
-          toast({
-            title: "Time's up",
-            description: "Choose an answer or use Skip if you have one.",
-            status: "warning",
-            duration: 4000,
-            isClosable: true,
-          });
+          /**
+           * Double Chance with no answer: some APIs leave the slot "open" after the first timedOut.
+           * Do not add a new question clock — chain one more timedOut so one "time's up" advances.
+           */
+          const readRetryStillOpen = (payload) => {
+            const after = unwrapSessionPayload(payload);
+            const sessShape =
+              after && typeof after === "object" && !Array.isArray(after) ? after : payload;
+            const ca = resolveCurrentAnswer(sessShape);
+            return (
+              hasSessionAnswerId(ca) &&
+              String(ca.sessionAnswerId) === String(id) &&
+              !!ca.canRetry
+            );
+          };
+
+          if (!cancelled && readRetryStillOpen(res)) {
+            if (DEBUG_GAME_QUIZ_TIMEOUT) {
+              // eslint-disable-next-line no-console
+              console.log("[GameQuiz timeout] second timedOut POST (finish Double Chance without extra clock)", {
+                sessionAnswerId: id,
+              });
+            }
+            res = await post(GAME_ENDPOINTS.ANSWER(sid, id), { timedOut: true });
+            applySessionFromResponse(res);
+          }
+
+          if (!cancelled) playSound("wrong");
+          lastQuestionTimeoutIdRef.current = null;
+        } catch (error) {
+          captureError(error);
+          lastQuestionTimeoutIdRef.current = null;
+          if (!cancelled) {
+            toast({
+              title: "Time's up",
+              description:
+                "Could not record a timed-out answer. The API must accept { timedOut: true } on the answer endpoint (see comment in GameQuizTryPage).",
+              status: "error",
+              duration: 7000,
+              isClosable: true,
+            });
+          }
+        } finally {
+          if (DEBUG_GAME_QUIZ_TIMEOUT) {
+            // eslint-disable-next-line no-console
+            console.log("[GameQuiz timeout] POST finished — clear overlay flags");
+          }
+          timeUpDisplayKeyRef.current = null;
+          timeUpAnimatingRef.current = false;
+          setTimeUpAnimating(false);
         }
-      } catch (error) {
-        captureError(error);
-        if (!cancelled) {
-          toast({
-            title: "Question timer",
-            description: error?.message || "Could not move to the next question.",
-            status: "warning",
-            duration: 4000,
-            isClosable: true,
-          });
-        }
-      }
-    })();
+      })();
+    }, 700);
+
     return () => {
+      if (DEBUG_GAME_QUIZ_TIMEOUT) {
+        // eslint-disable-next-line no-console
+        console.log("[GameQuiz timeout] effect cleanup (deps changed or unmount)", {
+          cancelledArmForId: id,
+        });
+      }
       cancelled = true;
+      window.clearTimeout(animTimer);
+      timeUpDisplayKeyRef.current = null;
+      timeUpAnimatingRef.current = false;
+      setTimeUpAnimating(false);
+      /**
+       * Critical: we set lastQuestionTimeoutIdRef = id when arming. If this cleanup runs before the
+       * POST (e.g. submitting toggles or effect deps churn), the timer is cancelled but the ref stayed
+       * === id, so the guard below blocked re-arming — user stuck at 0s on the same question forever.
+       */
+      lastQuestionTimeoutIdRef.current = prevTimeoutGuard;
     };
-  }, [step, currentQuestionKey, questionSecondsLeft, submitting, sessionId, toast]);
+  }, [step, currentQuestionKey, questionSecondsLeft, submitting, sessionId, toast, playSound, applySessionFromResponse]);
 
   const handleResumeSession = useCallback(
     async (sid) => {
@@ -345,10 +565,7 @@ const GameQuizTryPage = () => {
         setSessionId(id);
         setSession(sess);
         setActiveLevelNumber(getLevelNumberFromSession(sess));
-        sessionTimeoutFiredRef.current = false;
-        sessionStartedAtRef.current = Date.now();
         questionEndsAtRef.current = Date.now() + QUESTION_LIMIT_SEC * 1000;
-        setHintRevealed(false);
         setFinishSnapshot(null);
         writePendingGameSessionId(id);
         if (isSessionComplete(sess)) {
@@ -358,6 +575,7 @@ const GameQuizTryPage = () => {
         }
         setStep(2);
         unlockGameAudio();
+        void loadSessionJustifications(id);
       } catch (error) {
         captureError(error);
         if (error && typeof error === "object" && error.status === 404) {
@@ -374,7 +592,7 @@ const GameQuizTryPage = () => {
         setResumingSession(false);
       }
     },
-    [activeSessionId, toast, finalizeRunAndShowResults]
+    [activeSessionId, toast, finalizeRunAndShowResults, loadSessionJustifications]
   );
 
   const handleStartLevel = async (levelNumber) => {
@@ -407,10 +625,7 @@ const GameQuizTryPage = () => {
       setSession(sess);
       writePendingGameSessionId(sid);
       setActiveLevelNumber(levelNumber);
-      sessionTimeoutFiredRef.current = false;
-      sessionStartedAtRef.current = Date.now();
       questionEndsAtRef.current = Date.now() + QUESTION_LIMIT_SEC * 1000;
-      setHintRevealed(false);
       setFinishSnapshot(null);
       if (isSessionComplete(sess)) {
         autoFinishStartedForSessionRef.current = sid;
@@ -419,6 +634,7 @@ const GameQuizTryPage = () => {
       }
       setStep(2);
       unlockGameAudio();
+      void loadSessionJustifications(sid);
     } catch (error) {
       captureError(error);
       console.error("Start session:", error);
@@ -468,17 +684,61 @@ const GameQuizTryPage = () => {
 
   const handleSelectOption = async (selectedOption) => {
     if (!sessionId || !hasSessionAnswerId(currentAnswer) || submitting) return;
-    setSubmitting(true);
+    const prevAnswerId = currentAnswer.sessionAnswerId;
+    const end = questionEndsAtRef.current;
+    questionDisplayFrozenRef.current =
+      end == null ? QUESTION_LIMIT_SEC : Math.max(0, (end - Date.now()) / 1000);
+    setSubmittingMode("answer");
+    setAnswerAwaitingApi(true);
     try {
-      await post(GAME_ENDPOINTS.ANSWER(sessionId, currentAnswer.sessionAnswerId), {
+      const res = await post(GAME_ENDPOINTS.ANSWER(sessionId, prevAnswerId), {
         selectedOption,
       });
-      const s = await get(GAME_ENDPOINTS.SESSION(sessionId));
-      setSession(s);
-      playSound("correct");
+      setAnswerAwaitingApi(false);
+      const outcome = getAnswerRowOutcome(res, prevAnswerId);
+      const layer = unwrapSessionPayload(res);
+      const nextCa =
+        layer && typeof layer === "object" && !Array.isArray(layer)
+          ? resolveCurrentAnswer(layer)
+          : null;
+
+      if (outcome != null) {
+        playSound(outcome.isCorrect ? "correct" : "wrong");
+        const justification = getAnswerRowJustificationText(res, prevAnswerId);
+        setAnswerFeedback({
+          sessionAnswerId: String(prevAnswerId),
+          optionKey: selectedOption,
+          correct: outcome.isCorrect,
+          justification: justification ?? undefined,
+        });
+      } else {
+        playSound("wrong");
+      }
+
+      const revealMs =
+        outcome?.isCorrect === true ? ANSWER_REVEAL_MS_CORRECT : ANSWER_REVEAL_MS_WRONG;
+      await new Promise((r) => setTimeout(r, revealMs));
+
+      applySessionFromResponse(res);
+
+      const completeShape =
+        layer && typeof layer === "object" && !Array.isArray(layer) ? layer : res;
+      if (completeShape && typeof completeShape === "object" && isSessionComplete(completeShape)) {
+        setAnswerFeedback(null);
+      }
+
+      const sameSlotRetry =
+        outcome &&
+        !outcome.isCorrect &&
+        nextCa?.canRetry &&
+        String(nextCa.sessionAnswerId) === String(prevAnswerId);
+      if (sameSlotRetry) {
+        window.setTimeout(() => setAnswerFeedback(null), 850);
+      }
     } catch (error) {
       captureError(error);
       playSound("wrong");
+      setAnswerFeedback(null);
       toast({
         title: "Answer not saved",
         description: error?.message || "Try again.",
@@ -487,25 +747,31 @@ const GameQuizTryPage = () => {
         isClosable: true,
       });
     } finally {
-      setSubmitting(false);
+      questionDisplayFrozenRef.current = null;
+      setAnswerAwaitingApi(false);
+      setSubmittingMode(null);
     }
   };
 
   const handleUseAbility = async (ability) => {
     if (!sessionId || !hasSessionAnswerId(currentAnswer) || abilityLoading || submitting) return;
+    if (ability === "FiftyFifty" && readFiftyFiftyAlreadyUsedSession(sessionId)) return;
     setAbilityLoading(ability);
     try {
-      await post(GAME_ENDPOINTS.ABILITY(sessionId, currentAnswer.sessionAnswerId), {
+      const res = await post(GAME_ENDPOINTS.ABILITY(sessionId, currentAnswer.sessionAnswerId), {
         ability,
       });
-      if (ability === "Hint") {
-        setHintRevealed(true);
-      }
       if (ability === "TimeFreeze") {
-        const extra = 15;
+        const extra = GAME_TIME_FREEZE_EXTRA_SECONDS;
         questionEndsAtRef.current = (questionEndsAtRef.current || Date.now()) + extra * 1000;
       }
-      await reloadSession();
+      applySessionFromResponse(res);
+      if (ability === "FiftyFifty" && sessionId) {
+        markFiftyFiftyUsedSession(sessionId);
+        setFiftyFiftyConsumedFrontend(true);
+      }
+      playAbilityUseSound(soundEnabled);
+      setAbilityFlash(ability);
     } catch (error) {
       captureError(error);
       toast({
@@ -524,21 +790,28 @@ const GameQuizTryPage = () => {
     if (sessionId) {
       writePendingGameSessionId(sessionId);
     }
+    setSubmittingMode(null);
+    setAnswerAwaitingApi(false);
     setStep(1);
     setSession(null);
     setSessionId(null);
     setFinishSnapshot(null);
-    setHintRevealed(false);
-    sessionStartedAtRef.current = null;
+    setJustificationByAnswerId({});
+    setLevelsCelebrateLevel(null);
+    stopGameBgm();
     questionEndsAtRef.current = null;
   };
 
   const handleFinishManually = async () => {
     if (!sessionId || submitting) return;
-    setSubmitting(true);
+    const end = questionEndsAtRef.current;
+    questionDisplayFrozenRef.current =
+      end == null ? QUESTION_LIMIT_SEC : Math.max(0, (end - Date.now()) / 1000);
+    setSubmittingMode("finish");
     try {
       const res = await post(GAME_ENDPOINTS.FINISH(sessionId), {});
       clearPendingGameSessionId();
+      stopGameBgm();
       setFinishSnapshot({ session, finish: res });
       setStep(3);
     } catch (error) {
@@ -551,7 +824,8 @@ const GameQuizTryPage = () => {
         isClosable: true,
       });
     } finally {
-      setSubmitting(false);
+      questionDisplayFrozenRef.current = null;
+      setSubmittingMode(null);
     }
   };
 
@@ -577,38 +851,96 @@ const GameQuizTryPage = () => {
     [finishSnapshot, session]
   );
 
+  /** Passed runs show only the congrats overlay, then return to the level map (no results panel). */
+  const sessionEndedPassed = useMemo(() => {
+    if (step !== 3 || !finishSnapshot) return false;
+    const summary = extractResultSummary(finishSnapshot.session, finishSnapshot.finish);
+    return summary.passed === true || summary.passed === "true";
+  }, [step, finishSnapshot]);
+
+  useEffect(() => {
+    if (step !== 3) {
+      setLevelOutcomeFlash(null);
+      prevStepForOutcomeRef.current = step;
+      return;
+    }
+    const justEntered = prevStepForOutcomeRef.current !== 3;
+    prevStepForOutcomeRef.current = step;
+    if (!justEntered) return;
+
+    const sess = finishSnapshot?.session ?? session;
+    const summary = extractResultSummary(sess, finishSnapshot?.finish ?? null);
+    const passed =
+      summary.passed === true || summary.passed === "true"
+        ? true
+        : summary.passed === false || summary.passed === "false"
+          ? false
+          : null;
+    const scoreNum = Number(summary.score);
+    setLevelOutcomeFlash({
+      variant: passed === true ? "pass" : passed === false ? "fail" : "ambiguous",
+      levelNumber: activeLevelNumber,
+      unlockedLevel: parseUnlockedLevelNumber(summary.unlockedNextLevel),
+      correctCount: Number.isFinite(scoreNum) ? scoreNum : 0,
+      totalQuestions: getSessionTotalQuestions(sess),
+      badgeLabel:
+        summary.badge != null && String(summary.badge).trim() !== ""
+          ? String(summary.badge).trim()
+          : null,
+    });
+    /** Level-up / fail stings with overlay — fire after paint so it lines up with the flash animation. */
+    if (passed === true) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          playLevelPassFlashSound(soundEnabledRef.current);
+        });
+      });
+    } else if (passed === false) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          playLevelFailSound(soundEnabledRef.current);
+        });
+      });
+    }
+  }, [step, finishSnapshot, session, activeLevelNumber]);
+
+  useEffect(() => {
+    if (levelsCelebrateLevel == null) return undefined;
+    const t = window.setTimeout(() => setLevelsCelebrateLevel(null), 5200);
+    return () => window.clearTimeout(t);
+  }, [levelsCelebrateLevel]);
+
   const doubleChanceNotice = currentAnswer?.canRetry
     ? "You can answer again on this question."
     : null;
 
-  if (!isLoggedIn) {
+  if (!authInitialized || !isLoggedIn) {
     return null;
   }
 
   return (
     <Box
       minH="100vh"
-      bgGradient="linear(to-r, white, #ebf8ff)"
+      bg={step === 1 ? "#f9f9ff" : "linear-gradient(to right, white, #ebf8ff)"}
       display="flex"
       flexDirection="column"
       justifyContent="space-between"
     >
-      <Box px={{ base: 4, md: 16 }} py={8}>
-        <Progress
-          value={(step / 3) * 100}
-          colorScheme="brand"
-          mb={8}
-          borderRadius="full"
-        />
-
+      <Box
+        flex="1"
+        px={step === 1 ? 0 : { base: 4, md: 16 }}
+        py={step === 1 ? 0 : 8}
+      >
         {step === 1 && (
           <GameLevelsView
             totalPoints={totalPoints}
             maxUnlockedLevel={maxUnlocked}
+            levelSummaries={levelSummaries}
             loading={loadingProgress}
             startingLevel={startingLevel}
             resumingSession={resumingSession}
             activeSessionId={activeSessionId}
+            celebrateLevelNumber={levelsCelebrateLevel}
             onStartLevel={handleStartLevel}
             onResumeSession={handleResumeSession}
             onBack={() => navigate("/game")}
@@ -623,36 +955,27 @@ const GameQuizTryPage = () => {
               questionTotal={qProgress.total}
               currentAnswer={currentAnswer}
               hiddenOptionKeys={currentAnswer?.hiddenOptions || []}
-              hintRevealed={hintRevealed}
               submitting={submitting}
+              answerAwaitingApi={answerAwaitingApi}
+              showTimeUpOverlay={timeUpAnimating}
               abilityLoading={abilityLoading}
               abilityCounts={abilityCounts}
               onSelectOption={handleSelectOption}
               onUseAbility={handleUseAbility}
               questionSecondsLeft={questionSecondsLeft}
-              sessionSecondsLeft={sessionSecondsLeft}
               questionUrgency={questionUrgency}
-              sessionUrgency={sessionUrgency}
               soundEnabled={soundEnabled}
               onToggleSound={toggleSound}
               doubleChanceNotice={doubleChanceNotice}
+              answerFeedback={answerFeedback}
+              justificationByAnswerId={justificationByAnswerId}
               onExit={handleExitSession}
             />
-            <Box textAlign="center" mt={6}>
-              <Button
-                variant="link"
-                colorScheme="gray"
-                size="sm"
-                onClick={handleFinishManually}
-                isLoading={submitting}
-              >
-                Finish session early
-              </Button>
-            </Box>
+         
           </Box>
         )}
 
-        {step === 3 && (
+        {step === 3 && !sessionEndedPassed && (
           <GameResultsView
             summary={resultSummary}
             onPlayAgain={() => {
@@ -660,6 +983,8 @@ const GameQuizTryPage = () => {
               setFinishSnapshot(null);
               setSession(null);
               setSessionId(null);
+              setJustificationByAnswerId({});
+              setLevelsCelebrateLevel(null);
               setStep(1);
             }}
             onBackToLevels={() => {
@@ -667,11 +992,16 @@ const GameQuizTryPage = () => {
               setFinishSnapshot(null);
               setSession(null);
               setSessionId(null);
+              setJustificationByAnswerId({});
+              setLevelsCelebrateLevel(null);
               setStep(1);
             }}
           />
         )}
       </Box>
+
+      <AbilityFlashOverlay ability={abilityFlash} onDismiss={dismissAbilityFlash} />
+      <LevelOutcomeFlashOverlay payload={levelOutcomeFlash} onDismiss={handleLevelOutcomeComplete} />
 
       <Footer />
     </Box>
