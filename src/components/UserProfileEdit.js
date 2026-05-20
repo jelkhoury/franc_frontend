@@ -22,11 +22,18 @@ import { FaUser } from "react-icons/fa";
 import { get } from "../utils/httpServices";
 import { captureError } from "../utils/sentryUtils";
 import { getStoredToken, getUserRole, getStoredUserRole } from "../utils/tokenUtils";
-import { USER_ENDPOINTS } from "../services/apiService";
+import { USER_ENDPOINTS, GAME_ENDPOINTS } from "../services/apiService";
+import { LEVEL_BADGE_ORDER, getEarnedBadgeLevels } from "../pages/services/GameQuiz/gameSessionUtils";
+import CareerLevelMedalBadge, {
+  getMedalPresetForLevel,
+} from "../pages/services/GameQuiz/CareerLevelMedalBadge";
+import { consumeNewGameBadgeLevel } from "../pages/services/GameQuiz/gameBadgeProfile";
 
 export default function UserProfileEdit({ onClose, onLogout }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [gameProgress, setGameProgress] = useState(null);
+  const [newBadgeLevel, setNewBadgeLevel] = useState(null);
   const [userInfo, setUserInfo] = useState({
     firstName: "",
     lastName: "",
@@ -39,13 +46,23 @@ export default function UserProfileEdit({ onClose, onLogout }) {
     sdsAttempts: 0,
   });
 
-  // Fetch user info from API
+  useEffect(() => {
+    setNewBadgeLevel(consumeNewGameBadgeLevel());
+  }, []);
+
+  // Fetch user info and Career Quest progress
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
         setLoading(true);
         const token = getStoredToken();
-        const data = await get(USER_ENDPOINTS.GET_USER_INFO, { token });
+        const [data, progress] = await Promise.all([
+          get(USER_ENDPOINTS.GET_USER_INFO, { token }),
+          get(GAME_ENDPOINTS.PROGRESS, { token }).catch((err) => {
+            captureError(err);
+            return null;
+          }),
+        ]);
 
         setUserInfo({
           firstName: data.firstName || "",
@@ -58,6 +75,7 @@ export default function UserProfileEdit({ onClose, onLogout }) {
           resumeAttempts: data.resumeAttempts ?? 0,
           sdsAttempts: data.sdsAttempts ?? 0,
         });
+        setGameProgress(progress);
       } catch (error) {
         captureError(error);
         console.error("Error fetching user info:", error);
@@ -68,6 +86,9 @@ export default function UserProfileEdit({ onClose, onLogout }) {
 
     fetchUserInfo();
   }, []);
+
+  const earnedBadgeLevels = getEarnedBadgeLevels(gameProgress);
+  const earnedSet = new Set(earnedBadgeLevels);
 
   const userName =
     `${userInfo.firstName} ${userInfo.lastName}`.trim() || "User";
@@ -134,6 +155,55 @@ export default function UserProfileEdit({ onClose, onLogout }) {
           </Badge>
         </VStack>
       </Flex>
+
+      <Box w="full" pt={2}>
+        <Heading fontSize="md" color="gray.700" mb={2} textAlign="center">
+          Career Quest medals
+        </Heading>
+        <Text fontSize="xs" color="gray.500" textAlign="center" mb={3} lineHeight="short">
+          Medals you earn by passing levels appear here. Colors match each level tier.
+        </Text>
+        <Flex justify="center" flexWrap="wrap" gap={3} mb={2}>
+          {LEVEL_BADGE_ORDER.map(({ level }) => {
+            const earned = earnedSet.has(level);
+            const preset = getMedalPresetForLevel(level);
+            const isNew = newBadgeLevel != null && Number(newBadgeLevel) === level;
+            return (
+              <VStack key={level} spacing={1} minW="72px">
+                <Box position="relative">
+                  <CareerLevelMedalBadge
+                    preset={preset}
+                    size={64}
+                    earned={earned}
+                    active={earned}
+                  />
+                  {isNew && earned && (
+                    <Badge
+                      position="absolute"
+                      top="-6px"
+                      right="-8px"
+                      colorScheme="green"
+                      fontSize="9px"
+                      px={1.5}
+                      borderRadius="full"
+                    >
+                      New
+                    </Badge>
+                  )}
+                </Box>
+                <Text fontSize="10px" fontWeight="600" color="gray.600">
+                  L{level}
+                </Text>
+              </VStack>
+            );
+          })}
+        </Flex>
+        {earnedBadgeLevels.length === 0 && (
+          <Text fontSize="xs" color="gray.500" textAlign="center" mb={2}>
+            No medals yet — pass a level in Career Quest to earn your first one.
+          </Text>
+        )}
+      </Box>
 
       <Box w="full" pt={2}>
         <Heading fontSize="md" color="gray.700" mb={2} textAlign="center">

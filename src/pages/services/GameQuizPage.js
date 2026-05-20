@@ -23,8 +23,6 @@ import {
   CheckCircleIcon,
   StarIcon,
   ArrowForwardIcon,
-  QuestionOutlineIcon,
-  ViewIcon,
 } from "@chakra-ui/icons";
 import { FaGamepad } from "react-icons/fa";
 import Footer from "../../components/Footer";
@@ -64,8 +62,8 @@ const GameQuizPage = () => {
         gap={10}
       >
         <Image
-          src="/assets/images/gamification.gif"
-          alt="Gamification quiz"
+          src="/assets/images/gamification_icon.svg"
+          alt="Career Quest"
           maxW="400px"
           objectFit="contain"
           alignSelf="flex-end"
@@ -86,23 +84,35 @@ const GameQuizPage = () => {
             Career Quest
           </Heading>
 
-          <Text fontSize="lg" mb={6}>
-            A timed, level-based quiz with abilities, badges, and points. Unlock Bronze through Diamond
-            as you prove what you know.
+          <Text fontSize="lg" mb={6} lineHeight="tall">
+            Ready to play the hiring game? Career Quest turns the real path from{" "}
+            <Box as="span" fontWeight="bold" color="brand.500">
+              Applicant
+            </Box>{" "}
+            to{" "}
+            <Box as="span" fontWeight="bold" color="brand.500">
+              Candidate
+            </Box>{" "}
+            to{" "}
+            <Box as="span" fontWeight="bold" color="brand.500">
+              Employee
+            </Box>{" "}
+            into a five-level adventure. Beat the clock, unleash power-ups, stack points, and collect
+            shiny badges as you master every step it takes to get hired.
           </Text>
 
           <HStack spacing={6} mb={6} flexWrap="wrap">
             <VStack spacing={1}>
               <Icon as={FaGamepad} color="purple.400" boxSize={6} />
-              <Text fontSize="sm">Five levels</Text>
+              <Text fontSize="sm">5 hiring levels</Text>
             </VStack>
             <VStack spacing={1}>
               <Icon as={StarIcon} color="yellow.400" boxSize={6} />
-              <Text fontSize="sm">Badges & points</Text>
+              <Text fontSize="sm">Bronze → Diamond badges</Text>
             </VStack>
             <VStack spacing={1}>
               <Icon as={CheckCircleIcon} color="green.400" boxSize={6} />
-              <Text fontSize="sm">Power-up abilities</Text>
+              <Text fontSize="sm">Timed quiz + abilities</Text>
             </VStack>
           </HStack>
 
@@ -113,55 +123,91 @@ const GameQuizPage = () => {
       </Flex>
 
       <Box py={16} px={{ base: 6, md: 16 }} textAlign="center" bg="white">
-        <Heading color="brand.500" size="lg" mb={10}>
+        <Heading color="brand.500" size="lg" mb={3}>
           How it works
         </Heading>
+        <Text fontSize="md" color="gray.600" maxW="3xl" mx="auto" mb={10} lineHeight="tall">
+          Play through five levels that mirror the hiring journey. Clear each stage to earn a badge,
+          unlock the next level, and climb from Applicant to Employee.
+        </Text>
 
-        <HStack spacing={10} justify="center" flexWrap="wrap">
-          <VStack spacing={4}>
-            <Circle size="60px" bg="purple.100" color="purple.700">
-              <Icon as={QuestionOutlineIcon} boxSize={6} />
-            </Circle>
-            <Text fontWeight="bold">Pick a level</Text>
-            <Text fontSize="sm" color="gray.600" maxW="150px">
-              Only unlocked levels can be started. Your progress syncs from the server.
-            </Text>
-          </VStack>
-
-          <Icon
-            as={ArrowForwardIcon}
-            color="gray.400"
-            boxSize={6}
-            display={{ base: "none", md: "block" }}
-          />
-
-          <VStack spacing={4}>
-            <Circle size="60px" bg="purple.100" color="purple.700">
-              <Icon as={ViewIcon} boxSize={6} />
-            </Circle>
-            <Text fontWeight="bold">Beat the clock</Text>
-            <Text fontSize="sm" color="gray.600" maxW="150px">
-              Each question has its own countdown on the client.
-            </Text>
-          </VStack>
-
-          <Icon
-            as={ArrowForwardIcon}
-            color="gray.400"
-            boxSize={6}
-            display={{ base: "none", md: "block" }}
-          />
-
-          <VStack spacing={4}>
-            <Circle size="60px" bg="purple.100" color="purple.700">
-              <Icon as={CheckCircleIcon} boxSize={6} />
-            </Circle>
-            <Text fontWeight="bold">Earn rewards</Text>
-            <Text fontSize="sm" color="gray.600" maxW="150px">
-              Finish to see your score, badge, and unlocked levels when the API provides them.
-            </Text>
-          </VStack>
-        </HStack>
+        <Flex
+          direction={{ base: "column", lg: "row" }}
+          align="stretch"
+          justify="center"
+          gap={{ base: 6, lg: 4 }}
+          maxW="6xl"
+          mx="auto"
+        >
+          {[
+            {
+              level: 1,
+              stage: "Applicant",
+              title: "First contact",
+              badge: "Bronze",
+              detail: "Kick off your quest — apply what you know and earn your first badge.",
+            },
+            {
+              level: 2,
+              stage: "Applicant",
+              title: "Stand out",
+              badge: "Silver",
+              detail: "Prove you are more than a CV and level up your applicant game.",
+            },
+            {
+              level: 3,
+              stage: "Candidate",
+              title: "In the arena",
+              badge: "Gold",
+              detail: "Face interview-style challenges and show you belong on the shortlist.",
+            },
+            {
+              level: 4,
+              stage: "Candidate",
+              title: "Closing in",
+              badge: "Platinum",
+              detail: "Nail the final hurdles before the offer — you are almost hired.",
+            },
+            {
+              level: 5,
+              stage: "Employee",
+              title: "Hired!",
+              badge: "Diamond",
+              detail: "Cross the finish line, flash your top badge, and complete the journey.",
+            },
+          ].map((step, index, steps) => (
+            <Flex key={step.level} align="center" flex={{ base: "none", lg: 1 }} minW={0}>
+              <VStack spacing={3} flex="1" px={2}>
+                <Circle size="52px" bg="brand.50" color="brand.600" fontWeight="bold" fontSize="lg">
+                  {step.level}
+                </Circle>
+                <Text fontSize="xs" fontWeight="700" color="brand.500" textTransform="uppercase" letterSpacing="wider">
+                  {step.stage}
+                </Text>
+                <Text fontWeight="bold">{step.title}</Text>
+                <Text fontSize="sm" color="gray.600" lineHeight="short">
+                  {step.detail}
+                </Text>
+                <HStack spacing={1} justify="center">
+                  <Icon as={StarIcon} color="yellow.400" boxSize={3} />
+                  <Text fontSize="xs" fontWeight="semibold" color="gray.700">
+                    {step.badge} badge
+                  </Text>
+                </HStack>
+              </VStack>
+              {index < steps.length - 1 && (
+                <Icon
+                  as={ArrowForwardIcon}
+                  color="gray.300"
+                  boxSize={5}
+                  flexShrink={0}
+                  display={{ base: "none", lg: "block" }}
+                  mx={1}
+                />
+              )}
+            </Flex>
+          ))}
+        </Flex>
       </Box>
 
       <Box bg="brand.500" color="white" py={16} px={{ base: 6, md: 16 }} textAlign="center">
@@ -169,7 +215,8 @@ const GameQuizPage = () => {
           Ready to level up?
         </Heading>
         <Text fontSize="lg" mb={6}>
-          Log in and jump into the quiz — abilities, timers, and five badge tiers await.
+          Log in and start your quest — five levels, five badges, and one epic path from applicant to
+          employee.
         </Text>
         <Button
           onClick={handleTryNowClick}

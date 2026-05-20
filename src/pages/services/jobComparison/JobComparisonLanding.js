@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import {
   Box,
+  Image,
   Circle,
   Heading,
   Text,
@@ -151,31 +152,14 @@ const JobComparisonLanding = () => {
         p={{ base: 6, md: 16 }}
         gap={10}
       >
-        {/* Right - Video */}
-        <Box
-          maxW={{ base: "100%", md: "480px" }}
-          w="100%"
-          minH={{ base: "280px", md: "280px" }}
-          borderRadius="xl"
-          overflow="hidden"
-          boxShadow="lg"
-          sx={{ aspectRatio: "16/9" }}
-        >
-          <video
-            src="/assets/images/job comparison.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "contain",
-              display: "block",
-            }}
-            title="Job comparison"
-          />
-        </Box>
+        <Image
+          src="/assets/images/job_comparaison_icon.svg"
+          alt="Job Comparison Scorecard"
+          maxW="400px"
+          objectFit="contain"
+          alignSelf="flex-end"
+          fallbackSrc="/assets/images/sds.svg"
+        />
 
         {/* Left - Card with Content */}
         <Box

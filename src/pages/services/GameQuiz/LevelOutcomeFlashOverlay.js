@@ -1,8 +1,11 @@
 import { Box, Text, VStack, HStack } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect } from "react";
-import { FaTrophy, FaUnlock, FaRedo, FaStar } from "react-icons/fa";
+import { FaTrophy, FaUnlock, FaRedo } from "react-icons/fa";
 import { useCountUp } from "./useCountUp";
+import CareerLevelMedalBadge, {
+  getMedalPresetForLevel,
+} from "./CareerLevelMedalBadge";
 
 const DISMISS_MS_PASS = 2800;
 const DISMISS_MS_FAIL = 3600;
@@ -113,31 +116,40 @@ export default function LevelOutcomeFlashOverlay({ payload, onDismiss }) {
             <VStack spacing={4} textAlign="center">
               {payload.variant === "pass" && (
                 <>
-                  <HStack justify="center" spacing={3}>
+                  <Box
+                    as={motion.div}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 280, damping: 16 }}
+                    filter="drop-shadow(0 8px 20px rgba(5, 150, 105, 0.35))"
+                  >
+                    <CareerLevelMedalBadge
+                      preset={getMedalPresetForLevel(payload.levelNumber)}
+                      size={112}
+                      earned
+                      active
+                    />
+                  </Box>
+                  <HStack justify="center" spacing={2}>
                     <Box
                       as={motion.div}
                       animate={{ rotate: [0, -8, 8, 0], y: [0, -4, 0] }}
                       transition={{ duration: 0.7, ease: "easeInOut" }}
-                      filter="drop-shadow(0 6px 16px rgba(5, 150, 105, 0.5))"
                     >
-                      <FaTrophy size={56} color="#14532d" />
+                      <FaTrophy size={28} color="#14532d" />
                     </Box>
-                    <Box
-                      as={motion.div}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1, rotate: [0, 10, 0] }}
-                      transition={{ type: "spring", delay: 0.12, stiffness: 260, damping: 14 }}
+                    <Text
+                      fontSize={{ base: "2xl", md: "3xl" }}
+                      fontWeight="black"
+                      color="gray.900"
+                      textShadow="0 1px 0 rgba(255,255,255,0.45)"
                     >
-                      <FaStar size={40} color="#ca8a04" />
-                    </Box>
+                      Level {payload.levelNumber} complete!
+                    </Text>
                   </HStack>
-                  <Text
-                    fontSize={{ base: "2xl", md: "3xl" }}
-                    fontWeight="black"
-                    color="gray.900"
-                    textShadow="0 1px 0 rgba(255,255,255,0.45)"
-                  >
-                    Level {payload.levelNumber} complete!
+                  <Text fontSize="sm" fontWeight="semibold" color="green.900" opacity={0.95}>
+                    {getMedalPresetForLevel(payload.levelNumber).title} medal earned — see your
+                    profile
                   </Text>
                   {payload.unlockedLevel != null && (
                     <HStack
@@ -159,11 +171,6 @@ export default function LevelOutcomeFlashOverlay({ payload, onDismiss }) {
                         Level {payload.unlockedLevel} unlocked
                       </Text>
                     </HStack>
-                  )}
-                  {payload.badgeLabel && (
-                    <Text fontSize="sm" fontWeight="semibold" color="green.900" opacity={0.95}>
-                      Badge: {payload.badgeLabel}
-                    </Text>
                   )}
                 </>
               )}
