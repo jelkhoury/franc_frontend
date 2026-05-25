@@ -32,6 +32,9 @@ import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { LEVEL_BADGE_ORDER } from "./gameSessionUtils";
 import { useCountUp } from "./useCountUp";
+import CareerLevelMedalBadge, {
+  getMedalPresetForLevel,
+} from "./CareerLevelMedalBadge";
 
 const MotionText = motion(Text);
 const MotionBox = motion(Box);
@@ -49,7 +52,7 @@ const CQ = {
   tierSilver: "#9BA3AF",
   tierGold: "#F6AD55",
   tierPlatinum: "#4A5568",
-  tierDiamond: "#3182CE",
+  tierDiamond: "#005ea1",
   success: "#48BB78",
   surfaceContainerHigh: "#dee8ff",
   glass: "rgba(255, 255, 255, 0.72)",
@@ -275,13 +278,21 @@ const GameLevelsView = ({
               <Box as="span" fontWeight="700" color={CQ.onSurface}>
                 five levels
               </Box>
-              , earn badges from{" "}
-              <Box as="span" fontWeight="700" color={CQ.tierBronze}>
-                Bronze
+              , earn certified medals from{" "}
+              <Box
+                as="span"
+                fontWeight="700"
+                color={getMedalPresetForLevel(1).text}
+              >
+                Apply
               </Box>{" "}
               to{" "}
-              <Box as="span" fontWeight="700" color={CQ.tierDiamond}>
-                Diamond
+              <Box
+                as="span"
+                fontWeight="700"
+                color={getMedalPresetForLevel(5).text}
+              >
+                Hired
               </Box>
               , and stack points. Jump into any{" "}
               <Box as="span" fontWeight="700" color={CQ.primary}>
@@ -291,7 +302,11 @@ const GameLevelsView = ({
             </Text>
           </Box>
 
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} alignItems="stretch">
+          <SimpleGrid
+            columns={{ base: 1, md: 2 }}
+            spacing={4}
+            alignItems="stretch"
+          >
             <MotionBox
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -417,7 +432,11 @@ const GameLevelsView = ({
                       whiteSpace="nowrap"
                       initial={{ scale: 0.92 }}
                       animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 22,
+                      }}
                     >
                       Level {maxUnlockedLevel}
                     </MotionText>
@@ -432,11 +451,10 @@ const GameLevelsView = ({
               <Spinner size="lg" color={CQ.primary} thickness="3px" />
             </FlexCentered>
           ) : (
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 5 }} spacing={5}>
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 5 }} spacing={5} alignItems="stretch">
               {rows.map(
                 ({
                   level,
-                  label,
                   colorScheme,
                   unlocked,
                   cleared,
@@ -458,6 +476,7 @@ const GameLevelsView = ({
                       flexDirection="column"
                       alignItems="center"
                       textAlign="center"
+                      h="full"
                       borderTopWidth="4px"
                       borderTopColor={tierHex}
                       position="relative"
@@ -483,62 +502,66 @@ const GameLevelsView = ({
                           pointerEvents="none"
                         />
                       )}
-                      <Box
-                        px={3}
-                        py={1}
-                        borderRadius="full"
-                        bg={tierTintBg(tierHex)}
-                        color={tierHex}
-                        fontSize="xs"
-                        fontWeight="700"
-                        letterSpacing="0.04em"
-                        textTransform="uppercase"
-                        mb={4}
-                        position="relative"
-                        zIndex={1}
-                      >
-                        {label}
-                      </Box>
-                      <Heading
-                        as="h3"
-                        fontFamily={fontHeadline}
-                        fontSize="lg"
-                        fontWeight="600"
-                        mb={5}
-                        position="relative"
-                        zIndex={1}
-                        color={unlocked ? CQ.onSurface : CQ.onSurfaceVariant}
-                      >
-                        Level {level}
-                      </Heading>
-                      <HStack
-                        color={unlocked ? CQ.success : CQ.onSurfaceVariant}
-                        spacing={2}
-                        mb={1.5}
-                        position="relative"
-                        zIndex={1}
-                      >
-                        <Icon
-                          as={unlocked ? UnlockIcon : LockIcon}
-                          boxSize={3.5}
-                        />
-                        <Text
-                          fontSize="xs"
-                          fontWeight="700"
-                          letterSpacing="0.06em"
+                      <Box flexShrink={0} position="relative" zIndex={1} w="full">
+                        <Flex justify="center" mb={3}>
+                          <CareerLevelMedalBadge
+                            preset={getMedalPresetForLevel(level)}
+                            size={84}
+                            earned={cleared}
+                            active={unlocked}
+                          />
+                        </Flex>
+                        <Heading
+                          as="h3"
+                          fontFamily={fontHeadline}
+                          fontSize="lg"
+                          fontWeight="600"
+                          mb={5}
+                          color={unlocked ? CQ.onSurface : CQ.onSurfaceVariant}
                         >
-                          {unlocked ? "Unlocked" : "Locked"}
-                        </Text>
-                      </HStack>
-                      {cleared && (
-                        <>
+                          Level {level}
+                        </Heading>
+                      </Box>
+                      <Box
+                        flex="1"
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="center"
+                        w="full"
+                        position="relative"
+                        zIndex={1}
+                      >
+                        <HStack
+                          color={unlocked ? CQ.success : CQ.onSurfaceVariant}
+                          spacing={2}
+                          mb={1.5}
+                          minH="1.25rem"
+                        >
+                          <Icon
+                            as={unlocked ? UnlockIcon : LockIcon}
+                            boxSize={3.5}
+                          />
+                          <Text
+                            fontSize="xs"
+                            fontWeight="700"
+                            letterSpacing="0.06em"
+                          >
+                            {unlocked ? "Unlocked" : "Locked"}
+                          </Text>
+                        </HStack>
+                        <Box
+                          minH="1.5rem"
+                          mb={3}
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="center"
+                        >
                           <HStack
                             color={CQ.success}
                             fontWeight="700"
                             spacing={2}
-                            mb={3}
-                            position="relative"
-                            zIndex={1}
+                            visibility={cleared ? "visible" : "hidden"}
+                            aria-hidden={!cleared}
                           >
                             <Icon as={CheckCircleIcon} boxSize={3.5} />
                             <Text
@@ -550,91 +573,98 @@ const GameLevelsView = ({
                               Passed
                             </Text>
                           </HStack>
-                          {bestScore != null && Number.isFinite(bestScore) && (
-                            <Text
-                              fontSize="sm"
-                              fontWeight="600"
-                              color={CQ.onSurfaceVariant}
-                              mt="auto"
-                              mb={2}
-                              position="relative"
-                              zIndex={1}
-                            >
-                              Best score:{" "}
-                              <Box
-                                as="span"
-                                color={CQ.onSurface}
-                                fontWeight="700"
-                              >
-                                {bestScore}/{questionCount ?? 10}
-                              </Box>
-                            </Text>
-                          )}
-                        </>
-                      )}
-                      {unlocked && !cleared && (
+                        </Box>
                         <Text
-                          fontSize="xs"
+                          fontSize="sm"
+                          fontWeight="600"
                           color={CQ.onSurfaceVariant}
-                          lineHeight="short"
                           mb={2}
-                          mt="auto"
-                          position="relative"
-                          zIndex={1}
+                          minH="1.375rem"
+                          lineHeight="1.375rem"
                         >
-                          Earn the badge by passing this level.
+                          Best score:{" "}
+                          <Box
+                            as="span"
+                            color={CQ.onSurface}
+                            fontWeight="700"
+                            opacity={
+                              cleared &&
+                              bestScore != null &&
+                              Number.isFinite(bestScore)
+                                ? 1
+                                : 0.35
+                            }
+                          >
+                            {cleared &&
+                            bestScore != null &&
+                            Number.isFinite(bestScore)
+                              ? `${bestScore}/${questionCount ?? 10}`
+                              : "—"}
+                          </Box>
                         </Text>
-                      )}
-                      {unlocked && !activeSessionId && (
-                        <Button
-                          w="full"
-                          px={6}
-                          py={2.5}
-                          h="auto"
-                          size="sm"
-                          mt={2}
-                          bg={tierHex}
-                          color={CQ.onPrimary}
-                          fontWeight="600"
-                          fontSize="sm"
-                          borderRadius="md"
-                          _hover={{ bg: CQ.primaryContainer }}
-                          boxShadow={`0 8px 18px ${tierHex}33`}
-                          isDisabled={!!startingLevel}
-                          isLoading={busy}
-                          onClick={() => onStartLevel(level)}
-                          position="relative"
-                          zIndex={1}
-                        >
-                          Start level
-                        </Button>
-                      )}
-                      {!unlocked && (
-                        <Button
-                          w="full"
-                          px={6}
-                          py={2.5}
-                          h="auto"
-                          size="sm"
-                          variant="outline"
-                          borderColor={CQ.outlineVariant}
-                          color={CQ.onSurfaceVariant}
-                          fontWeight="600"
-                          fontSize="sm"
-                          borderRadius="md"
-                          isDisabled
-                          mt="auto"
-                          position="relative"
-                          zIndex={1}
-                        >
-                          Locked
-                        </Button>
-                      )}
+                      </Box>
+                      <Box
+                        w="full"
+                        flexShrink={0}
+                        minH="44px"
+                        display="flex"
+                        alignItems="flex-end"
+                        position="relative"
+                        zIndex={1}
+                      >
+                        {unlocked && !activeSessionId ? (
+                          <Button
+                            w="full"
+                            px={6}
+                            py={2.5}
+                            h="40px"
+                            size="sm"
+                            bg={tierHex}
+                            color={CQ.onPrimary}
+                            fontWeight="600"
+                            fontSize="sm"
+                            borderRadius="md"
+                            _hover={{ bg: CQ.primaryContainer }}
+                            boxShadow={`0 8px 18px ${tierHex}33`}
+                            isDisabled={!!startingLevel}
+                            isLoading={busy}
+                            onClick={() => onStartLevel(level)}
+                          >
+                            Start level
+                          </Button>
+                        ) : (
+                          <Button
+                            w="full"
+                            px={6}
+                            py={2.5}
+                            h="40px"
+                            size="sm"
+                            variant="outline"
+                            borderColor={CQ.outlineVariant}
+                            color={CQ.onSurfaceVariant}
+                            fontWeight="600"
+                            fontSize="sm"
+                            borderRadius="md"
+                            isDisabled
+                            visibility={unlocked ? "hidden" : "visible"}
+                            aria-hidden={unlocked}
+                            pointerEvents="none"
+                          >
+                            Locked
+                          </Button>
+                        )}
+                      </Box>
                     </GlassCard>
                   );
 
                   const wrapped = (
-                    <Box key={level} role="group">
+                    <Box
+                      key={level}
+                      role="group"
+                      h="full"
+                      display="flex"
+                      flexDirection="column"
+                    >
                       {cardInner}
                     </Box>
                   );
@@ -645,6 +675,10 @@ const GameLevelsView = ({
                   return (
                     <MotionBox
                       key={level}
+                      h="full"
+                      alignSelf="stretch"
+                      display="flex"
+                      flexDirection="column"
                       layout
                       initial={{ scale: 0.97, opacity: 0.92 }}
                       animate={{
@@ -838,37 +872,54 @@ const GameLevelsView = ({
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody maxH="65vh" overflowY="auto" pt={0}>
-            <Text fontSize="sm" color={CQ.onSurfaceVariant} mb={4} lineHeight="short">
-              One badge per level when you pass it. For now this is a simple view—colored dots match each
-              tier; descriptions show what you&apos;ve earned or what&apos;s left.
+            <Text
+              fontSize="sm"
+              color={CQ.onSurfaceVariant}
+              mb={4}
+              lineHeight="short"
+            >
+              One certified medal per level when you pass it. Earn Apply through
+              Hired as you move from applicant to employee.
             </Text>
-            <VStack align="stretch" spacing={3.5}>
-              {rows.map(({ level, label, colorScheme, cleared, unlocked }) => {
-                const tierHex = tierHexFromColorScheme(colorScheme);
+            <VStack align="stretch" spacing={4}>
+              {rows.map(({ level, cleared, unlocked }) => {
+                const preset = getMedalPresetForLevel(level);
                 const earned = !!cleared;
                 const desc = earned
-                  ? `${label} — earned by passing Level ${level}.`
+                  ? `${preset.title} — earned by passing Level ${level}.`
                   : unlocked
-                    ? `${label} — pass Level ${level} to earn this badge.`
-                    : `${label} — unlock Level ${level} by clearing the previous stage.`;
+                    ? `${preset.title} — pass Level ${level} to earn this medal.`
+                    : `${preset.title} — unlock Level ${level} by clearing the previous stage.`;
                 return (
-                  <HStack key={level} align="start" spacing={3}>
-                    <Circle
-                      size="12px"
-                      mt={1.5}
-                      flexShrink={0}
-                      bg={earned ? tierHex : "rgba(160, 174, 192, 0.55)"}
-                      boxShadow={earned ? `0 0 0 2px ${tierHex}40` : "none"}
-                      aria-hidden
+                  <HStack key={level} align="start" spacing={4}>
+                    <CareerLevelMedalBadge
+                      preset={preset}
+                      size={64}
+                      earned={earned}
+                      active={unlocked}
                     />
-                    <Box minW={0}>
-                      <Text fontSize="xs" fontWeight="700" color={CQ.onSurface} lineHeight="short">
+                    <Box minW={0} pt={1}>
+                      <Text
+                        fontSize="xs"
+                        fontWeight="700"
+                        color={CQ.onSurface}
+                        lineHeight="short"
+                      >
                         Level {level}{" "}
-                        <Text as="span" fontWeight="600" color={CQ.onSurfaceVariant}>
-                          ({label})
+                        <Text
+                          as="span"
+                          fontWeight="600"
+                          color={CQ.onSurfaceVariant}
+                        >
+                          ({preset.title})
                         </Text>
                       </Text>
-                      <Text fontSize="xs" color={CQ.onSurfaceVariant} lineHeight="short" mt={0.5}>
+                      <Text
+                        fontSize="xs"
+                        color={CQ.onSurfaceVariant}
+                        lineHeight="short"
+                        mt={0.5}
+                      >
                         {desc}
                       </Text>
                     </Box>

@@ -284,6 +284,13 @@ export function getLevelSummariesForLevelsView(progress, questionsPerLevel = GAM
   }));
 }
 
+/** Level numbers (1–5) with an earned badge, in tier order. */
+export function getEarnedBadgeLevels(progress) {
+  return LEVEL_BADGE_ORDER.filter(({ level }) =>
+    isLevelBadgeEarned(progress, level)
+  ).map(({ level }) => level);
+}
+
 export function normalizeOptions(answer) {
   if (!answer || typeof answer !== "object") {
     return { A: "", B: "", C: "", D: "" };

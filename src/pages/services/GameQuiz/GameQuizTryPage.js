@@ -50,6 +50,7 @@ import {
 } from "./gameSessionUtils";
 import { playGameSound, unlockGameAudio } from "./gameWebAudio";
 import { playGameMediaFeedback, startGameBgm, stopGameBgm, playLevelFailSound, playLevelPassFlashSound, playLastThreeSecondsSound, playAbilityUseSound, playUnlockNewLevelSound } from "./gameMediaAudio";
+import { markGameBadgeEarnedForProfile } from "./gameBadgeProfile";
 
 const QUESTION_LIMIT_SEC = 30;
 /** Hold after grading before session advances (wrong: quick; correct: longer so explanation can be read). */
@@ -130,6 +131,9 @@ const GameQuizTryPage = () => {
   const handleLevelOutcomeComplete = useCallback((payload) => {
     setLevelOutcomeFlash(null);
     if (payload?.variant !== "pass") return;
+    if (payload?.levelNumber != null) {
+      markGameBadgeEarnedForProfile(payload.levelNumber);
+    }
     clearPendingGameSessionId();
     setFinishSnapshot(null);
     setSession(null);
@@ -391,15 +395,16 @@ const GameQuizTryPage = () => {
   }, [step, soundEnabled, currentQuestionKey, questionSecondsLeft, tick]);
 
   useEffect(() => {
-    if (step !== 2 || questionUrgency !== "critical" || !soundEnabled) return undefined;
-    if (questionSecondsLeft > 5) return undefined;
-    if (questionSecondsLeft <= 3) return undefined;
+    if (step !== 2 || !soundEnabled) return undefined;
+    const secsLeft = Math.ceil(questionSecondsLeft);
+    if (secsLeft > 10) return undefined;
+    if (secsLeft <= 3) return undefined;
     const now = Date.now();
     if (now - lastTickSoundAtRef.current < 900) return undefined;
     lastTickSoundAtRef.current = now;
     playGameSound("tick", soundEnabled);
     return undefined;
-  }, [step, questionUrgency, questionSecondsLeft, soundEnabled, tick]);
+  }, [step, questionSecondsLeft, soundEnabled, tick]);
 
   /**
    * Question timer expired: show brief overlay, then POST answer as timeout (wrong), no abilities.
