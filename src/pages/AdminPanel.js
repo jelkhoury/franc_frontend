@@ -333,17 +333,25 @@ const AdminPanel = () => {
   );
 
   return (
-    <Flex direction={{ base: "column", md: "row" }} minH="100vh">
-      {/* Desktop Sidebar */}
+    <Flex
+      direction={{ base: "column", md: "row" }}
+      h="100vh"
+      maxH="100vh"
+      overflow="hidden"
+      bg="gray.50"
+    >
+      {/* Desktop Sidebar — stays in view; only main pane scrolls */}
       <Box
         width={{ base: "100%", md: "280px" }}
         minW={{ md: "280px" }}
+        flexShrink={0}
         bg="gray.100"
         p={{ base: 4, md: 6 }}
-        height={{ base: "auto", md: "100vh" }}
+        h={{ md: "100vh" }}
+        maxH={{ md: "100vh" }}
         display={{ base: "none", md: "flex" }}
         flexDirection="column"
-        justifyContent="space-between"
+        overflow="hidden"
         borderRight="1px solid"
         borderColor="gray.200"
       >
@@ -353,6 +361,7 @@ const AdminPanel = () => {
       {/* Mobile Header with Hamburger */}
       <Box
         display={{ base: "flex", md: "none" }}
+        flexShrink={0}
         bg="gray.100"
         p={4}
         align="center"
@@ -390,8 +399,16 @@ const AdminPanel = () => {
         </DrawerContent>
       </Drawer>
 
-      {/* Main Content */}
-      <Box flex="1" p={{ base: 4, md: 8 }} overflowX="auto">
+      {/* Main Content — sole scroll area on desktop & mobile */}
+      <Box
+        flex="1"
+        minW={0}
+        minH={0}
+        p={{ base: 4, md: 8 }}
+        overflowY="auto"
+        overflowX="auto"
+        bg="white"
+      >
         {selectedTab === "users" && <ManageUsers />}
         {selectedTab === "mockInterviews" && <ManageMockInterviews />}
         {selectedTab === "mockInterviewQuestions" && <ManageMockInterviewQuestions />}

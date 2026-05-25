@@ -107,6 +107,7 @@ const services = [
     isActive: true,
     link: "/game",
     buttonText: "Play",
+    isAdminOnly: true,
   },
 ];
 

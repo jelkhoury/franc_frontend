@@ -59,6 +59,9 @@ export const MOCK_INTERVIEW_ENDPOINTS = {
     `/api/evaluation/increase-attempt?userId=${userId}`,
   EVALUATE: "/api/evaluation/evaluate",
   EVALUATE_MULTIPLE: "/api/evaluation/evaluate-multiple",
+  /** Merged mock answers + EvaluateQuestion rows (partial saves show nulls until graded) */
+  GET_EVALUATIONS_BY_MOCK_INTERVIEW_ID: (mockInterviewId) =>
+    `/api/evaluation/GetEvaluationsByMockInterviewId?mockInterviewId=${mockInterviewId}`,
   CREATE_REPORT: "/api/evaluation/create-report",
   /** Completed mock interview evaluation reports for a user */
   GET_USER_INTERVIEW_REPORTS: (userId) =>
