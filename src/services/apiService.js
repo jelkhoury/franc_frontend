@@ -95,12 +95,22 @@ export const BLOB_STORAGE_ENDPOINTS = {
   EDIT_QUESTION_TITLE: (id) => `/api/blob/edit-question-title/${id}`,
 };
 
-// AI endpoints (use base: "ai" when calling)
+// AI endpoints (use base: "ai" when calling — REACT_APP_API_AI_URL)
 export const AI_ENDPOINTS = {
   ASK: "/ask",
   SUGGEST_BY_CODE: "/suggest-by-code",
   GET_OCCUPATIONS_OR_EDUCATIONS_FOR_CODE:
     "/get-occupations-or-educations-for-code",
+};
+
+// Embeddings / knowledge-base documents (use base: "ai")
+export const EMBEDDINGS_ENDPOINTS = {
+  LIST: "/embeddings",
+  DELETE: "/embeddings",
+  UPLOAD_PDF: "/upload_pdf",
+  FETCH_AND_PROCESS: "/fetch_and_process",
+  FETCH_URLS: "/fetch_urls",
+  TRANSCRIBE: "/transcribe",
 };
 
 // Job Comparison endpoints

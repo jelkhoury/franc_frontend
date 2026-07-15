@@ -15,9 +15,8 @@ import {
   HStack,
 } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
-import { getStoredToken, getUserRole, getStoredUserRole } from "../utils/tokenUtils";
 import {
   FcDiploma1,
   FcComments,
@@ -82,7 +81,6 @@ const services = [
     isActive: true,
     link: "/job-comparison",
     buttonText: "Compare Jobs",
-    isAdminOnly: true,
   },
   {
     heading: "Job Matching",
@@ -91,7 +89,6 @@ const services = [
     isActive: true,
     link: "/job-matching",
     buttonText: "Match Jobs",
-    isAdminOnly: true,
   },
   {
     heading: "Values and Interests",
@@ -107,7 +104,6 @@ const services = [
     isActive: true,
     link: "/game",
     buttonText: "Play",
-    isAdminOnly: true,
   },
 ];
 
@@ -119,16 +115,11 @@ const ServiceCard = ({
   isActive,
   link,
   buttonText,
-  isAdminOnly = false,
-  isAdmin = false,
 }) => {
   const cardBg = useColorModeValue("white", "gray.800");
   const activeBg = useColorModeValue("brand.50", "gray.700");
   const iconBg = isActive ? "brand.100" : "gray.200";
   const iconColor = isActive ? "brand.500" : "gray.500";
-  
-  // If service requires admin and user is not admin, disable it
-  const shouldBeActive = isActive && (!isAdminOnly || isAdmin);
 
   return (
     <Box
@@ -136,13 +127,13 @@ const ServiceCard = ({
       minH="250px"
       borderRadius="xl"
       p={6}
-      bg={shouldBeActive ? activeBg : cardBg}
-      boxShadow={shouldBeActive ? "lg" : "sm"}
-      border={shouldBeActive ? "2px solid" : "1px solid"}
-      borderColor={shouldBeActive ? "brand.300" : "gray.200"}
+      bg={isActive ? activeBg : cardBg}
+      boxShadow={isActive ? "lg" : "sm"}
+      border={isActive ? "2px solid" : "1px solid"}
+      borderColor={isActive ? "brand.300" : "gray.200"}
       transition="all 0.3s ease"
       _hover={
-        shouldBeActive ? { transform: "translateY(-4px)", boxShadow: "xl" } : {}
+        isActive ? { transform: "translateY(-4px)", boxShadow: "xl" } : {}
       }
       display="flex"
       flexDirection="column"
@@ -178,7 +169,7 @@ const ServiceCard = ({
       </Stack>
 
       <Box textAlign="center" mt={4}>
-        {shouldBeActive ? (
+        {isActive ? (
           <Button
             as={RouterLink}
             to={link}
@@ -199,7 +190,7 @@ const ServiceCard = ({
             variant="outline"
             opacity={0.7}
           >
-            {isAdminOnly && !isAdmin ? "Coming Soon" : "Coming Soon"}
+            Coming Soon
           </Button>
         )}
       </Box>
@@ -441,30 +432,6 @@ const ExpandableSections = () => {
 };
 
 const FrancPage = () => {
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const checkAdminRole = () => {
-      const token = getStoredToken();
-      let userRole = null;
-
-      // First try to get role from token
-      if (token) {
-        userRole = getUserRole(token);
-      }
-
-      // Fallback to localStorage
-      if (!userRole) {
-        userRole = getStoredUserRole();
-      }
-
-      // Check if user is Admin
-      setIsAdmin(userRole === "Admin");
-    };
-
-    checkAdminRole();
-  }, []);
-
   return (
     <Box
       py={{ base: 24, md: 35 }}
@@ -534,7 +501,7 @@ const FrancPage = () => {
                 transition={{ duration: 0.6, delay: idx * 0.1 }}
                 viewport={{ once: true }}
               >
-                <ServiceCard {...service} isAdmin={isAdmin} />
+                <ServiceCard {...service} />
               </MotionBox>
             ))}
           </Flex>

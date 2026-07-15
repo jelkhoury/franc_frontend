@@ -36,6 +36,7 @@ import {
   onLottieComplete as handleLottieComplete,
   THINKING_LOOP,
 } from "./utils/lottieUtils";
+import { isVideoMediaUrl } from "./utils/mediaUtils";
 
 const INTERVIEW_DURATION_MINUTES = 10;
 const COMMON_QUESTION_DURATION_SECONDS = 60; // 1 minute
@@ -108,6 +109,7 @@ const MockInterviewQuestionsPage = () => {
   const [selectedTitle, setSelectedTitle] = useState("");
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [countdownActive, setCountdownActive] = useState(false);
+  const [promptMediaUrl, setPromptMediaUrl] = useState("");
 
   // recording
   const [showRecorder, setShowRecorder] = useState(false);
@@ -129,6 +131,7 @@ const MockInterviewQuestionsPage = () => {
   const webcamRef = useRef(null);
   const lottieRef = useRef(null);
   const audioRef = useRef(null);
+  const videoRef = useRef(null);
   const pendingStartRef = useRef(false); // begin countdown after end_talk2 completes
 
   // lottie mode
@@ -295,6 +298,39 @@ const MockInterviewQuestionsPage = () => {
   }, [major]);
 
   // ---- special question handling ----
+  const playPromptMedia = async (url) => {
+    const mediaUrl = url || "";
+    setPromptMediaUrl(mediaUrl);
+    setAudioBlocked(false);
+
+    const useVideo = isVideoMediaUrl(mediaUrl);
+    const el = useVideo ? videoRef.current : audioRef.current;
+
+    // Stop the other element so they don't overlap
+    try {
+      if (useVideo) {
+        audioRef.current?.pause?.();
+        if (audioRef.current) audioRef.current.removeAttribute("src");
+      } else {
+        videoRef.current?.pause?.();
+        if (videoRef.current) {
+          videoRef.current.removeAttribute("src");
+          videoRef.current.load?.();
+        }
+      }
+    } catch {
+      // ignore cleanup errors
+    }
+
+    if (!el) {
+      throw new Error("Media element not ready");
+    }
+
+    el.src = mediaUrl;
+    el.currentTime = 0;
+    await el.play();
+  };
+
   const playSpecialQuestion = async (questionType) => {
     const specialQuestion = specialQuestions[questionType];
     if (!specialQuestion) return;
@@ -307,18 +343,14 @@ const MockInterviewQuestionsPage = () => {
     setMode("start_talk");
 
     try {
-      if (audioRef.current) {
-        audioRef.current.src = specialQuestion.videoUrl || "";
-        audioRef.current.currentTime = 0;
-        await audioRef.current.play();
-      }
+      await playPromptMedia(specialQuestion.videoUrl);
     } catch (e) {
       captureError(e);
-      console.error("Audio play blocked:", e);
+      console.error("Media play blocked:", e);
       setAudioBlocked(true);
       toast({
-        title: "Enable audio",
-        description: 'Click "Enable Audio" to start the audio.',
+        title: "Enable media",
+        description: 'Click "Enable media" to start the question.',
         status: "warning",
         duration: 3000,
       });
@@ -351,9 +383,9 @@ const MockInterviewQuestionsPage = () => {
     }
   };
 
-  // ---- prompt audio & animation ----
+  // ---- prompt media & animation ----
   const playQuestionPrompt = async (
-    audioUrl,
+    mediaUrl,
     title,
     idx,
     questionType = "major"
@@ -375,20 +407,16 @@ const MockInterviewQuestionsPage = () => {
     // 1) Play the start_talk intro ONCE
     setMode("start_talk");
 
-    // 2) Start the audio right away; when intro completes, onComplete switches to the chain
+    // 2) Start media right away; when intro completes, onComplete switches to the chain
     try {
-      if (audioRef.current) {
-        audioRef.current.src = audioUrl || "";
-        audioRef.current.currentTime = 0;
-        await audioRef.current.play(); // user gesture
-      }
+      await playPromptMedia(mediaUrl);
     } catch (e) {
       captureError(e);
-      console.error("Audio play blocked:", e);
+      console.error("Media play blocked:", e);
       setAudioBlocked(true);
       toast({
-        title: "Enable audio",
-        description: 'Click "Enable Audio" to start the question audio.',
+        title: "Enable media",
+        description: 'Click "Enable media" to start the question.',
         status: "warning",
         duration: 3000,
       });
@@ -396,11 +424,20 @@ const MockInterviewQuestionsPage = () => {
   };
 
   const onAudioPlaying = () => {
-    // ensure we’re in talk mode as soon as audio actually starts
+    // ensure we’re in talk mode as soon as media actually starts
     setMode("talkingChain");
   };
 
   const onAudioEnded = () => {
+    // Return interviewer panel to Lottie idle/listening after the video/audio prompt
+    try {
+      videoRef.current?.pause?.();
+      audioRef.current?.pause?.();
+    } catch {
+      // ignore
+    }
+    setPromptMediaUrl("");
+
     // Check if this is a special question
     if (currentSpecialQuestion) {
       onSpecialQuestionAudioEnded();
@@ -1000,18 +1037,23 @@ const MockInterviewQuestionsPage = () => {
 
               <LottieView
                 lottieRef={lottieRef}
+                videoRef={videoRef}
                 audioRef={audioRef}
+                mediaUrl={promptMediaUrl}
                 mode={mode}
                 selectedTitle={selectedTitle}
                 audioBlocked={audioBlocked}
                 onLottieComplete={onLottieComplete}
-                onAudioPlaying={onAudioPlaying}
-                onAudioEnded={onAudioEnded}
-                onAudioError={onAudioError}
+                onMediaPlaying={onAudioPlaying}
+                onMediaEnded={onAudioEnded}
+                onMediaError={onAudioError}
                 onEnableAudio={async () => {
                   try {
                     setAudioBlocked(false);
-                    await audioRef.current?.play();
+                    const el = isVideoMediaUrl(promptMediaUrl)
+                      ? videoRef.current
+                      : audioRef.current;
+                    await el?.play();
                   } catch (e) {
                     captureError(e);
                     console.error(e);

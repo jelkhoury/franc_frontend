@@ -41,7 +41,6 @@ import {
   AlertDialogHeader,
   AlertDialogContent,
   AlertDialogOverlay,
-  Tooltip,
 } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
 import { get, postForm, del, put } from "../../utils/httpServices";
@@ -82,6 +81,17 @@ const ManageMockInterviewQuestions = () => {
     onOpen: onDeleteOpen,
     onClose: onDeleteClose,
   } = useDisclosure();
+  const {
+    isOpen: isPreviewOpen,
+    onOpen: onPreviewOpen,
+    onClose: onPreviewClose,
+  } = useDisclosure();
+  const [previewQuestion, setPreviewQuestion] = useState(null);
+
+  const openVideoPreview = (question) => {
+    setPreviewQuestion(question);
+    onPreviewOpen();
+  };
 
   // Form state
   const [formData, setFormData] = useState({
@@ -457,7 +467,7 @@ const ManageMockInterviewQuestions = () => {
               <Th>ID</Th>
               <Th>Major</Th>
               <Th>Title</Th>
-              <Th>Video URL</Th>
+              <Th>Video</Th>
               <Th>Actions</Th>
             </Tr>
           </Thead>
@@ -483,17 +493,22 @@ const ManageMockInterviewQuestions = () => {
                   </Text>
                 </Td>
                 <Td>
-                  <Tooltip label={question.videoUrl} placement="top" hasArrow>
-                    <Text
-                      fontSize="xs"
-                      noOfLines={1}
-                      maxW="200px"
-                      color="gray.600"
-                      cursor="help"
-                    >
-                      {question.videoUrl}
-                    </Text>
-                  </Tooltip>
+                  <HStack spacing={2}>
+                    {question.videoUrl ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        colorScheme="blue"
+                        onClick={() => openVideoPreview(question)}
+                      >
+                        Play video
+                      </Button>
+                    ) : (
+                      <Text fontSize="xs" color="gray.400">
+                        No video
+                      </Text>
+                    )}
+                  </HStack>
                 </Td>
                 <Td>
                   <HStack spacing={2}>
@@ -558,19 +573,23 @@ const ManageMockInterviewQuestions = () => {
                   <Text fontWeight="semibold">{question.title}</Text>
                 </Box>
                 <Box>
-                  <Text fontSize="xs" color="gray.500">
-                    Video URL
+                  <Text fontSize="xs" color="gray.500" mb={1}>
+                    Video
                   </Text>
-                  <Tooltip label={question.videoUrl} placement="top" hasArrow>
-                    <Text
-                      fontSize="xs"
-                      color="gray.600"
-                      noOfLines={2}
-                      cursor="help"
+                  {question.videoUrl ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      colorScheme="blue"
+                      onClick={() => openVideoPreview(question)}
                     >
-                      {question.videoUrl}
+                      Play video
+                    </Button>
+                  ) : (
+                    <Text fontSize="xs" color="gray.400">
+                      No video
                     </Text>
-                  </Tooltip>
+                  )}
                 </Box>
                 <HStack spacing={2} mt={2}>
                   <Button
@@ -651,6 +670,42 @@ const ManageMockInterviewQuestions = () => {
           </HStack>
         </Flex>
       )}
+
+      {/* Video Preview Modal */}
+      <Modal
+        isOpen={isPreviewOpen}
+        onClose={() => {
+          onPreviewClose();
+          setPreviewQuestion(null);
+        }}
+        size="4xl"
+        isCentered
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader pr={12}>
+            {previewQuestion?.title || "Question video"}
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            {previewQuestion?.videoUrl ? (
+              <Box
+                as="video"
+                key={previewQuestion.videoUrl}
+                src={previewQuestion.videoUrl}
+                controls
+                playsInline
+                w="100%"
+                maxH="70vh"
+                bg="black"
+                borderRadius="md"
+              />
+            ) : (
+              <Text color="gray.500">No video available</Text>
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       {/* Add Question Modal */}
       <Modal

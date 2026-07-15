@@ -1525,14 +1525,15 @@ const ManageMockInterviews = () => {
                 <Box
                   as="video"
                   ref={videoRef}
+                  src={currentAnswer.videoUrl}
                   width="100%"
                   maxW="720px"
                   mx="auto"
                   display="block"
                   controls
+                  playsInline
                   key={currentAnswer.answerId}
                 >
-                  <source src={currentAnswer.videoUrl} type="video/webm" />
                   Your browser does not support the video tag.
                 </Box>
               </Box>

@@ -40,6 +40,7 @@ import ManageMockInterviewQuestions from "../components/Admin/ManageMockIntervie
 import ManageFiles from "../components/Admin/ManageFiles";
 import ManageChatbot from "../components/Admin/ManageChatbot";
 import ManageJobComparisons from "../components/Admin/ManageJobComparisons";
+import ManageEmbeddings from "../components/Admin/ManageEmbeddings";
 import { AuthContext } from "../components/AuthContext";
 import UserProfileEdit from "../components/UserProfileEdit"; // Adjust path if necessary
 import {
@@ -53,6 +54,7 @@ import {
   FaFolder,
   FaRobot,
   FaBalanceScale,
+  FaBook,
 } from "react-icons/fa";
 import { getStoredToken, getUserRole, getStoredUserRole } from "../utils/tokenUtils";
 
@@ -186,11 +188,21 @@ const AdminPanel = () => {
     { id: "files", icon: FaFolder, label: "Manage Files" },
     { id: "chatbot", icon: FaRobot, label: "Manage Chatbot" },
     { id: "jobComparisons", icon: FaBalanceScale, label: "Job Comparisons" },
+    { id: "embeddings", icon: FaBook, label: "Knowledge Documents" },
   ];
 
   const SidebarContent = () => (
     <Flex direction="column" flex="1" minH="0">
-      <Box flex="1" overflowY="auto" minH="0">
+      <Box
+        flex="1"
+        overflowY="auto"
+        minH="0"
+        sx={{
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          "&::-webkit-scrollbar": { display: "none" },
+        }}
+      >
         <Flex align="center" gap={2} mb={4} px={1}>
           <Box
             p={2}
@@ -417,6 +429,7 @@ const AdminPanel = () => {
         {selectedTab === "files" && <ManageFiles />}
         {selectedTab === "chatbot" && <ManageChatbot />}
         {selectedTab === "jobComparisons" && <ManageJobComparisons />}
+        {selectedTab === "embeddings" && <ManageEmbeddings />}
       </Box>
     </Flex>
   );

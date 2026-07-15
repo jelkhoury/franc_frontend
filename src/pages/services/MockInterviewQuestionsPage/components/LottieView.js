@@ -2,50 +2,57 @@ import React from "react";
 import { Box, Heading, Text, HStack, Button } from "@chakra-ui/react";
 import Lottie from "lottie-react";
 import gptTalking from "../../../../assets/animations/chat_animation.json";
+import { isVideoMediaUrl } from "../utils/mediaUtils";
 
 const MODE_COPY = {
   thinkingLoop: {
-    text: "🤔 Thinking...",
+    text: "Thinking...",
     bg: "purple.50",
     color: "purple.700",
   },
   start_talk: {
-    text: "🎬 Getting ready...",
+    text: "Getting ready...",
     bg: "orange.50",
     color: "orange.700",
   },
   talkingChain: {
-    text: "🗣️ Talking...",
+    text: "Playing question...",
     bg: "blue.100",
     color: "blue.700",
   },
   listeningLoop: {
-    text: "👂 Listening...",
+    text: "Listening...",
     bg: "green.50",
     color: "green.700",
   },
   end_talk2: {
-    text: "✨ Done!",
+    text: "Done!",
     bg: "pink.50",
     color: "pink.700",
   },
 };
 
 /**
- * Lottie animation view component for interviewer avatar
+ * Interviewer panel: shows blob video prompts as <video>,
+ * and falls back to Lottie + <audio> for audio-only URLs.
  */
 const LottieView = ({
   lottieRef,
+  videoRef,
   audioRef,
+  mediaUrl,
   mode,
   selectedTitle,
   audioBlocked,
   onLottieComplete,
-  onAudioPlaying,
-  onAudioEnded,
-  onAudioError,
+  onMediaPlaying,
+  onMediaEnded,
+  onMediaError,
   onEnableAudio,
 }) => {
+  const showVideo = isVideoMediaUrl(mediaUrl);
+  const status = MODE_COPY[mode] || MODE_COPY.thinkingLoop;
+
   return (
     <Box
       flex="1"
@@ -66,7 +73,7 @@ const LottieView = ({
         borderRadius="md"
         borderWidth="1px"
         borderColor="gray.200"
-        bg="blue.50"
+        bg={showVideo ? "black" : "blue.50"}
         display="flex"
         alignItems="center"
         justifyContent="center"
@@ -75,7 +82,6 @@ const LottieView = ({
         flex="1"
         minH={0}
       >
-        {/* Title */}
         <Box
           position="absolute"
           top="8px"
@@ -87,66 +93,81 @@ const LottieView = ({
           borderRadius="md"
           boxShadow="sm"
           zIndex={3}
+          maxW="90%"
         >
-          <Text fontSize="sm" fontWeight="semibold">
+          <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>
             {selectedTitle || "—"}
           </Text>
         </Box>
 
-        {/* Lottie animation */}
-        <Lottie
-          lottieRef={lottieRef}
-          animationData={gptTalking}
-          loop={false}
-          autoplay={false}
-          onComplete={onLottieComplete}
-          style={{
-            width: "70%",
-            maxWidth: 340,
-            minWidth: 220,
-            height: "auto",
-            pointerEvents: "none",
-          }}
+        {/* Always mounted so play() works without waiting for remount */}
+        <Box
+          as="video"
+          ref={videoRef}
+          controls
+          playsInline
+          preload="auto"
+          onPlaying={onMediaPlaying}
+          onEnded={onMediaEnded}
+          onError={onMediaError}
+          display={showVideo ? "block" : "none"}
+          w="100%"
+          h="100%"
+          objectFit="contain"
+          bg="black"
         />
 
-        {/* Status pill */}
-        {(() => {
-          const s = MODE_COPY[mode] || MODE_COPY.thinkingLoop;
-          return (
-            <Box
-              position="absolute"
-              bottom="10px"
-              left="50%"
-              transform="translateX(-50%)"
-              bg={s.bg}
-              color={s.color}
-              px={4}
-              py={2}
-              borderRadius="md"
-              boxShadow="sm"
-              zIndex={3}
-            >
-              <Text fontSize="sm" fontWeight="medium">
-                {s.text}
-              </Text>
-            </Box>
-          );
-        })()}
+        {!showVideo && (
+          <Lottie
+            lottieRef={lottieRef}
+            animationData={gptTalking}
+            loop={false}
+            autoplay={false}
+            onComplete={onLottieComplete}
+            style={{
+              width: "70%",
+              maxWidth: 340,
+              minWidth: 220,
+              height: "auto",
+              pointerEvents: "none",
+            }}
+          />
+        )}
 
-        {/* Hidden audio element */}
         <audio
           ref={audioRef}
           preload="auto"
-          onPlaying={onAudioPlaying}
-          onEnded={onAudioEnded}
-          onError={onAudioError}
+          onPlaying={onMediaPlaying}
+          onEnded={onMediaEnded}
+          onError={onMediaError}
+          style={{ display: "none" }}
         />
+
+        {!showVideo && (
+          <Box
+            position="absolute"
+            bottom="10px"
+            left="50%"
+            transform="translateX(-50%)"
+            bg={status.bg}
+            color={status.color}
+            px={4}
+            py={2}
+            borderRadius="md"
+            boxShadow="sm"
+            zIndex={3}
+          >
+            <Text fontSize="sm" fontWeight="medium">
+              {status.text}
+            </Text>
+          </Box>
+        )}
       </Box>
 
       {audioBlocked && (
         <HStack mt={3} spacing={2} wrap="wrap">
           <Button size="sm" colorScheme="pink" onClick={onEnableAudio}>
-            Enable Audio
+            Enable media
           </Button>
         </HStack>
       )}
@@ -155,4 +176,3 @@ const LottieView = ({
 };
 
 export default LottieView;
-
