@@ -153,4 +153,14 @@ export const GAME_ENDPOINTS = {
   QUESTIONS_IMPORT: "/api/game/questions/import",
 };
 
+// Admin Analytics endpoints (Phase 1 + Phase 2 — Admin JWT required)
+export const ANALYTICS_ENDPOINTS = {
+  OVERVIEW: "/api/admin/analytics/overview",
+  ACTIVITY_TREND: "/api/admin/analytics/activity-trend",
+  RECENT_ACTIVITY: "/api/admin/analytics/recent-activity",
+  SERVICE: (serviceKey) => `/api/admin/analytics/services/${serviceKey}`,
+  USERS: "/api/admin/analytics/users",
+  USER_PROFILE: (userId) => `/api/admin/analytics/users/${userId}`,
+};
+
 

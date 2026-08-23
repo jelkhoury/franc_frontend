@@ -31,7 +31,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { Link, useNavigate } from "react-router-dom";
-import { HamburgerIcon } from "@chakra-ui/icons";
+import { ChevronLeftIcon, HamburgerIcon } from "@chakra-ui/icons";
 import ManageUsers from "../components/Admin/ManageUsers";
 import ManageMockInterviews from "../components/Admin/ManageMockInterviews";
 import ManageSelfTests from "../components/Admin/ManageSelfTests";
@@ -41,6 +41,7 @@ import ManageFiles from "../components/Admin/ManageFiles";
 import ManageChatbot from "../components/Admin/ManageChatbot";
 import ManageJobComparisons from "../components/Admin/ManageJobComparisons";
 import ManageEmbeddings from "../components/Admin/ManageEmbeddings";
+import AnalyticsDashboard from "../features/adminAnalytics/pages/AnalyticsDashboard";
 import { AuthContext } from "../components/AuthContext";
 import UserProfileEdit from "../components/UserProfileEdit"; // Adjust path if necessary
 import {
@@ -55,14 +56,16 @@ import {
   FaRobot,
   FaBalanceScale,
   FaBook,
+  FaChartBar,
 } from "react-icons/fa";
 import { getStoredToken, getUserRole, getStoredUserRole } from "../utils/tokenUtils";
 
 const AdminPanel = () => {
-  const [selectedTab, setSelectedTab] = useState("users");
+  const [selectedTab, setSelectedTab] = useState("analytics");
   const { isLoggedIn, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const isMobile = useBreakpointValue({ base: true, md: false });
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isCheckingRole, setIsCheckingRole] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -119,9 +122,11 @@ const AdminPanel = () => {
 
   const handleTabChange = (tab) => {
     setSelectedTab(tab);
-    if (isMobile) {
-      onDrawerClose();
-    }
+    onDrawerClose();
+  };
+
+  const handleCloseSidebar = () => {
+    setIsSidebarOpen(false);
   };
 
   // Show loading or access denied message
@@ -180,6 +185,7 @@ const AdminPanel = () => {
   const userSectionBg = useColorModeValue("gray.50", "gray.800");
 
   const menuItems = [
+    { id: "analytics", icon: FaChartBar, label: "Analytics" },
     { id: "users", icon: FaUsers, label: "Manage Users" },
     { id: "mockInterviews", icon: FaVideo, label: "Manage Mock Interviews" },
     { id: "mockInterviewQuestions", icon: FaListOl, label: "Mock Interview Questions" },
@@ -214,9 +220,18 @@ const AdminPanel = () => {
           >
             <FaUsers />
           </Box>
-          <Heading color="brand.500" size="sm" fontWeight="semibold" letterSpacing="tight">
+          <Heading color="brand.500" size="sm" fontWeight="semibold" letterSpacing="tight" flex={1}>
             Admin Menu
           </Heading>
+          {!isMobile && (
+            <IconButton
+              icon={<ChevronLeftIcon />}
+              aria-label="Close sidebar"
+              size="sm"
+              variant="ghost"
+              onClick={handleCloseSidebar}
+            />
+          )}
         </Flex>
         <Divider borderColor={sidebarBorder} mb={4} />
         <VStack spacing={1} align="stretch">
@@ -352,75 +367,77 @@ const AdminPanel = () => {
       overflow="hidden"
       bg="gray.50"
     >
-      {/* Desktop Sidebar — stays in view; only main pane scrolls */}
-      <Box
-        width={{ base: "100%", md: "280px" }}
-        minW={{ md: "280px" }}
-        flexShrink={0}
-        bg="gray.100"
-        p={{ base: 4, md: 6 }}
-        h={{ md: "100vh" }}
-        maxH={{ md: "100vh" }}
-        display={{ base: "none", md: "flex" }}
-        flexDirection="column"
-        overflow="hidden"
-        borderRight="1px solid"
-        borderColor="gray.200"
-      >
-        <SidebarContent />
-      </Box>
+      {/* Desktop Sidebar — visible when open; main pane scrolls independently */}
+      {!isMobile && isSidebarOpen && (
+        <Box
+          width="280px"
+          minW="280px"
+          flexShrink={0}
+          bg="gray.100"
+          p={6}
+          h="100vh"
+          maxH="100vh"
+          display="flex"
+          flexDirection="column"
+          overflow="hidden"
+          borderRight="1px solid"
+          borderColor="gray.200"
+        >
+          <SidebarContent />
+        </Box>
+      )}
 
-      {/* Mobile Header with Hamburger */}
-      <Box
-        display={{ base: "flex", md: "none" }}
-        flexShrink={0}
-        bg="gray.100"
-        p={4}
-        align="center"
-        justify="space-between"
-        borderBottom="1px solid"
-        borderColor="gray.200"
-      >
-        <Heading color="brand.500" size="md">
-          Admin Panel
-        </Heading>
-        <IconButton
-          icon={<HamburgerIcon />}
-          aria-label="Open menu"
-          onClick={onDrawerOpen}
-          variant="ghost"
-        />
-      </Box>
+      <Flex direction="column" flex="1" minW={0} minH={0}>
+        {/* Header with menu toggle when sidebar is closed or on mobile */}
+        {(isMobile || !isSidebarOpen) && (
+          <Box
+            flexShrink={0}
+            bg="gray.100"
+            px={4}
+            py={3}
+            display="flex"
+            align="center"
+            borderBottom="1px solid"
+            borderColor="gray.200"
+          >
+            <Flex align="center" gap={2}>
+              <IconButton
+                icon={<HamburgerIcon />}
+                aria-label="Open menu"
+                onClick={onDrawerOpen}
+                variant="ghost"
+              />
+              <Heading color="brand.500" size="md">
+                Admin Panel
+              </Heading>
+            </Flex>
+          </Box>
+        )}
 
-      {/* Mobile Drawer */}
-      <Drawer isOpen={isDrawerOpen} placement="left" onClose={onDrawerClose}>
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton />
-          <DrawerHeader>Admin Menu</DrawerHeader>
-          <DrawerBody>
-            <Box
-              display="flex"
-              flexDirection="column"
-              justifyContent="space-between"
-              height="calc(100% - 60px)"
-            >
+        {/* Navigation drawer — mobile always; desktop when sidebar is collapsed */}
+        <Drawer isOpen={isDrawerOpen} placement="left" onClose={onDrawerClose} size="xs">
+          <DrawerOverlay />
+          <DrawerContent maxW="280px">
+            <DrawerCloseButton />
+            <DrawerHeader borderBottomWidth="1px">Admin Menu</DrawerHeader>
+            <DrawerBody p={4} display="flex" flexDirection="column" overflow="hidden">
               <SidebarContent />
-            </Box>
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
+            </DrawerBody>
+          </DrawerContent>
+        </Drawer>
 
-      {/* Main Content — sole scroll area on desktop & mobile */}
-      <Box
-        flex="1"
-        minW={0}
-        minH={0}
-        p={{ base: 4, md: 8 }}
-        overflowY="auto"
-        overflowX="auto"
-        bg="white"
-      >
+        {/* Main Content — sole scroll area on desktop & mobile */}
+        <Box
+          flex="1"
+          minW={0}
+          minH={0}
+          p={{ base: 4, md: 8 }}
+          overflowY="auto"
+          overflowX="hidden"
+          bg="white"
+          sx={{ overscrollBehavior: "contain" }}
+        >
+        {selectedTab === "analytics" && <AnalyticsDashboard />}
         {selectedTab === "users" && <ManageUsers />}
         {selectedTab === "mockInterviews" && <ManageMockInterviews />}
         {selectedTab === "mockInterviewQuestions" && <ManageMockInterviewQuestions />}
@@ -430,7 +447,8 @@ const AdminPanel = () => {
         {selectedTab === "chatbot" && <ManageChatbot />}
         {selectedTab === "jobComparisons" && <ManageJobComparisons />}
         {selectedTab === "embeddings" && <ManageEmbeddings />}
-      </Box>
+        </Box>
+      </Flex>
     </Flex>
   );
 };
