@@ -42,6 +42,8 @@ export const SDS_ENDPOINTS = {
   GET_USER_SDS_RESULTS: (userId) =>
     `/api/sds/GetUserSDSResults?userId=${userId}`,
   SAVE_AI_FEEDBACK: "/api/sds/save-ai-feedback",
+  /** Admin-only SDS report (.xlsx); query: fromDate, toDate (YYYY-MM-DD), completion */
+  EXPORT_EXCEL: "/api/sds/export-excel",
   // Admin endpoints (if needed)
   CREATE_SECTION: "/api/sds/create-section",
   CREATE_QUESTION: "/api/sds/create-question",

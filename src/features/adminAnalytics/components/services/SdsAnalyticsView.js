@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Heading,
@@ -12,8 +12,14 @@ import {
   TableContainer,
   Badge,
   Text,
+  Button,
+  Flex,
+  HStack,
+  Select,
   useColorModeValue,
+  useToast,
 } from "@chakra-ui/react";
+import { DownloadIcon } from "@chakra-ui/icons";
 import {
   ResponsiveContainer,
   BarChart,
@@ -28,16 +34,126 @@ import {
 } from "recharts";
 import KpiCard, { KpiGrid } from "../KpiCard";
 import ChartContainer from "../ChartContainer";
-import { formatAnalyticsDate, formatPercent } from "../../utils/analytics.utils";
+import { formatAnalyticsDate, formatAnalyticsDateShort } from "../../utils/analytics.utils";
+import { exportSdsExcel } from "../../services/analyticsApi";
+import { captureError } from "../../../../utils/sentryUtils";
 
 const COLORS = ["#3E79BD", "#805AD5", "#38A169", "#DD6B20", "#E53E3E", "#718096"];
 
-export default function SdsAnalyticsView({ data }) {
+export default function SdsAnalyticsView({ data, filters = {} }) {
   const border = useColorModeValue("gray.200", "gray.600");
+  const panelBg = useColorModeValue("white", "gray.800");
+  const toast = useToast();
+  const [completion, setCompletion] = useState("all");
+  const [exporting, setExporting] = useState(false);
+
   if (!data) return null;
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const { blob, filename } = await exportSdsExcel({
+        fromDate: filters.fromDate,
+        toDate: filters.toDate,
+        completion,
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Report downloaded",
+        description: `${filename} saved successfully.`,
+        status: "success",
+        duration: 4000,
+        isClosable: true,
+      });
+    } catch (error) {
+      captureError(error);
+      toast({
+        title: "Export failed",
+        description: error.message || "Could not download the SDS report.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const dateRangeLabel =
+    filters.fromDate || filters.toDate
+      ? `${filters.fromDate ? formatAnalyticsDateShort(filters.fromDate) : "…"} – ${
+          filters.toDate ? formatAnalyticsDateShort(filters.toDate) : "…"
+        }`
+      : "All dates";
 
   return (
     <Box>
+      <Box
+        p={4}
+        mb={6}
+        borderRadius="xl"
+        borderWidth="1px"
+        borderColor={border}
+        bg={panelBg}
+      >
+        <Flex
+          direction={{ base: "column", md: "row" }}
+          align={{ md: "center" }}
+          justify="space-between"
+          gap={4}
+        >
+          <Box>
+            <Heading size="sm" mb={1}>
+              Export SDS report
+            </Heading>
+            <Text fontSize="sm" color="gray.600">
+              Download an Excel file for the selected date range. Columns: full name, email,
+              Holland code, status, attempt, started (UTC), completed (UTC).
+            </Text>
+            <Text fontSize="xs" color="gray.500" mt={1}>
+              Date range: {dateRangeLabel}
+            </Text>
+          </Box>
+
+          <HStack spacing={3} align="flex-end" flexShrink={0}>
+            <Box minW="160px">
+              <Text fontSize="xs" fontWeight="semibold" color="gray.500" mb={1}>
+                Completion
+              </Text>
+              <Select
+                size="sm"
+                bg="white"
+                value={completion}
+                onChange={(e) => setCompletion(e.target.value)}
+              >
+                <option value="all">All</option>
+                <option value="complete">Complete</option>
+                <option value="incomplete">Incomplete</option>
+              </Select>
+            </Box>
+            <Button
+              leftIcon={<DownloadIcon />}
+              colorScheme="brand"
+              size="sm"
+              onClick={handleExport}
+              isLoading={exporting}
+              loadingText="Exporting"
+            >
+              Download Excel
+            </Button>
+          </HStack>
+        </Flex>
+      </Box>
+
       <KpiGrid>
         <KpiCard label="Started" value={data.started} />
         <KpiCard label="Completed" value={data.completed} />

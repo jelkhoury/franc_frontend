@@ -40,7 +40,7 @@ function ServiceDetailView({ serviceKey, filters, onFilterChange, onBack }) {
       case SERVICE_KEYS.MOCK_INTERVIEW:
         return <MockInterviewAnalyticsView data={data} />;
       case SERVICE_KEYS.SDS:
-        return <SdsAnalyticsView data={data} />;
+        return <SdsAnalyticsView data={data} filters={filters} />;
       case SERVICE_KEYS.JOB_COMPARISON:
         return <JobComparisonAnalyticsView data={data} />;
       case SERVICE_KEYS.GAMIFICATION:
