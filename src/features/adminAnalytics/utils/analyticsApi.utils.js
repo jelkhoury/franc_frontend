@@ -3,6 +3,11 @@
  * Backend may return PascalCase (.NET); frontend expects camelCase.
  */
 
+import {
+  normalizeAnalyticsFromDate,
+  normalizeAnalyticsToDate,
+} from "./analytics.utils";
+
 export function pick(obj, ...keys) {
   if (!obj) return undefined;
   for (const k of keys) {
@@ -21,8 +26,10 @@ export function toUserIdString(value) {
  */
 export function analyticsQueryParams(filters = {}) {
   const params = {};
-  if (filters.fromDate) params.fromDate = filters.fromDate;
-  if (filters.toDate) params.toDate = filters.toDate;
+  const fromDate = normalizeAnalyticsFromDate(filters.fromDate);
+  const toDate = normalizeAnalyticsToDate(filters.toDate);
+  if (fromDate) params.fromDate = fromDate;
+  if (toDate) params.toDate = toDate;
   if (filters.serviceKey) params.serviceKey = filters.serviceKey;
   if (filters.userId) params.userId = filters.userId;
   if (filters.status) params.status = filters.status;

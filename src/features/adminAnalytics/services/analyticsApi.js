@@ -14,6 +14,11 @@ import {
   normalizeUserProfile,
   normalizeServiceAnalytics,
 } from "../utils/analyticsApi.utils";
+import {
+  normalizeAnalyticsFromDate,
+  normalizeAnalyticsToDate,
+  selectedCalendarDay,
+} from "../utils/analytics.utils";
 
 function getToken() {
   return localStorage.getItem("token");
@@ -66,9 +71,13 @@ export async function fetchUserProfile(userId) {
   return normalizeUserProfile(data);
 }
 
-function toExportDateParam(iso) {
+function toExportDateParam(iso, boundary) {
   if (!iso) return null;
-  return String(iso).slice(0, 10);
+  const normalized =
+    boundary === "to"
+      ? normalizeAnalyticsToDate(iso)
+      : normalizeAnalyticsFromDate(iso);
+  return selectedCalendarDay(normalized);
 }
 
 function parseContentDispositionFilename(header) {
@@ -93,8 +102,8 @@ export async function exportSdsExcel({
 } = {}) {
   const token = getToken();
   const params = new URLSearchParams();
-  const from = toExportDateParam(fromDate);
-  const to = toExportDateParam(toDate);
+  const from = toExportDateParam(fromDate, "from");
+  const to = toExportDateParam(toDate, "to");
   if (from) params.set("fromDate", from);
   if (to) params.set("toDate", to);
   params.set("completion", completion || "all");

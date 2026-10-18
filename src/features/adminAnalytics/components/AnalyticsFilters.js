@@ -10,7 +10,12 @@ import {
   Text,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { getDateRangePreset } from "../utils/analytics.utils";
+import {
+  analyticsDateInputValue,
+  calendarDayToFromDateUtc,
+  calendarDayToToDateUtc,
+  getDateRangePreset,
+} from "../utils/analytics.utils";
 import { getActiveServices } from "../constants/serviceRegistry";
 
 const PRESETS = [
@@ -77,10 +82,10 @@ export default function AnalyticsFilters({
               type="date"
               size="sm"
               bg="white"
-              value={filters.fromDate ? filters.fromDate.slice(0, 10) : ""}
+              value={analyticsDateInputValue(filters.fromDate)}
               onChange={(e) =>
                 onChange({
-                  fromDate: e.target.value ? new Date(e.target.value).toISOString() : null,
+                  fromDate: e.target.value ? calendarDayToFromDateUtc(e.target.value) : null,
                   preset: "custom",
                 })
               }
@@ -95,10 +100,10 @@ export default function AnalyticsFilters({
               type="date"
               size="sm"
               bg="white"
-              value={filters.toDate ? filters.toDate.slice(0, 10) : ""}
+              value={analyticsDateInputValue(filters.toDate)}
               onChange={(e) =>
                 onChange({
-                  toDate: e.target.value ? new Date(e.target.value).toISOString() : null,
+                  toDate: e.target.value ? calendarDayToToDateUtc(e.target.value) : null,
                   preset: "custom",
                 })
               }

@@ -1,5 +1,69 @@
 import { FRANC_SERVICES, getServiceByKey } from "../constants/serviceRegistry";
 
+const CALENDAR_DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+/** Stored range using UTC calendar-day boundaries (legacy). */
+const UTC_DAY_BOUNDARY_RE =
+  /^(\d{4}-\d{2}-\d{2})T(00:00:00\.000|23:59:59\.999)Z$/;
+
+/** Local calendar date as YYYY-MM-DD (matches `<input type="date">`). */
+export function formatLocalYmd(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function parseLocalCalendarDay(ymd) {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/**
+ * Calendar day the user selected in the date picker (local), from YMD or stored ISO.
+ */
+export function selectedCalendarDay(value) {
+  if (!value) return null;
+  const s = String(value).trim();
+  if (CALENDAR_DAY_RE.test(s)) return s;
+  const legacy = UTC_DAY_BOUNDARY_RE.exec(s);
+  if (legacy) return legacy[1];
+  const t = new Date(s);
+  if (Number.isNaN(t.getTime())) return null;
+  return formatLocalYmd(t);
+}
+
+/** First selected day → start of that local day as UTC ISO. */
+export function calendarDayToFromDateUtc(ymd) {
+  const day = selectedCalendarDay(ymd);
+  if (!day) return null;
+  const start = parseLocalCalendarDay(day);
+  start.setHours(0, 0, 0, 0);
+  return start.toISOString();
+}
+
+/** Last selected day → end of that local day as UTC ISO (never midnight at day start). */
+export function calendarDayToToDateUtc(ymd) {
+  const day = selectedCalendarDay(ymd);
+  if (!day) return null;
+  const end = parseLocalCalendarDay(day);
+  end.setHours(23, 59, 59, 999);
+  return end.toISOString();
+}
+
+export function normalizeAnalyticsFromDate(value) {
+  return calendarDayToFromDateUtc(value);
+}
+
+export function normalizeAnalyticsToDate(value) {
+  return calendarDayToToDateUtc(value);
+}
+
+/** Value for `<input type="date">` from stored filter ISO. */
+export function analyticsDateInputValue(iso) {
+  if (!iso) return "";
+  return selectedCalendarDay(iso) ?? "";
+}
+
 export function formatAnalyticsDate(iso) {
   if (!iso) return "—";
   try {
@@ -38,34 +102,38 @@ export function formatNumber(value) {
 }
 
 export function getDateRangePreset(preset) {
-  const now = new Date();
-  const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
+  const endDay = new Date();
+  const startDay = new Date();
+  let resolvedPreset = preset;
 
   switch (preset) {
     case "today":
-      return { fromDate: start.toISOString(), toDate: end.toISOString(), preset };
+      break;
     case "last7days":
-      start.setDate(start.getDate() - 6);
-      return { fromDate: start.toISOString(), toDate: end.toISOString(), preset };
+      startDay.setDate(startDay.getDate() - 6);
+      break;
     case "last30days":
-      start.setDate(start.getDate() - 29);
-      return { fromDate: start.toISOString(), toDate: end.toISOString(), preset };
+      startDay.setDate(startDay.getDate() - 29);
+      break;
     case "thisMonth":
-      start.setDate(1);
-      return { fromDate: start.toISOString(), toDate: end.toISOString(), preset };
+      startDay.setDate(1);
+      break;
     default:
-      start.setDate(start.getDate() - 29);
-      return { fromDate: start.toISOString(), toDate: end.toISOString(), preset: "last30days" };
+      startDay.setDate(startDay.getDate() - 29);
+      resolvedPreset = "last30days";
   }
+
+  return {
+    fromDate: calendarDayToFromDateUtc(formatLocalYmd(startDay)),
+    toDate: calendarDayToToDateUtc(formatLocalYmd(endDay)),
+    preset: resolvedPreset,
+  };
 }
 
 export function buildFilterQuery(filters) {
   const params = {};
-  if (filters.fromDate) params.fromDate = filters.fromDate;
-  if (filters.toDate) params.toDate = filters.toDate;
+  if (filters.fromDate) params.fromDate = normalizeAnalyticsFromDate(filters.fromDate);
+  if (filters.toDate) params.toDate = normalizeAnalyticsToDate(filters.toDate);
   if (filters.serviceKey) params.serviceKey = filters.serviceKey;
   if (filters.userId) params.userId = filters.userId;
   if (filters.status) params.status = filters.status;
