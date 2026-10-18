@@ -43,6 +43,34 @@ import { captureError } from "../../utils/sentryUtils";
 import { SDS_ENDPOINTS } from "../../services/apiService";
 
 const SDS_DRAFT_STORAGE_KEY = "sds_draft_answers";
+const SLIDER_QUESTION_TYPE = 4;
+const SLIDER_DEFAULT_DISPLAY_VALUE = 1;
+
+const getSliderOptionValue = (
+  question,
+  displayValue = SLIDER_DEFAULT_DISPLAY_VALUE
+) => {
+  const options = question?.answerOptions || [];
+  const selectedOption = options.find(
+    (opt) => opt.text === String(displayValue)
+  );
+  return selectedOption != null ? selectedOption.value : null;
+};
+
+const withDefaultSliderAnswers = (answersObj, sectionList) => {
+  const next = { ...(answersObj || {}) };
+  (sectionList || []).forEach((section) => {
+    (section.questions || []).forEach((q) => {
+      if (q.type !== SLIDER_QUESTION_TYPE) return;
+      if (next[q.id] != null && next[q.id] !== "") return;
+      const defaultValue = getSliderOptionValue(q);
+      if (defaultValue != null) {
+        next[q.id] = defaultValue;
+      }
+    });
+  });
+  return next;
+};
 
 const DEBOUNCE_TEXT_MS = 350;
 
@@ -241,9 +269,10 @@ const SdsTry = () => {
   };
 
   const handleSaveAndReturnLater = async () => {
+    const answersToSave = withDefaultSliderAnswers(answers, sections);
     const userId = getUserIdFromToken();
     if (!userId) {
-      saveAnswersToStorage(answers);
+      saveAnswersToStorage(answersToSave);
       toast({
         title: "Saved locally",
         description: "Log in to sync your progress to the server. Your answers are saved in this browser.",
@@ -262,19 +291,19 @@ const SdsTry = () => {
       });
     });
 
-    const changedOrNew = Object.keys(answers).filter((qid) => {
-      const current = normalizeAnswerForCompare(answers[qid]);
+    const changedOrNew = Object.keys(answersToSave).filter((qid) => {
+      const current = normalizeAnswerForCompare(answersToSave[qid]);
       const initial = normalizeAnswerForCompare(initialAnswersSnapshot[qid]);
       return current !== initial;
     });
 
     const responses = buildResponsesPayload(
-      Object.fromEntries(changedOrNew.map((qid) => [qid, answers[qid]])),
+      Object.fromEntries(changedOrNew.map((qid) => [qid, answersToSave[qid]])),
       typeMap
     );
 
     if (responses.length === 0) {
-      saveAnswersToStorage(answers);
+      saveAnswersToStorage(answersToSave);
       toast({
         title: "No changes to save",
         description: "Your progress is already saved. You can leave and continue later.",
@@ -293,8 +322,8 @@ const SdsTry = () => {
         isCompleted: false,
         responses,
       });
-      saveAnswersToStorage(answers);
-      setInitialAnswersSnapshot({ ...answers });
+      saveAnswersToStorage(answersToSave);
+      setInitialAnswersSnapshot({ ...answersToSave });
       toast({
         title: "Progress saved",
         description: "Your answers have been saved. You can continue later.",
@@ -371,43 +400,43 @@ const SdsTry = () => {
     (sum, s) => sum + (s.questions || []).length,
     0
   );
-  const answered = Object.keys(answers).length;
 
-  // Check if all questions are answered
-  const isAllQuestionsAnswered = () => {
-    return sections.every((section) =>
-      (section.questions || []).every((q) => {
-        const answer = answers[q.id];
-        if (q.type === 5 || q.type === 6) {
-          // Text questions need non-empty text
-          return answer && answer.toString().trim().length > 0;
-        } else if (q.type === 2) {
-          // Multi-select questions need at least one selection
-          return Array.isArray(answer) && answer.length > 0;
-        } else {
-          // Single select, slider, etc.
-          return answer !== null && answer !== undefined && answer !== "";
-        }
-      })
-    );
-  };
-
-  const allAnswered = isAllQuestionsAnswered();
-
-  // Check if a specific question is answered
-  const isQuestionAnswered = (question) => {
+  const hasStoredAnswer = (question) => {
     const answer = answers[question.id];
     if (question.type === 5 || question.type === 6) {
-      // Text questions need non-empty text
       return answer && answer.toString().trim().length > 0;
-    } else if (question.type === 2) {
-      // Multi-select questions need at least one selection
-      return Array.isArray(answer) && answer.length > 0;
-    } else {
-      // Single select, slider, etc.
-      return answer !== null && answer !== undefined && answer !== "";
     }
+    if (question.type === 2) {
+      return Array.isArray(answer) && answer.length > 0;
+    }
+    return answer !== null && answer !== undefined && answer !== "";
   };
+
+  /** Progress bar & badges: only count answers the user actually set. */
+  const isQuestionAnsweredForProgress = (question) => hasStoredAnswer(question);
+
+  /** Submit validation: sliders count as complete at default 1 even if untouched. */
+  const isQuestionCompleteForSubmit = (question) => {
+    if (question.type === SLIDER_QUESTION_TYPE) {
+      if (hasStoredAnswer(question)) return true;
+      return getSliderOptionValue(question) != null;
+    }
+    return hasStoredAnswer(question);
+  };
+
+  const isAllQuestionsAnswered = () =>
+    sections.every((section) =>
+      (section.questions || []).every((q) => isQuestionCompleteForSubmit(q))
+    );
+
+  const allAnswered = isAllQuestionsAnswered();
+  const answered = sections.reduce(
+    (sum, s) =>
+      sum +
+      (s.questions || []).filter((q) => isQuestionAnsweredForProgress(q))
+        .length,
+    0
+  );
 
   const riasecMeta = {
     Realistic: { emoji: "🛠️", color: "teal" },
@@ -671,7 +700,8 @@ const SdsTry = () => {
       });
     });
 
-    const responses = Object.entries(answers).map(([qid, val]) => {
+    const answersToSubmit = withDefaultSliderAnswers(answers, sections);
+    const responses = Object.entries(answersToSubmit).map(([qid, val]) => {
       const questionId = Number(qid);
       const qType = typeMap[questionId];
 
@@ -867,7 +897,8 @@ const SdsTry = () => {
           <Progress value={progressPct} rounded="full" size="sm" />
           <HStack mt={2} justify="space-between">
             <Text fontSize="sm" color="gray.600">
-              {answered}/{totalQs} answered ({progressPct}%)
+              {answered}/{totalQs} answered ({progressPct}%). Rating sliders start
+              at 1 — adjust only if you want a different score.
             </Text>
             <HStack spacing={2}>
               {earnedBadges.map((b, i) => (
@@ -959,7 +990,7 @@ const SdsTry = () => {
                     >
                       <VStack align="stretch" spacing={6}>
                         {(section.questions || []).map((q, idx) => {
-                          const isAnswered = isQuestionAnswered(q);
+                          const isAnswered = isQuestionCompleteForSubmit(q);
                           const showError = showValidationErrors && !isAnswered;
                           return (
                             <Box key={q.id}>
@@ -994,17 +1025,24 @@ const SdsTry = () => {
                                   type={q.type}
                                   text=""
                                   value={
-                                    q.type === 4
+                                    q.type === SLIDER_QUESTION_TYPE
                                       ? (() => {
-                                          if (answers[q.id]) {
-                                            const option = q.answerOptions.find(
-                                              (opt) => opt.value === answers[q.id]
+                                          if (
+                                            answers[q.id] != null &&
+                                            answers[q.id] !== ""
+                                          ) {
+                                            const option = (
+                                              q.answerOptions || []
+                                            ).find(
+                                              (opt) =>
+                                                String(opt.value) ===
+                                                String(answers[q.id])
                                             );
                                             return option
                                               ? Number(option.text)
-                                              : 1;
+                                              : SLIDER_DEFAULT_DISPLAY_VALUE;
                                           }
-                                          return 1;
+                                          return SLIDER_DEFAULT_DISPLAY_VALUE;
                                         })()
                                       : answers[q.id]
                                   }
@@ -1014,19 +1052,14 @@ const SdsTry = () => {
                                     value: String(opt.value),
                                   }))}
                                   onChange={(val) => {
-                                    if (q.type === 4) {
+                                    if (q.type === SLIDER_QUESTION_TYPE) {
                                       const sliderValue = Math.max(
-                                        1,
+                                        SLIDER_DEFAULT_DISPLAY_VALUE,
                                         Math.min(7, Math.round(val))
-                                      );
-                                      const selectedOption = q.answerOptions.find(
-                                        (opt) => opt.text === String(sliderValue)
                                       );
                                       setAnswers((prev) => ({
                                         ...prev,
-                                        [q.id]: selectedOption
-                                          ? selectedOption.value
-                                          : null,
+                                        [q.id]: getSliderOptionValue(q, sliderValue),
                                       }));
                                     } else if (q.type === 1) {
                                       const currentValue = answers[q.id];
