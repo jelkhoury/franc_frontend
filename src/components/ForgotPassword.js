@@ -43,7 +43,7 @@ const ForgotPassword = () => {
 
     setLoading(true);
     try {
-      const data = await post(`${USER_ENDPOINTS.FORGOT_PASSWORD}?email=${encodeURIComponent(email)}`);
+      const data = await post(`${USER_ENDPOINTS.FORGOT_PASSWORD}?email=${encodeURIComponent(email)}`, undefined, { token: '' });
 
       toast({
         title: 'Code Sent',

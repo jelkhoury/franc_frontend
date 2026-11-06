@@ -16,7 +16,7 @@ import {
 } from "@chakra-ui/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../components/AuthContext";
-import { decodeToken, getUserRole, getUserName, getUserId } from "../utils/tokenUtils";
+import { decodeToken, getUserRole, getUserName, getUserId, isTokenExpired } from "../utils/tokenUtils";
 import { post } from "../utils/httpServices";
 import { captureError } from "../utils/sentryUtils";
 import { USER_ENDPOINTS } from "../services/apiService";
@@ -30,6 +30,7 @@ const OTPVerification = () => {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
+  const [resendAfter, setResendAfter] = useState(shouldSendCode ? 0 : 60);
   const toast = useToast();
 
   const sendVerificationCode = useCallback(async () => {
@@ -38,8 +39,9 @@ const OTPVerification = () => {
     setSendingCode(true);
     try {
       await post(
-        `${USER_ENDPOINTS.SEND_VERIFICATION_CODE}?email=${encodeURIComponent(email)}`
+        `${USER_ENDPOINTS.SEND_VERIFICATION_CODE}?email=${encodeURIComponent(email)}`, undefined, { token: "" }
       );
+      setResendAfter(60);
       toast({
         title: "Verification code sent",
         description: "Please check your email for the verification code.",
@@ -68,6 +70,12 @@ const OTPVerification = () => {
     }
   }, [shouldSendCode, email, sendVerificationCode]);
 
+  useEffect(() => {
+    if (resendAfter <= 0) return undefined;
+    const timer = setTimeout(() => setResendAfter(value => Math.max(0, value - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [resendAfter]);
+
   const handleChange = (value) => {
     setOtp(value);
   };
@@ -84,101 +92,31 @@ const OTPVerification = () => {
       return;
     }
 
-    if (otp.length !== 4) return;
+    if (!/^\d{6}$/.test(otp)) return;
 
     setLoading(true);
 
     try {
       const data = await post(
-        `${USER_ENDPOINTS.VERIFY_CODE}?email=${encodeURIComponent(email)}&code=${otp}`
+        `${USER_ENDPOINTS.VERIFY_CODE}?email=${encodeURIComponent(email)}&code=${otp}`, undefined, { token: "" }
       );
 
-      // Check if verification was successful
-      const isSuccess = data.message && 
-        data.message.toLowerCase().includes("verification successful");
-
-      if (isSuccess) {
-        // If token is already in response, use it
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-          
-          const decodedToken = decodeToken(data.token);
-          
-          if (decodedToken) {
-            const userRole = getUserRole(data.token);
-            const userName = getUserName(data.token);
-            const userId = getUserId(data.token);
-            
-            localStorage.setItem('userRole', userRole);
-            localStorage.setItem('userName', userName);
-            localStorage.setItem('userId', userId);
-            
-            login();
-            
-            toast({
-              title: "Verification Successful!",
-              description: `Welcome, ${userName}! Your email has been verified successfully.`,
-              status: "success",
-              duration: 3000,
-              isClosable: true,
-            });
-            
-            // Navigate based on role
-            if (userRole === 'Admin') {
-              navigate('/admin');
-            } else {
-              navigate('/');
-            }
-            return;
-          }
-        }
-
-        // If no token but verification successful, generate token using email
-        const tokenData = await post(
-          `${USER_ENDPOINTS.GENERATE_TOKEN_BY_EMAIL}?email=${encodeURIComponent(email)}`
-        );
-        
-        if (!tokenData.token) {
-          throw new Error('Failed to generate token');
-        }
-
-        // Store token and decode user info
-        localStorage.setItem('token', tokenData.token);
-        
-        const decodedToken = decodeToken(tokenData.token);
-        
-        if (decodedToken) {
-          const userRole = getUserRole(tokenData.token);
-          const userName = getUserName(tokenData.token);
-          const userId = getUserId(tokenData.token);
-          
-          localStorage.setItem('userRole', userRole);
-          localStorage.setItem('userName', userName);
-          localStorage.setItem('userId', userId);
-          
-          // Update auth context
-          login();
-          
-          toast({
-            title: "Verification Successful!",
-            description: `Welcome, ${userName}! Your email has been verified successfully.`,
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-          });
-          
-          // Navigate to home page
-          if (userRole === 'Admin') {
-            navigate('/admin');
-          } else {
-            navigate('/');
-          }
-        } else {
-          throw new Error('Invalid token received');
-        }
-      } else {
-        throw new Error(data.message || 'Verification failed');
+      const token = data.token;
+      if (!token || !decodeToken(token) || isTokenExpired(token)) {
+        throw new Error('No valid login token was returned. Please sign in again.');
       }
+      const userRole = getUserRole(token);
+      const userName = getUserName(token);
+      const userId = getUserId(token);
+      if (!userRole || !userId) throw new Error('Invalid login token received.');
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('userRole', userRole);
+      localStorage.setItem('userName', userName || '');
+      localStorage.setItem('userId', userId);
+      login();
+      toast({title: 'Verification Successful!', description: 'Your email has been verified.', status: 'success', duration: 3000, isClosable: true});
+      navigate(userRole === 'Admin' ? '/admin' : '/');
     } catch (err) {
       captureError(err);
       toast({
@@ -224,10 +162,7 @@ const OTPVerification = () => {
           <Center>
             <HStack>
               <PinInput otp size="lg" value={otp} onChange={handleChange}>
-                <PinInputField />
-                <PinInputField />
-                <PinInputField />
-                <PinInputField />
+                {Array.from({length: 6}, (_, index) => <PinInputField key={index} aria-label={`Verification digit ${index + 1}`} />)}
               </PinInput>
             </HStack>
           </Center>
@@ -238,23 +173,17 @@ const OTPVerification = () => {
           fontSize="md"
           onClick={handleSubmit}
           isLoading={loading}
-          isDisabled={otp.length !== 4}
+          isDisabled={otp.length !== 6}
         >
           Verify
         </Button>
         <Stack pt={6}>
           <Text textAlign={"center"}>
             Didn't receive the code?{" "}
-            <Text 
-              as="span" 
-              color={"blue.400"} 
-              fontWeight="medium"
-              cursor="pointer"
-              onClick={sendVerificationCode}
-              _hover={{ textDecoration: "underline" }}
-            >
-              Resend
-            </Text>
+            <Button variant="link" color="blue.400" onClick={sendVerificationCode}
+              isDisabled={sendingCode || resendAfter > 0}>
+              {resendAfter > 0 ? `Resend in ${resendAfter}s` : 'Resend'}
+            </Button>
           </Text>
         </Stack>
       </Stack>

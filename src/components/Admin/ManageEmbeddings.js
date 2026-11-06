@@ -39,7 +39,11 @@ import { get, post, postForm, del } from "../../utils/httpServices";
 import { EMBEDDINGS_ENDPOINTS } from "../../services/apiService";
 import { captureError } from "../../utils/sentryUtils";
 
-const DEFAULT_INDEX = "antonine-university";
+const DEFAULT_INDEX = "document-chats";
+const INDEX_LABELS = {
+  "document-chats": "Document chats",
+  "events-and-surveys-chats": "Events and surveys chats",
+};
 const DEFAULT_LIMIT = "100";
 const LIST_LIMIT_OPTIONS = ["100", "200", "300", "400", "500", "all"];
 const EMBEDDINGS_CACHE_PREFIX = "franc_embeddings_cache_v3_";
@@ -622,7 +626,7 @@ const ManageEmbeddings = () => {
           >
             {(indexes.length ? indexes : [selectedIndex]).map((idx) => (
               <option key={idx} value={idx}>
-                {idx}
+                {INDEX_LABELS[idx] || idx}
               </option>
             ))}
           </Select>

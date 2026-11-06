@@ -46,7 +46,7 @@ const Login = () => {
 
     try {
       // ---- login request ----
-      const data = await post(USER_ENDPOINTS.SIGN_IN, { email, password });
+      const data = await post(USER_ENDPOINTS.SIGN_IN, { email, password }, { token: "" });
 
       // ---- store and decode token ----
       const { token } = data;
@@ -85,6 +85,7 @@ const Login = () => {
 
       // Check if account is not verified
       if (
+        err.details?.code === "account_not_verified" ||
         errorMessage.toLowerCase().includes("account not verified") ||
         errorMessage.toLowerCase().includes("not verified")
       ) {
