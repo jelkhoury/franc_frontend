@@ -172,7 +172,7 @@ const Signup = () => {
         lastName,
         email,
         passwordHash,
-      });
+      }, { token: "" });
 
       // Don't log in immediately - user needs to verify email first
       // Navigate to OTP verification page

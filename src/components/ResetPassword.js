@@ -40,10 +40,10 @@ const ResetPassword = () => {
   }, [email, navigate]);
 
   const handleSubmit = async () => {
-    if (!email || !otp || !newPassword || !confirmPassword) {
+    if (!email || !/^\d{6}$/.test(otp) || !newPassword || !confirmPassword) {
       toast({
         title: 'Missing Fields',
-        description: 'Please fill in all fields.',
+        description: 'Enter the six-digit code and fill in both password fields.',
         status: 'warning',
         duration: 3000,
         isClosable: true,
@@ -60,6 +60,10 @@ const ResetPassword = () => {
       });
       return;
     }
+    if (newPassword.length < 6) {
+      toast({title: 'Password too short', description: 'Use at least six characters.', status: 'warning', duration: 3000, isClosable: true});
+      return;
+    }
 
     setLoading(true);
     try {
@@ -67,7 +71,7 @@ const ResetPassword = () => {
         email,
         verificationCode: otp,
         newPassword,
-      });
+      }, { token: '' });
 
       toast({
         title: 'Password Reset Successful',
@@ -118,8 +122,10 @@ const ResetPassword = () => {
           <FormLabel>Verification Code</FormLabel>
           <Input
             placeholder="Enter the code sent to your email"
+            inputMode="numeric"
+            maxLength={6}
             value={otp}
-            onChange={(e) => setOtp(e.target.value)}
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
           />
         </FormControl>
 

@@ -11,7 +11,8 @@ export const USER_ENDPOINTS = {
   RESET_PASSWORD: "/api/users/reset-password",
   VERIFY_CODE: "/api/users/verify-code",
   SEND_VERIFICATION_CODE: "/api/users/send-verification-code",
-  GENERATE_TOKEN_BY_EMAIL: "/api/users/generate-token-by-email",
+  // Inactive legacy endpoint: tokens are returned by VERIFY_CODE after verification.
+  // GENERATE_TOKEN_BY_EMAIL: "/api/users/generate-token-by-email",
   SEND_PDF: "/api/users/send-pdf",
   SEND_MOCK_SUBMISSION_NOTIFICATION:
     "/api/users/send-mock-submission-notification",
