@@ -68,3 +68,9 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## Chatbot events and surveys
+
+Admin panel → Events and Surveys manages content through `/api/chat-content` on the existing .NET API base. The chat renders verified action links returned by Flask alongside its `response` field. No indexing secrets belong in frontend environment variables. Dates entered in the forms use the explicitly selected timezone, independently of the browser timezone.
+
+Backend migration and runtime settings are documented in `franc_backend/docs/chatbot-events-and-surveys.md` and `Frank-LLM/docs/events-and-surveys.md`. Deploy the backend schema/APIs and Flask before enabling chat classification.

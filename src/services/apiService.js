@@ -166,3 +166,10 @@ export const ANALYTICS_ENDPOINTS = {
 };
 
 
+
+// Admin-managed events and survey links (use the .NET API base).
+export const CHAT_CONTENT_ENDPOINTS = {
+  LIST: (type) => `/api/chat-content/${type}`,
+  ITEM: (type, id) => `/api/chat-content/${type}/${id}`,
+  RETRY: (type, id) => `/api/chat-content/${type}/${id}/retry-index`,
+};

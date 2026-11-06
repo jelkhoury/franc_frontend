@@ -2,19 +2,21 @@
 
 import {
   Box,
+  Button,
   Input,
   IconButton,
   VStack,
   HStack,
   Text,
+  Link,
   Flex,
   useColorModeValue,
 } from "@chakra-ui/react";
 import { useState, useRef, useEffect } from "react";
-import { ArrowForwardIcon, CloseIcon } from "@chakra-ui/icons";
-import Footer from "../../components/Footer";
+import { ArrowForwardIcon, CloseIcon, ArrowDownIcon } from "@chakra-ui/icons";
 import { post } from "../../utils/httpServices";
 import { captureError } from "../../utils/sentryUtils";
+import { safeLinks } from "../../features/chatContent/contentUtils";
 import { AI_ENDPOINTS } from "../../services/apiService";
 
 const TypingIndicator = () => {
@@ -84,7 +86,9 @@ const TypingIndicator = () => {
   );
 };
 
-const ChatBubble = ({ message, isUser, isTyping }) => {
+const ChatBubble = ({ message, isUser, isTyping, links }) => {
+  const botBackground = useColorModeValue("gray.100", "gray.700");
+  const botColor = useColorModeValue("gray.800", "gray.200");
   if (isTyping) {
     return <TypingIndicator />;
   }
@@ -92,8 +96,8 @@ const ChatBubble = ({ message, isUser, isTyping }) => {
   return (
     <Flex justify={isUser ? "flex-end" : "flex-start"} w="100%">
       <Box
-        bg={isUser ? "brand.500" : useColorModeValue("gray.100", "gray.700")}
-        color={isUser ? "white" : useColorModeValue("gray.800", "gray.200")}
+        bg={isUser ? "brand.500" : botBackground}
+        color={isUser ? "white" : botColor}
         px={4}
         py={2}
         borderRadius="xl"
@@ -102,7 +106,9 @@ const ChatBubble = ({ message, isUser, isTyping }) => {
         wordBreak="break-word"
       >
         <Text whiteSpace="pre-wrap">{message}</Text>{" "}
-        {/* <-- This enables \n line breaks */}
+        {!isUser && <VStack align="start" mt={2} spacing={2}>{safeLinks(links).map(link => (
+          <Link key={link.url} href={link.url} isExternal rel="noopener noreferrer" color="blue.500" fontWeight="semibold">{link.label || 'Open link'} ↗</Link>
+        ))}</VStack>}
       </Box>
     </Flex>
   );
@@ -115,46 +121,42 @@ const Chatting = () => {
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUserScrolled, setIsUserScrolled] = useState(false);
-  const messagesEndRef = useRef();
+  const followLatestRef = useRef(true);
   const messagesContainerRef = useRef();
   const stopTypingRef = useRef(false);
   const typingTimeoutRef = useRef(null);
 
-  // Smart auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (messagesContainerRef.current && !isUserScrolled) {
-      // Scroll to bottom only if user hasn't scrolled up manually
-      setTimeout(() => {
-        messagesContainerRef.current.scrollTop =
-          messagesContainerRef.current.scrollHeight;
-      }, 0);
-    }
-  }, [messages, isUserScrolled]);
+  const scrollToLatest = () => {
+    followLatestRef.current = true;
+    setIsUserScrolled(false);
+    const node = messagesContainerRef.current;
+    if (node) node.scrollTop = node.scrollHeight;
+  };
 
-  // Handle keyboard visibility on mobile
   useEffect(() => {
-    const handleResize = () => {
-      // When keyboard disappears, scroll back to default
-      if (messagesContainerRef.current && !isUserScrolled) {
-        setTimeout(() => {
-          messagesContainerRef.current.scrollTop =
-            messagesContainerRef.current.scrollHeight;
-        }, 100);
-      }
+    const node = messagesContainerRef.current;
+    if (node && followLatestRef.current) node.scrollTop = node.scrollHeight;
+  }, [messages]);
+
+  useEffect(() => {
+    const resize = () => {
+      const node = messagesContainerRef.current;
+      if (node && followLatestRef.current) node.scrollTop = node.scrollHeight;
     };
+    window.addEventListener('resize', resize);
+    window.visualViewport?.addEventListener('resize', resize);
+    return () => {
+      window.removeEventListener('resize', resize);
+      window.visualViewport?.removeEventListener('resize', resize);
+    };
+  }, []);
 
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [isUserScrolled]);
-
-  // Track manual scroll
   const handleScroll = () => {
-    if (messagesContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } =
-        messagesContainerRef.current;
-      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50; // 50px threshold
-      setIsUserScrolled(!isAtBottom);
-    }
+    const node = messagesContainerRef.current;
+    if (!node) return;
+    const atBottom = node.scrollHeight - node.scrollTop - node.clientHeight < 50;
+    followLatestRef.current = atBottom;
+    setIsUserScrolled(!atBottom);
   };
 
   // Cleanup timeout on unmount
@@ -177,6 +179,8 @@ const Chatting = () => {
   const handleSend = async () => {
     if (!input.trim() || isGenerating) return;
 
+    followLatestRef.current = true;
+    setIsUserScrolled(false);
     const userMessage = { text: input, sender: "user" };
     setMessages((prev) => [...prev, userMessage]);
 
@@ -203,7 +207,7 @@ const Chatting = () => {
       // Remove typing indicator and prepare for typing animation
       setMessages((prev) => [
         ...prev.slice(0, -1),
-        { text: "", sender: "bot", isTyping: false },
+        { text: "", sender: "bot", isTyping: false, links: safeLinks(data.links) },
       ]);
 
       // Simulate typing effect
@@ -225,7 +229,7 @@ const Chatting = () => {
         currentText += botResponse[i];
         setMessages((prev) => {
           const updated = [...prev];
-          updated[updated.length - 1] = { text: currentText, sender: "bot" };
+          updated[updated.length - 1] = { ...updated[updated.length - 1], text: currentText, sender: "bot" };
           return updated;
         });
       }
@@ -248,13 +252,14 @@ const Chatting = () => {
 
   return (
     <Box
-      minH="100vh"
+      minH={0}
       display="flex"
       flexDirection="column"
       bgGradient="linear(to-r, white, #ebf8ff)"
       overflow="hidden"
       position="relative"
-      height="100vh"
+      height="100%"
+      p={{ base: 0, md: 4 }}
     >
       {/* Chat container */}
       <Box
@@ -262,12 +267,12 @@ const Chatting = () => {
         maxW="800px"
         mx="auto"
         bg="white"
-        mt={{ base: 0, md: 6 }}
-        mb={{ base: 0, md: 4 }}
         p={{ base: 4, md: 6 }}
         borderRadius={{ base: 0, md: "xl" }}
         boxShadow={{ base: "none", md: "lg" }}
-        height={{ base: "calc(100vh - 0px)", md: "calc(100vh - 100px)" }}
+        height="100%"
+        minH={0}
+        flex="1"
         display="flex"
         flexDirection="column"
         overflow="hidden"
@@ -276,6 +281,14 @@ const Chatting = () => {
         <Box
           ref={messagesContainerRef}
           flex="1"
+          minH={0}
+          role="log"
+          aria-label="Conversation"
+          aria-live="polite"
+          aria-relevant="additions"
+          tabIndex={0}
+          overscrollBehavior="contain"
+          style={{ WebkitOverflowScrolling: "touch", overflowAnchor: "none" }}
           overflowY="auto"
           overflowX="hidden"
           pr={2}
@@ -302,13 +315,19 @@ const Chatting = () => {
               <ChatBubble
                 key={idx}
                 message={msg.text}
+                links={msg.links}
                 isUser={msg.sender === "user"}
                 isTyping={msg.isTyping || false}
               />
             ))}
-            <div ref={messagesEndRef} />
           </VStack>
         </Box>
+
+        {isUserScrolled && <Flex justify="center" flexShrink={0} pt={2}>
+          <Button size="sm" variant="outline" leftIcon={<ArrowDownIcon />} onClick={scrollToLatest}>
+            Latest messages
+          </Button>
+        </Flex>}
 
         {/* Input area */}
         <HStack 
@@ -320,6 +339,7 @@ const Chatting = () => {
           pb={{ base: "env(safe-area-inset-bottom)", md: 0 }}
         >
           <Input
+            aria-label="Message"
             placeholder="Type your message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -349,10 +369,7 @@ const Chatting = () => {
         </HStack>
       </Box>
 
-      {/* Footer */}
-      <Box flexShrink={0} mt={4} display={{ base: "none", md: "block" }}>
-        <Footer />
-      </Box>
+
     </Box>
   );
 };

@@ -40,6 +40,8 @@ import ManageMockInterviewQuestions from "../components/Admin/ManageMockIntervie
 import ManageFiles from "../components/Admin/ManageFiles";
 import ManageChatbot from "../components/Admin/ManageChatbot";
 import ManageJobComparisons from "../components/Admin/ManageJobComparisons";
+import ManageEvents from "../components/Admin/ManageEvents";
+import ManageSurveys from "../components/Admin/ManageSurveys";
 import ManageEmbeddings from "../components/Admin/ManageEmbeddings";
 import AnalyticsDashboard from "../features/adminAnalytics/pages/AnalyticsDashboard";
 import { AuthContext } from "../components/AuthContext";
@@ -193,6 +195,8 @@ const AdminPanel = () => {
     { id: "personalityQuestions", icon: FaTasks, label: "Personality Test Questions" },
     { id: "files", icon: FaFolder, label: "Manage Files" },
     { id: "chatbot", icon: FaRobot, label: "Manage Chatbot" },
+    { id: "events", icon: FaClipboardList, label: "Events" },
+    { id: "surveys", icon: FaTasks, label: "Surveys" },
     { id: "jobComparisons", icon: FaBalanceScale, label: "Job Comparisons" },
     { id: "embeddings", icon: FaBook, label: "Knowledge Documents" },
   ];
@@ -445,6 +449,8 @@ const AdminPanel = () => {
         {selectedTab === "personalityQuestions" && <ManagePersonalityTestQuestions />}
         {selectedTab === "files" && <ManageFiles />}
         {selectedTab === "chatbot" && <ManageChatbot />}
+        {selectedTab === "events" && <ManageEvents />}
+        {selectedTab === "surveys" && <ManageSurveys />}
         {selectedTab === "jobComparisons" && <ManageJobComparisons />}
         {selectedTab === "embeddings" && <ManageEmbeddings />}
         </Box>

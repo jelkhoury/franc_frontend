@@ -5,6 +5,7 @@ import {
   Route,
   useLocation,
 } from "react-router-dom";
+import ChatViewport from "./features/chatContent/ChatViewport";
 import Navbar from "./components/Navbar";
 import LandingPage from "./pages/LandingPage";
 import FrancPage from "./pages/FrancPage";
@@ -75,6 +76,9 @@ const App = () => {
 const MainLayout = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
+  if (location.pathname.replace(/\/+$/, '') === '/chat-franc') {
+    return <ChatViewport navigation={<Navbar />}><Chatting /></ChatViewport>;
+  }
 
   return (
     <>
